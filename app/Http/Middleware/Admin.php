@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
+
+class Admin
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  Closure(Request): (Response)  $next
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        if (! Auth::check()) {
+            return redirect()->route('admin.login');
+        }
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        if ($user->status !== 'ativo') {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->with('warning', 'Seu usuário está inativo.');
+        }
+
+        if ($user->nivel === 'admin') {
+            return $next($request);
+        }
+
+        if ($user->nivel === 'user' && $user->canAccessRouteName($request->route()?->getName())) {
+            return $next($request);
+        }
+
+        return redirect()->route('cliente.dashboard')->with('warning', 'Seu perfil não possui acesso a este submenu.');
+    }
+}
