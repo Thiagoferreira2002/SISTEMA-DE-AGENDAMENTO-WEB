@@ -1,128 +1,378 @@
 @extends('admin.layouts.master')
 @section('content')
+<style>
+  .dashboard-shell {
+    --dashboard-accent: #1E90FF;
+    --dashboard-accent-deep: #1E90FF;
+    --dashboard-dark: #123a63;
+    --dashboard-soft: #f4f9ff;
+    --dashboard-soft-border: rgba(30, 144, 255, 0.22);
+    padding: 28px;
+    border-radius: 28px;
+    background:
+      radial-gradient(circle at top right, rgba(30, 144, 255, 0.18), transparent 26%),
+      linear-gradient(180deg, rgba(30, 144, 255, 0.08) 0%, rgba(244, 249, 255, 0.94) 42%, rgba(238, 245, 255, 0.98) 100%);
+  }
+
+  .dashboard-shell .section-header {
+    align-items: stretch;
+    margin-bottom: 0;
+  }
+
+  .dashboard-shell .section-header h1 {
+    color: var(--dashboard-dark);
+    font-weight: 800;
+  }
+
+  .dashboard-hero {
+    position: relative;
+    overflow: hidden;
+    border: 0;
+    border-radius: 22px;
+    background: linear-gradient(135deg, rgba(30, 144, 255, 0.78) 0%, #1E90FF 100%);
+    color: #ffffff;
+    box-shadow: 0 18px 40px rgba(30, 144, 255, 0.16);
+    animation: dashboardFadeIn .7s ease-out both;
+  }
+
+  .dashboard-hero::after {
+    content: '';
+    position: absolute;
+    inset: auto -10% -45% auto;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.22);
+    filter: blur(4px);
+  }
+
+  .dashboard-hero .card-body {
+    position: relative;
+    z-index: 1;
+    padding: 32px;
+  }
+
+  .dashboard-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 12px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .dashboard-hero h2 {
+    margin: 18px 0 10px;
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  .dashboard-hero p {
+    max-width: 720px;
+    margin-bottom: 0;
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  .dashboard-metric-card,
+  .dashboard-list-card {
+    border: 0;
+    border-radius: 18px;
+    box-shadow: 0 14px 28px rgba(30, 144, 255, 0.08);
+    animation: dashboardRise .55s ease-out both;
+  }
+
+  .dashboard-metric-card {
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(244, 249, 255, 0.98) 100%);
+    border-top: 4px solid var(--dashboard-accent-deep);
+    border: 1px solid var(--dashboard-soft-border);
+  }
+
+  .dashboard-metric-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .dashboard-metric-link:hover {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .dashboard-metric-link:hover .dashboard-metric-card {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 34px rgba(30, 144, 255, 0.14);
+  }
+
+  .dashboard-metric-card .card-body {
+    padding: 22px;
+  }
+
+  .dashboard-metric-card .metric-icon {
+    width: 56px;
+    height: 56px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    background: rgba(30, 144, 255, 0.16);
+    color: var(--dashboard-dark);
+    font-size: 22px;
+  }
+
+  .dashboard-metric-card h4 {
+    color: #4d6d8a;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .dashboard-metric-card .metric-value {
+    color: var(--dashboard-dark);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .dashboard-metric-card .metric-footnote {
+    margin-top: 10px;
+    color: #587693;
+    font-size: 13px;
+  }
+
+  .dashboard-list-card .card-header {
+    padding: 20px 24px 0;
+    background: linear-gradient(180deg, rgba(30, 144, 255, 0.12) 0%, rgba(30, 144, 255, 0) 100%);
+    border-bottom: 0;
+  }
+
+  .dashboard-list-card {
+    background: rgba(255, 255, 255, 0.98);
+    border-top: 4px solid var(--dashboard-accent);
+    border: 1px solid var(--dashboard-soft-border);
+  }
+
+  .dashboard-list-card .card-header h4 {
+    color: var(--dashboard-dark);
+    font-weight: 700;
+  }
+
+  .dashboard-list-card .card-body {
+    padding: 20px 24px 24px;
+  }
+
+  .dashboard-table thead th {
+    border-top: 0;
+    color: #4d6d8a;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    background: rgba(30, 144, 255, 0.12);
+  }
+
+  .dashboard-table tbody tr {
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+
+  .dashboard-table tbody tr:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 0 0 9999px rgba(30, 144, 255, 0.1);
+  }
+
+  .dashboard-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  .dashboard-status.confirmado {
+    background: rgba(30, 144, 255, 0.14);
+    color: #155a9d;
+  }
+
+  .dashboard-status.pendente {
+    background: rgba(30, 144, 255, 0.14);
+    color: #155a9d;
+  }
+
+  .dashboard-status.cancelado {
+    background: rgba(30, 144, 255, 0.14);
+    color: #155a9d;
+  }
+
+  .dashboard-shell .btn-primary {
+    background: #1E90FF;
+    border: 0;
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(30, 144, 255, 0.2);
+  }
+
+  .dashboard-shell .btn-primary:hover,
+  .dashboard-shell .btn-primary:focus {
+    background: #1E90FF !important;
+    color: #ffffff;
+  }
+
+  @media (max-width: 767.98px) {
+    .dashboard-shell {
+      padding: 18px;
+      border-radius: 20px;
+    }
+  }
+
+  @keyframes dashboardFadeIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes dashboardRise {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
  <section class="section">
-            <div class="section-header">
-              <h1>Painel de Controle</h1>
-            </div>
-            <div class="row">
-              <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                <div class="card card-statistic-1">
-                  <div class="card-icon bg-primary">
-                    <i class="far fa-calendar"></i>
-                  </div>
-                  <div class="card-wrap">
-                    <div class="card-header">
-                      <h4>Total Agendamentos</h4>
-                    </div>
-                    <div class="card-body">
-                      {{ $totalAgendamentos }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                <div class="card card-statistic-1">
-                  <div class="card-icon bg-warning">
-                    <i class="far fa-clock"></i>
-                  </div>
-                  <div class="card-wrap">
-                    <div class="card-header">
-                      <h4>Agendamentos Pendentes</h4>
-                    </div>
-                    <div class="card-body">
-                       {{ $agendamentosPendentes }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                <div class="card card-statistic-1">
-                  <div class="card-icon bg-success">
-                    <i class="far fa-check-circle"></i>
-                  </div>
-                  <div class="card-wrap">
-                    <div class="card-header">
-                      <h4>Agendamentos Confirmados</h4>
-                    </div>
-                    <div class="card-body">
-                        {{ $agendamentosConfirmados }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-                <div class="card card-statistic-1">
-                  <div class="card-icon bg-info">
-                    <i class="far fa-user"></i>
-                  </div>
-                  <div class="card-wrap">
-                    <div class="card-header">
-                      <h4>Total Pacientes</h4>
-                    </div>
-                    <div class="card-body">
-                      {{ $totalPacientes }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          <!-- FIM CONTADORES  -->
+  <div class="dashboard-shell">
+    <div class="section-header border-0 mb-4">
+      <h1>{{ $dashboardTitle ?? 'Painel de Controle' }}</h1>
+    </div>
 
+    <div class="card dashboard-hero mb-4">
+      <div class="card-body">
+        <span class="dashboard-kicker">
+          <i class="fas fa-wave-square"></i>
+          {{ ($isProfessionalDashboard ?? false) ? 'Visão do profissional' : 'Visão geral da clínica' }}
+        </span>
+        <h2>{{ ($isProfessionalDashboard ?? false) ? ($dashboardWelcome ?? 'Boas-vindas') : ($dashboardTitle ?? 'Painel de Controle') }}</h2>
+        <p>{{ $dashboardSubtitle ?? 'Acompanhe os indicadores e os próximos atendimentos.' }}</p>
+      </div>
+    </div>
 
-          <!-- INICIO PRÓXIMOS AGENDAMENTOS   -->
-          <div class="row">
-            <div class="col-lg-12 col-md-12 col-12 col-sm-12">
-              <div class="card">
-                <div class="card-header">
-                  <h4>Próximos Agendamentos</h4>
-                  <div class="card-header-action">
-                    <a href="{{ route('admin.agendamentos.index') }}" class="btn btn-primary">Ver Todos</a>
-                  </div>
-                </div>
-                <div class="card-body">
-                  <div class="table-responsive">
-                    <table class="table table-striped">
-                      <thead>
-                        <tr>
-                          <th>Nome</th>
-                          <th>Serviço</th>
-                          <th>Data</th>
-                          <th>Horário</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        @forelse($proximosAgendamentos as $agendamento)
-                        <tr>
-                          <td>{{ $agendamento->nome }}</td>
-                          <td>{{ $agendamento->servico }}</td>
-                          <td>{{ $agendamento->data_agendamento->format('d/m/Y') }}</td>
-                          <td>{{ $agendamento->horario }}</td>
-                          <td>
-                            @if($agendamento->status == 'confirmado')
-                              <span class="badge badge-success">Confirmado</span>
-                            @elseif($agendamento->status == 'pendente')
-                              <span class="badge badge-warning">Pendente</span>
-                            @elseif($agendamento->status == 'cancelado')
-                              <span class="badge badge-danger">Cancelado</span>
-                            @endif
-                          </td>
-                        </tr>
-                        @empty
-                        <tr>
-                          <td colspan="5" class="text-center">Nenhum agendamento próximo</td>
-                        </tr>
-                        @endforelse
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+    <div class="row">
+      <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <a href="{{ $dashboardLinks['total'] ?? route('admin.agendamentos.index') }}" class="dashboard-metric-link">
+          <div class="card dashboard-metric-card" style="animation-delay:.05s;">
+            <div class="card-body">
+              <div class="metric-icon"><i class="far fa-calendar"></i></div>
+              <h4>Total de Agendamentos</h4>
+              <div class="metric-value">{{ $totalAgendamentos }}</div>
+              <div class="metric-footnote">Conta apenas agendamentos ativos, sem cancelados e sem finalizados.</div>
+            </div>
+          </div>
+        </a>
+      </div>
+      <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <a href="{{ $dashboardLinks['pendentes'] ?? route('admin.agendamentos.confirmations') }}" class="dashboard-metric-link">
+          <div class="card dashboard-metric-card" style="animation-delay:.12s;">
+            <div class="card-body">
+              <div class="metric-icon"><i class="far fa-clock"></i></div>
+              <h4>Agendamentos Pendentes</h4>
+              <div class="metric-value">{{ $agendamentosPendentes }}</div>
+              <div class="metric-footnote">Itens pendentes ou sem status, excluindo cancelados e finalizados.</div>
+            </div>
+          </div>
+        </a>
+      </div>
+      <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <a href="{{ $dashboardLinks['confirmados'] ?? route('admin.agendamentos.index') }}" class="dashboard-metric-link">
+          <div class="card dashboard-metric-card" style="animation-delay:.19s;">
+            <div class="card-body">
+              <div class="metric-icon"><i class="far fa-check-circle"></i></div>
+              <h4>Agendamentos Confirmados</h4>
+              <div class="metric-value">{{ $agendamentosConfirmados }}</div>
+              <div class="metric-footnote">Somente agendamentos confirmados e ainda não concluídos.</div>
+            </div>
+          </div>
+        </a>
+      </div>
+      @unless($isProfessionalDashboard ?? false)
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+          <a href="{{ $dashboardLinks['complementar'] ?? route('admin.patients.index') }}" class="dashboard-metric-link">
+            <div class="card dashboard-metric-card" style="animation-delay:.26s;">
+              <div class="card-body">
+                <div class="metric-icon"><i class="far fa-user"></i></div>
+                <h4>Total de Pacientes</h4>
+                <div class="metric-value">{{ $totalPacientes }}</div>
+                <div class="metric-footnote">Base total de pacientes cadastrados no sistema.</div>
+              </div>
+            </div>
+          </a>
+        </div>
+      @endunless
+      <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <a href="{{ $dashboardLinks['finalizados'] ?? route('admin.patients.history') }}" class="dashboard-metric-link">
+          <div class="card dashboard-metric-card" style="animation-delay:.33s;">
+            <div class="card-body">
+              <div class="metric-icon"><i class="fas fa-check-double"></i></div>
+              <h4>Serviços Finalizados</h4>
+              <div class="metric-value">{{ $agendamentosFinalizados ?? 0 }}</div>
+              <div class="metric-footnote">
+                {{ ($isProfessionalDashboard ?? false) ? 'Total de atendimentos concluídos no seu perfil.' : 'Total de atendimentos concluídos na clínica.' }}
               </div>
             </div>
           </div>
-          <!-- FIM PRÓXIMOS AGENDAMENTOS   --->
+        </a>
+      </div>
+    </div>
 
-
-
+    <div class="row mt-2">
+      <div class="col-lg-12 col-md-12 col-12 col-sm-12">
+        <div class="card dashboard-list-card" style="animation-delay:.34s;">
+          <div class="card-header">
+            <h4>Próximos Agendamentos</h4>
+            <div class="card-header-action">
+              <a href="{{ ($isProfessionalDashboard ?? false) ? route('admin.doctor.queue') : route('admin.agendamentos.index') }}" class="btn btn-primary">Ver todos</a>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table dashboard-table mb-0">
+                <thead>
+                  <tr>
+                    <th>Paciente</th>
+                    <th>Serviço</th>
+                    <th>Profissional</th>
+                    <th>Data</th>
+                    <th>Horário</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @forelse($proximosAgendamentos as $agendamento)
+                    <tr>
+                      <td>{{ $agendamento->nome }}</td>
+                      <td>{{ $agendamento->servico }}</td>
+                      <td>{{ $agendamento->professional->nome ?? 'Não informado' }}</td>
+                      <td>{{ optional($agendamento->data_agendamento)->format('d/m/Y') }}</td>
+                      <td>{{ $agendamento->horario }}</td>
+                      <td>
+                        <span class="dashboard-status {{ $agendamento->status }}">
+                          {{ ucfirst($agendamento->status ?? 'pendente') }}
+                        </span>
+                      </td>
+                    </tr>
+                  @empty
+                    <tr>
+                      <td colspan="6" class="text-center text-muted py-4">Nenhum agendamento próximo encontrado.</td>
+                    </tr>
+                  @endforelse
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 @endsection

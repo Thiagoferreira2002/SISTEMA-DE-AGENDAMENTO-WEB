@@ -50,10 +50,93 @@
 </script>
 <!-- /END GA --></head>
 
-<body>
+@php
+  $authenticatedUser = auth()->user();
+  $isClinicManager = $authenticatedUser?->isClinicManager() ?? false;
+  $isCadastrosBaseRoute = request()->routeIs('admin.settings.*');
+@endphp
+
+<body class="sidebar-gone {{ $isClinicManager ? 'clinic-manager-user' : '' }} {{ $isClinicManager && ! $isCadastrosBaseRoute ? 'clinic-manager-readonly' : '' }}">
+  <style>
+    .sidebar-toggle-fixed {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      z-index: 1200;
+      min-height: 44px;
+      min-width: 132px;
+      padding: 10px 18px;
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(8, 37, 66, 0.96) 0%, rgba(17, 79, 138, 0.96) 100%);
+      box-shadow: 0 14px 28px rgba(8, 37, 66, 0.22);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .01em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      text-decoration: none !important;
+      transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease, left .2s ease;
+    }
+
+    .sidebar-toggle-fixed:hover,
+    .sidebar-toggle-fixed:focus {
+      background: linear-gradient(135deg, rgba(10, 46, 82, 1) 0%, rgba(24, 102, 175, 1) 100%);
+      color: #ffffff;
+      text-decoration: none !important;
+      transform: translateY(-1px);
+      box-shadow: 0 16px 30px rgba(8, 37, 66, 0.26);
+    }
+
+    .sidebar-toggle-fixed[data-state="open"] {
+      background: rgba(255, 255, 255, 0.95);
+      color: #0f3d6b;
+      box-shadow: 0 12px 26px rgba(8, 37, 66, 0.16);
+    }
+
+    .sidebar-toggle-fixed[data-state="open"]:hover,
+    .sidebar-toggle-fixed[data-state="open"]:focus {
+      background: #ffffff;
+      color: #0d3358;
+    }
+
+    body.sidebar-gone .navbar {
+      left: 0;
+    }
+
+    body.sidebar-gone .main-content {
+      padding-left: 30px;
+    }
+
+    body.sidebar-gone .main-footer {
+      padding-left: 30px;
+    }
+
+    body:not(.sidebar-gone) .sidebar-toggle-fixed {
+      left: 266px;
+    }
+
+    body.sidebar-mini .sidebar-toggle-fixed {
+      left: 82px;
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar-toggle-fixed,
+      body:not(.sidebar-gone) .sidebar-toggle-fixed,
+      body.sidebar-mini .sidebar-toggle-fixed {
+        left: 14px;
+        top: 14px;
+      }
+    }
+  </style>
   <div id="app">
     <div class="main-wrapper main-wrapper-1">
       <div class=""></div>
+      <a href="#" id="sidebar-toggle-fixed" data-toggle="sidebar" class="sidebar-toggle-fixed" data-state="closed" aria-label="Abrir lateral" aria-pressed="false">Abrir lateral</a>
+
       <!-- START NAVABAR - MAYKONSILVEIRA.COM.BR -->
       @include('admin.layouts.navbar')
 
@@ -142,6 +225,47 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
+      var sidebarToggleButton = document.getElementById('sidebar-toggle-fixed');
+
+      if (sidebarToggleButton) {
+        var updateSidebarToggleLabel = function () {
+          var isClosed = document.body.classList.contains('sidebar-gone') && !document.body.classList.contains('sidebar-show');
+
+          sidebarToggleButton.textContent = isClosed ? 'Abrir lateral' : 'Fechar lateral';
+          sidebarToggleButton.setAttribute('data-state', isClosed ? 'closed' : 'open');
+          sidebarToggleButton.setAttribute('aria-label', isClosed ? 'Abrir lateral' : 'Fechar lateral');
+          sidebarToggleButton.setAttribute('aria-pressed', isClosed ? 'false' : 'true');
+        };
+
+        updateSidebarToggleLabel();
+
+        sidebarToggleButton.addEventListener('click', function () {
+          window.setTimeout(updateSidebarToggleLabel, 20);
+        });
+
+        var sidebarObserver = new MutationObserver(updateSidebarToggleLabel);
+        sidebarObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      }
+
+      if (document.body.classList.contains('clinic-manager-readonly')) {
+        var mainContent = document.querySelector('.main-content');
+
+        if (mainContent) {
+          mainContent.querySelectorAll('form').forEach(function (form) {
+            var spoofedMethodInput = form.querySelector('input[name="_method"]');
+            var method = ((spoofedMethodInput ? spoofedMethodInput.value : form.getAttribute('method')) || 'GET').toUpperCase();
+
+            if (method !== 'GET') {
+              form.style.display = 'none';
+            }
+          });
+
+          mainContent.querySelectorAll('a[href*="/create"], a[href*="/edit"], [data-target*="edit-"], [data-target*="create-"]').forEach(function (element) {
+            element.style.display = 'none';
+          });
+        }
+      }
+
       if (!window.localStorage) {
         return;
       }

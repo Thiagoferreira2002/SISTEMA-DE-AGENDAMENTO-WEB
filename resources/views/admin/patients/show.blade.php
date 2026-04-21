@@ -24,7 +24,7 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-lg-6 col-12">
-                                <div class="border rounded p-3 mb-3 h-100">
+                                <div class="border rounded p-4 mb-4 h-100 shadow-sm bg-white">
                                     <h5 class="mb-3">Dados Pessoais</h5>
                                     <p><strong>Nome:</strong> {{ $patient->nome }}</p>
                                     <p><strong>CPF:</strong> {{ $patient->cpf ?: '-' }}</p>
@@ -33,14 +33,14 @@
                                 </div>
                             </div>
                             <div class="col-lg-6 col-12">
-                                <div class="border rounded p-3 mb-3 h-100">
+                                <div class="border rounded p-4 mb-4 h-100 shadow-sm bg-white">
                                     <h5 class="mb-3">Contato</h5>
                                     <p><strong>Celular:</strong> {{ $patient->telefone }}</p>
                                     <p class="mb-0"><strong>E-mail:</strong> {{ $patient->email }}</p>
                                 </div>
                             </div>
                             <div class="col-lg-6 col-12">
-                                <div class="border rounded p-3 mb-3 h-100">
+                                <div class="border rounded p-4 mb-4 h-100 shadow-sm bg-white">
                                     <h5 class="mb-3">Endereço e Situação Cadastral</h5>
                                     <p><span class="badge badge-{{ $patient->cadastro_status_class }}">{{ $patient->cadastro_status_label }}</span></p>
                                     <p><strong>Pendências cadastrais:</strong> {{ empty($patient->cadastro_pendencias) ? 'Nenhuma' : implode(', ', $patient->cadastro_pendencias) }}</p>
@@ -54,7 +54,7 @@
                             </div>
                         </div>
 
-                        <div class="border rounded p-3 mt-3">
+                        <div class="border rounded p-4 mt-4 shadow-sm bg-white">
                             <h5 class="mb-3">Linha do Tempo de Consultas</h5>
                             <div class="table-responsive">
                                 <table class="table table-striped mb-0">
@@ -82,6 +82,11 @@
                                     </tbody>
                                 </table>
                             </div>
+                            @if(method_exists($history, 'hasPages') && $history->hasPages())
+                                <div class="d-flex justify-content-center mt-4">
+                                    {{ $history->links('vendor.pagination.patients-blocks') }}
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>

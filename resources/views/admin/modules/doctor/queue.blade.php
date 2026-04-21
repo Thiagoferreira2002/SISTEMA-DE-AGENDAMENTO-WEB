@@ -6,18 +6,6 @@
     </div>
 
     <div class="section-body">
-        <div class="row mb-4">
-            <div class="col-lg-4 col-md-6 col-12">
-                <div class="card card-statistic-1">
-                    <div class="card-icon bg-primary"><i class="fas fa-user-clock"></i></div>
-                    <div class="card-wrap">
-                        <div class="card-header"><h4>Pacientes na fila</h4></div>
-                        <div class="card-body">{{ $totalPatientsInQueue }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="card mb-4">
             <div class="card-header">
                 <h4>Filtros da fila</h4>
@@ -67,9 +55,6 @@
                                 <th>Horário</th>
                                 <th>Paciente</th>
                                 <th>Profissional</th>
-                                <th>Tempo de Espera</th>
-                                <th>Chegada</th>
-                                <th>Tipo</th>
                                 <th>Serviço</th>
                                 <th>Status</th>
                                 <th>Ações</th>
@@ -82,9 +67,6 @@
                                     <td>{{ $item->horario }}</td>
                                     <td>{{ $item->nome }}</td>
                                     <td>{{ $item->profissional_fila }}</td>
-                                    <td>{{ $item->tempo_espera }} min</td>
-                                    <td><span class="badge badge-{{ $item->status_chegada_classe }}">{{ $item->status_chegada }}</span></td>
-                                    <td><i class="{{ $item->tipo_atendimento['icon'] }} mr-1"></i>{{ $item->tipo_atendimento['label'] }}</td>
                                     <td>{{ $item->servico }}</td>
                                     <td>
                                         <span class="badge badge-{{ $item->status === 'confirmado' ? 'success' : ($item->status === 'cancelado' ? 'danger' : 'warning') }}">
@@ -92,18 +74,21 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <form method="POST" action="{{ route('admin.doctor.queue.finish', $item) }}">
-                                            @csrf
-                                            <input type="hidden" name="q" value="{{ $search }}">
-                                            <input type="hidden" name="date" value="{{ $selectedDate }}">
-                                            <input type="hidden" name="period" value="{{ $period }}">
-                                            <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Deseja finalizar este atendimento?');">Finalizar atendimento</button>
-                                        </form>
+                                        <div class="d-flex flex-wrap" style="gap: 8px;">
+                                            <a href="{{ route('admin.agendamentos.show', ['agendamento' => $item, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-info">Ver</a>
+                                            <form method="POST" action="{{ route('admin.doctor.queue.finish', $item) }}">
+                                                @csrf
+                                                <input type="hidden" name="q" value="{{ $search }}">
+                                                <input type="hidden" name="date" value="{{ $selectedDate }}">
+                                                <input type="hidden" name="period" value="{{ $period }}">
+                                                <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Deseja finalizar este atendimento?');">Finalizar atendimento</button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="10" class="text-center">Nenhum paciente encontrado na fila para os filtros informados.</td>
+                                    <td colspan="7" class="text-center">Nenhum paciente encontrado na fila para os filtros informados.</td>
                                 </tr>
                             @endforelse
                         </tbody>

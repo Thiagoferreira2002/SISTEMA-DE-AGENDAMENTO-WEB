@@ -37,7 +37,26 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-9 d-flex flex-wrap align-items-center" style="gap: 8px;">
+                        @if(empty($authenticatedProfessional))
+                            <div class="col-md-4">
+                                <div class="form-group mb-md-0">
+                                    <label for="history-search">Paciente por CPF ou nome</label>
+                                    <input type="text" class="form-control" id="history-search" name="q" value="{{ $search ?? '' }}" placeholder="Digite o CPF ou o nome do paciente">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-md-0">
+                                    <label for="professional_id">Profissional</label>
+                                    <select class="form-control" id="professional_id" name="professional_id">
+                                        <option value="">Todos os profissionais</option>
+                                        @foreach(($professionalOptions ?? collect()) as $professional)
+                                            <option value="{{ $professional->id }}" {{ (string) ($professionalFilter ?? '') === (string) $professional->id ? 'selected' : '' }}>{{ $professional->nome }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        @endif
+                        <div class="col-md-2 d-flex flex-wrap align-items-center" style="gap: 8px;">
                             <button type="submit" class="btn btn-primary">Filtrar</button>
                             <a href="{{ route('admin.patients.history') }}" class="btn btn-light">Limpar</a>
                         </div>

@@ -32,7 +32,7 @@
         </div>
 
         <div class="checkbox-group">
-            <input id="remember_me" type="checkbox" name="remember">
+            <input id="remember_me" type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}>
             <label for="remember_me">Lembrar-me</label>
         </div>
 
@@ -42,6 +42,9 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var cpfInput = document.getElementById('cpf');
+            var rememberInput = document.getElementById('remember_me');
+            var loginForm = document.querySelector('form[action="{{ route('login') }}"]');
+            var rememberedCpfKey = 'admin.auth.last-remembered-cpf';
 
             if (!cpfInput) {
                 return;
@@ -66,9 +69,30 @@
             };
 
             cpfInput.value = formatCpf(cpfInput.value);
+
+            if (!cpfInput.value && rememberInput && window.localStorage) {
+                var rememberedCpf = window.localStorage.getItem(rememberedCpfKey);
+
+                if (rememberedCpf) {
+                    cpfInput.value = formatCpf(rememberedCpf);
+                    rememberInput.checked = true;
+                }
+            }
+
             cpfInput.addEventListener('input', function () {
                 cpfInput.value = formatCpf(cpfInput.value);
             });
+
+            if (loginForm && rememberInput && window.localStorage) {
+                loginForm.addEventListener('submit', function () {
+                    if (rememberInput.checked) {
+                        window.localStorage.setItem(rememberedCpfKey, String(cpfInput.value || '').replace(/\D/g, ''));
+                        return;
+                    }
+
+                    window.localStorage.removeItem(rememberedCpfKey);
+                });
+            }
         });
     </script>
 @endsection

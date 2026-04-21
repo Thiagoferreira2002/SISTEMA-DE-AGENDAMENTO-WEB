@@ -44,10 +44,12 @@
     </div>
 
     @php
+        $authenticatedUser = auth()->user();
         $roleLabels = [
             'medico' => 'Profissional',
             'profissional' => 'Profissional',
             'recepcionista' => 'Recepcionista',
+            'gestor_clinica' => 'Gestor da Clínica',
             'admin' => 'Administrador',
         ];
 
@@ -60,6 +62,7 @@
             'agendamentos' => 'Agendamentos',
             'pacientes' => 'Pacientes',
             'painel_doutor' => 'Painel do Profissional',
+            'cadastros_base' => 'Cadastros Base',
         ];
 
         $renderPermissionBadges = function ($permissions) use ($permissionLabels) {
@@ -159,7 +162,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3"><div class="form-group"><label>Papel *</label><select class="form-control @error('role') is-invalid @enderror" id="new-user-role" name="role" required><option value="recepcionista" {{ old('role', 'recepcionista') === 'recepcionista' ? 'selected' : '' }}>Recepcionista</option><option value="profissional" {{ in_array(old('role'), ['profissional', 'medico'], true) ? 'selected' : '' }}>Profissional</option></select>@error('role')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Papel *</label><select class="form-control @error('role') is-invalid @enderror" id="new-user-role" name="role" required><option value="recepcionista" {{ old('role', 'recepcionista') === 'recepcionista' ? 'selected' : '' }}>Recepcionista</option><option value="profissional" {{ in_array(old('role'), ['profissional', 'medico'], true) ? 'selected' : '' }}>Profissional</option><option value="gestor_clinica" {{ old('role') === 'gestor_clinica' ? 'selected' : '' }}>Gestor da Clínica</option></select>@error('role')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div></div>
                     </div>
 
                     <button type="submit" class="btn btn-primary">Cadastrar usuário</button>
@@ -172,12 +175,21 @@
                 <h4 class="mb-0">Perfis de acesso e permissões de Módulo</h4>
                 <form action="{{ route('admin.settings.users') }}" method="GET" class="d-flex flex-wrap align-items-end" style="gap: 10px;">
                     <div class="form-group mb-0">
-                        <label for="cpf-search" class="mb-1">Pesquisar por CPF</label>
-                        <input type="text" class="form-control cpf-mask" id="cpf-search" name="cpf_search" value="{{ $cpfSearch ?? '' }}" placeholder="000.000.000-00" maxlength="14" inputmode="numeric">
+                        <label for="cpf-search" class="mb-1">Pesquisar por CPF ou nome</label>
+                        <input type="text" class="form-control" id="cpf-search" name="cpf_search" value="{{ $userSearch ?? '' }}" placeholder="Digite o CPF ou o nome do usuário" style="min-width: 360px;">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label for="role-filter" class="mb-1">Filtrar papel</label>
+                        <select class="form-control" id="role-filter" name="role_filter" style="min-width: 220px;">
+                            <option value="">Todos os perfis</option>
+                            <option value="recepcionista" {{ ($roleFilter ?? '') === 'recepcionista' ? 'selected' : '' }}>Recepcionista</option>
+                            <option value="profissional" {{ ($roleFilter ?? '') === 'profissional' ? 'selected' : '' }}>Profissional</option>
+                            <option value="gestor_clinica" {{ ($roleFilter ?? '') === 'gestor_clinica' ? 'selected' : '' }}>Gestor da Clínica</option>
+                        </select>
                     </div>
                     <div class="d-flex" style="gap: 8px;">
                         <button type="submit" class="btn btn-primary">Pesquisar</button>
-                        @if(!empty($cpfSearch))
+                        @if(!empty($userSearch) || !empty($roleFilter))
                             <a href="{{ route('admin.settings.users') }}" class="btn btn-light border">Limpar</a>
                         @endif
                     </div>
@@ -198,11 +210,15 @@
                         </thead>
                         <tbody>
                             @forelse($users as $user)
+                                @php
+                                    $isAuthenticatedClinicManagerOwnAccount = $authenticatedUser?->isClinicManager()
+                                        && (int) $authenticatedUser->id === (int) $user->id;
+                                @endphp
                                 <tr>
                                     <td>
                                         {{ trim(($user->nome ?? '') . ' ' . ($user->sobrenome ?? '')) }}
                                     </td>
-                                    <td>{{ $formatCpf($user->cpf) }}</td>
+                                    <td>{{ $authenticatedUser?->isClinicManager() && $user->isPrimaryAdmin() ? 'Protegido' : $formatCpf($user->cpf) }}</td>
                                     <td>
                                         @if($user->isPrimaryAdmin())
                                             <div class="d-flex justify-content-center">
@@ -230,22 +246,32 @@
                                         @if($user->isPrimaryAdmin())
                                             <div class="d-flex flex-wrap align-items-center" style="gap: 6px;">
                                                 <button type="button" class="btn btn-sm btn-secondary" data-toggle="modal" data-target="#view-user-modal-{{ $user->id }}">Ver</button>
-                                                <span class="text-muted">Protegido</span>
+                                                @if($authenticatedUser?->isPrimaryAdmin())
+                                                    <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#edit-user-modal-{{ $user->id }}">Editar</button>
+                                                @else
+                                                    <span class="text-muted">Protegido</span>
+                                                @endif
                                             </div>
                                         @else
                                             <div class="d-flex flex-wrap" style="gap: 6px;">
                                                 <button type="button" class="btn btn-sm btn-secondary" data-toggle="modal" data-target="#view-user-modal-{{ $user->id }}">Ver</button>
-                                                <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#edit-user-modal-{{ $user->id }}">Editar</button>
-                                                <form action="{{ route('admin.settings.users.status', $user) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="submit" class="btn btn-sm btn-{{ $user->status === 'ativo' ? 'warning' : 'success' }}">{{ $user->status === 'ativo' ? 'Inativar' : 'Ativar' }}</button>
-                                                </form>
-                                                <form action="{{ route('admin.settings.users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Deseja realmente excluir este usuário?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
-                                                </form>
+                                                @if(! $isAuthenticatedClinicManagerOwnAccount)
+                                                    <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#edit-user-modal-{{ $user->id }}">Editar</button>
+                                                @endif
+                                                @if(! $isAuthenticatedClinicManagerOwnAccount)
+                                                    <form action="{{ route('admin.settings.users.status', $user) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="btn btn-sm btn-{{ $user->status === 'ativo' ? 'warning' : 'success' }}">{{ $user->status === 'ativo' ? 'Inativar' : 'Ativar' }}</button>
+                                                    </form>
+                                                @endif
+                                                @if(! $isAuthenticatedClinicManagerOwnAccount)
+                                                    <form action="{{ route('admin.settings.users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Deseja realmente excluir este usuário?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                                                    </form>
+                                                @endif
                                             </div>
                                         @endif
                                     </td>
@@ -293,7 +319,7 @@
                                 <div class="col-md-4 mb-3">
                                     <div class="border rounded p-3 h-100 bg-white">
                                         <div class="text-muted small text-uppercase">CPF</div>
-                                        <div class="mt-1">{{ $formatCpf($user->cpf) }}</div>
+                                        <div class="mt-1">{{ $authenticatedUser?->isClinicManager() && $user->isPrimaryAdmin() ? 'Protegido' : $formatCpf($user->cpf) }}</div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 mb-3">
@@ -362,7 +388,7 @@
                 </div>
             </div>
 
-            @if(! $user->isPrimaryAdmin())
+            @if(! $user->isPrimaryAdmin() || $authenticatedUser?->isPrimaryAdmin())
                 <div class="modal fade user-edit-modal" id="edit-user-modal-{{ $user->id }}" tabindex="-1" role="dialog" aria-labelledby="editUserModalLabel{{ $user->id }}" aria-hidden="true">
                     <div class="modal-dialog modal-lg" role="document">
                         <div class="modal-content">
@@ -382,8 +408,8 @@
                                         <div class="col-md-6"><div class="form-group"><label>CPF</label><input type="text" class="form-control user-edit-cpf-mask" name="cpf" value="{{ old('cpf', $formatCpf($user->cpf)) }}" placeholder="000.000.000-00" maxlength="14" inputmode="numeric"></div></div>
                                         <div class="col-md-6"><div class="form-group"><label>Telefone</label><input type="text" class="form-control user-edit-phone-mask" name="fone" value="{{ old('fone', $user->fone) }}" placeholder="(11) 99999-9999" maxlength="15" inputmode="numeric"></div></div>
                                         <div class="col-md-6"><div class="form-group"><label>E-mail *</label><input type="email" class="form-control" name="email" value="{{ old('email', $user->email) }}" required></div></div>
-                                        <div class="col-md-4"><div class="form-group"><label>Status *</label><select class="form-control" name="status" required><option value="ativo" {{ old('status', $user->status) === 'ativo' ? 'selected' : '' }}>Ativo</option><option value="cancelado" {{ old('status', $user->status) === 'cancelado' ? 'selected' : '' }}>Cancelado</option></select></div></div>
-                                        <div class="col-md-4"><div class="form-group"><label>Papel *</label><select class="form-control" name="role" required>@foreach($roles as $role)<option value="{{ $role }}" {{ ($role === 'profissional' ? in_array(old('role', $user->role ?? $user->nivel), ['profissional', 'medico'], true) : old('role', $user->role ?? $user->nivel) === $role) ? 'selected' : '' }}>{{ $roleLabels[$role] ?? ucfirst($role) }}</option>@endforeach</select></div></div>
+                                        <div class="col-md-4"><div class="form-group"><label>Status *</label><select class="form-control" name="status" required {{ $user->isPrimaryAdmin() ? 'disabled' : '' }}><option value="ativo" {{ old('status', $user->status) === 'ativo' ? 'selected' : '' }}>Ativo</option><option value="cancelado" {{ old('status', $user->status) === 'cancelado' ? 'selected' : '' }}>Cancelado</option></select>@if($user->isPrimaryAdmin())<input type="hidden" name="status" value="{{ old('status', $user->status) }}">@endif</div></div>
+                                        <div class="col-md-4"><div class="form-group"><label>Papel *</label><select class="form-control" name="role" required {{ $user->isPrimaryAdmin() ? 'disabled' : '' }}>@if($user->isPrimaryAdmin())<option value="admin" selected>Administrador</option>@else @foreach($roles as $role)<option value="{{ $role }}" {{ ($role === 'profissional' ? in_array(old('role', $user->role ?? $user->nivel), ['profissional', 'medico'], true) : old('role', $user->role ?? $user->nivel) === $role) ? 'selected' : '' }}>{{ $roleLabels[$role] ?? ucfirst($role) }}</option>@endforeach @endif</select>@if($user->isPrimaryAdmin())<input type="hidden" name="role" value="admin">@endif</div></div>
                                         <div class="col-md-4"><div class="form-group"><label>Nova senha</label><input type="password" class="form-control" name="password" placeholder="Preencha apenas se quiser alterar"></div></div>
                                         <div class="col-md-4"><div class="form-group"><label>Confirmar nova senha</label><input type="password" class="form-control" name="password_confirmation"></div></div>
                                     </div>

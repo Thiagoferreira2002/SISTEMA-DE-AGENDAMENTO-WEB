@@ -5,7 +5,7 @@
         <h1>Detalhes do Agendamento</h1>
         <div class="section-header-breadcrumb">
             <div class="breadcrumb-item active"><a href="{{ route('admin.dashboard') }}">Dashboard</a></div>
-            <div class="breadcrumb-item"><a href="{{ route('admin.agendamentos.index') }}">Agendamentos</a></div>
+            <div class="breadcrumb-item"><a href="{{ $returnUrl }}">Agendamentos</a></div>
             <div class="breadcrumb-item">Detalhes</div>
         </div>
     </div>
@@ -17,8 +17,10 @@
                     <div class="card-header">
                         <h4>Informações do Agendamento</h4>
                         <div class="card-header-action">
-                            <a href="{{ route('admin.agendamentos.edit', $agendamento) }}" class="btn btn-warning">Editar</a>
-                            <a href="{{ route('admin.agendamentos.index') }}" class="btn btn-secondary">Voltar</a>
+                            @unless($hideEditButton ?? false)
+                                <a href="{{ route('admin.agendamentos.edit', ['agendamento' => $agendamento, 'return_to' => $returnUrl]) }}" class="btn btn-warning">Editar</a>
+                            @endunless
+                            <a href="{{ $returnUrl }}" class="btn btn-secondary">Voltar</a>
                         </div>
                     </div>
                     <div class="card-body">

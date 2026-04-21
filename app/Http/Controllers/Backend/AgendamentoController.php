@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AgendamentoController extends Controller
@@ -46,7 +47,17 @@ class AgendamentoController extends Controller
 
     public function calendar(Request $request)
     {
-        return view('admin.agendamentos.calendar');
+        $professionalOptions = $this->professionalOptions();
+        $hideProfessionalFilter = $this->isProfessionalUser();
+        $selectedProfessionalId = $request->string('professional_id')->toString();
+        $returnUrl = $this->resolveReturnUrl($request);
+
+        return view('admin.agendamentos.calendar', compact(
+            'professionalOptions',
+            'hideProfessionalFilter',
+            'selectedProfessionalId',
+            'returnUrl'
+        ));
     }
 
     public function calendarEvents(Request $request): JsonResponse
@@ -58,6 +69,7 @@ class AgendamentoController extends Controller
 
     private function filteredAppointments(Request $request): array
     {
+        $focusedAppointmentId = $request->integer('open_agendamento');
         $professionals = $this->professionals();
         $units = $this->units();
         $insurances = $this->insurances();
@@ -76,15 +88,24 @@ class AgendamentoController extends Controller
             ->orderBy('horario')
             ->get()
             ->map(fn (Agendamento $agendamento) => $this->decorateAppointment($agendamento, $professionals, $units, $insurances, $professionalById, $professionalByName))
-            ->reject(function (Agendamento $agendamento) {
-                return in_array(mb_strtolower(trim((string) $agendamento->nome)), [
-                    'joão silva',
-                    'matheus da silva santos',
-                ], true);
+            ->reject(function (Agendamento $agendamento) use ($focusedAppointmentId) {
+                if ($focusedAppointmentId && (int) $agendamento->id === $focusedAppointmentId) {
+                    return false;
+                }
+
+                return in_array((string) $agendamento->status, ['concluido', 'cancelado'], true);
             })
             ->values();
 
         $agendamentos = $this->restrictAppointmentsForAuthenticatedProfessional($agendamentos);
+
+        $selectedProfessionalId = $request->string('professional_id')->toString();
+
+        if ($selectedProfessionalId !== '') {
+            $agendamentos = $agendamentos->filter(function (Agendamento $agendamento) use ($selectedProfessionalId) {
+                return (string) $agendamento->professional_id === $selectedProfessionalId;
+            })->values();
+        }
 
         if ($request->filled('medico')) {
             $agendamentos = $agendamentos->where('medico_exibicao', $request->string('medico')->toString())->values();
@@ -170,8 +191,8 @@ class AgendamentoController extends Controller
                 'title' => trim(($agendamento->nome ?? '') . ' - ' . ($agendamento->servico ?? 'Consulta')),
                 'start' => $agendamento->data_agendamento->format('Y-m-d') . 'T' . $startTime . ':00',
                 'end' => $endTime->format('Y-m-d\TH:i:s'),
-                'backgroundColor' => $agendamento->status_visual['color'],
-                'borderColor' => $agendamento->status_visual['color'],
+                'backgroundColor' => $agendamento->professional?->agenda_color ?: $agendamento->status_visual['color'],
+                'borderColor' => $agendamento->professional?->agenda_color ?: $agendamento->status_visual['color'],
                 'textColor' => '#ffffff',
                 'nome' => $agendamento->nome,
                 'email' => $agendamento->email,
@@ -201,6 +222,7 @@ class AgendamentoController extends Controller
         $clinicHours = $this->clinicHoursConfig();
         $occupiedAppointments = $this->occupiedAppointmentsData();
         $setupWarning = null;
+        $returnUrl = $this->resolveReturnUrl($request);
 
         if (! $this->hasTables(['professionals', 'procedures', 'insurances', 'units'])) {
             $setupWarning = 'Os cadastros base completos ainda não foram migrados. O agendamento seguirá usando opções de contingência até as migrations serem executadas.';
@@ -212,7 +234,7 @@ class AgendamentoController extends Controller
                 : 'Seu usuário profissional ainda não está vinculado a um cadastro de profissional de saúde.';
         }
 
-        return view('admin.agendamentos.create', compact('patients', 'preselectedPatient', 'procedureOptions', 'professionalOptions', 'lockedProfessional', 'unitOptions', 'insuranceOptions', 'clinicHours', 'occupiedAppointments', 'setupWarning'));
+        return view('admin.agendamentos.create', compact('patients', 'preselectedPatient', 'procedureOptions', 'professionalOptions', 'lockedProfessional', 'unitOptions', 'insuranceOptions', 'clinicHours', 'occupiedAppointments', 'setupWarning', 'returnUrl'));
     }
 
     public function store(Request $request)
@@ -232,24 +254,30 @@ class AgendamentoController extends Controller
             'room_id' => $appointment->room_id,
         ]);
 
-        return redirect()->route('admin.agendamentos.index')->with('success', 'Agendamento criado com sucesso!');
+        return redirect($this->resolveReturnUrl($request))->with('success', 'Agendamento criado com sucesso!');
     }
 
-    public function show(Agendamento $agendamento)
+    public function show(Request $request, Agendamento $agendamento)
+    {
+        $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
+        $returnUrl = $this->resolveReturnUrl($request);
+        $hideEditButton = Auth::user()?->isClinicManager() ?? false;
+
+        return view('admin.agendamentos.show', compact('agendamento', 'returnUrl', 'hideEditButton'));
+    }
+
+    public function edit(Request $request, Agendamento $agendamento)
     {
         $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
 
-        return view('admin.agendamentos.show', compact('agendamento'));
-    }
-
-    public function edit(Agendamento $agendamento)
-    {
-        $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
-
+        $procedureOptions = $this->procedureOptions();
+        $professionalOptions = $this->professionalOptions();
+        $lockedProfessional = $this->authenticatedProfessional();
         $clinicHours = $this->clinicHoursConfig();
         $occupiedAppointments = $this->occupiedAppointmentsData($agendamento);
+        $returnUrl = $this->resolveReturnUrl($request);
 
-        return view('admin.agendamentos.edit', compact('agendamento', 'clinicHours', 'occupiedAppointments'));
+        return view('admin.agendamentos.edit', compact('agendamento', 'procedureOptions', 'professionalOptions', 'lockedProfessional', 'clinicHours', 'occupiedAppointments', 'returnUrl'));
     }
 
     public function update(Request $request, Agendamento $agendamento)
@@ -269,17 +297,55 @@ class AgendamentoController extends Controller
         $agendamento->update($payload);
         $this->recordActivity('updated', $agendamento, 'Agendamento atualizado com revalidação de agenda.', ['status' => $agendamento->status]);
 
-        return redirect()->route('admin.agendamentos.index')->with('success', 'Agendamento atualizado com sucesso!');
+        if ($agendamento->status === 'pendente') {
+            return redirect()->route('admin.agendamentos.confirmations')->with('success', 'Agendamento atualizado com sucesso e enviado novamente para Confirmações.');
+        }
+
+        return redirect($this->resolveReturnUrl($request))->with('success', 'Agendamento atualizado com sucesso!');
     }
 
-    public function destroy(Agendamento $agendamento)
+    public function destroy(Request $request, Agendamento $agendamento)
     {
         $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
 
         $this->recordActivity('deleted', $agendamento, 'Agendamento removido.', ['nome' => $agendamento->nome]);
         $agendamento->delete();
 
-        return redirect()->route('admin.agendamentos.index')->with('success', 'Agendamento excluído com sucesso!');
+        return redirect($this->resolveReturnUrl($request))->with('success', 'Agendamento excluído com sucesso!');
+    }
+
+    private function resolveReturnUrl(Request $request): string
+    {
+        $fallback = route('admin.agendamentos.index');
+
+        foreach ([$request->input('return_to'), url()->previous()] as $candidate) {
+            if (! is_string($candidate) || trim($candidate) === '') {
+                continue;
+            }
+
+            if (! $this->isSafeReturnUrl($candidate)) {
+                continue;
+            }
+
+            if (Str::startsWith($candidate, [route('admin.agendamentos.store'), route('admin.agendamentos.update', ['agendamento' => $request->route('agendamento') ?? 0])])) {
+                continue;
+            }
+
+            return $candidate;
+        }
+
+        return $fallback;
+    }
+
+    private function isSafeReturnUrl(string $url): bool
+    {
+        $applicationUrl = rtrim((string) config('app.url'), '/');
+
+        if (Str::startsWith($url, ['/'])) {
+            return true;
+        }
+
+        return $applicationUrl !== '' && Str::startsWith($url, $applicationUrl);
     }
 
     private function rules(): array
@@ -322,13 +388,13 @@ class AgendamentoController extends Controller
             'procedure_id.required' => 'O campo procedimento é obrigatório.',
             'data_agendamento.required' => 'O campo data do agendamento é obrigatório.',
             'horario.required' => 'O campo horário inicial é obrigatório.',
-            'horario_final.required' => 'O campo horário de término é obrigatório.',
+            'horario_final.required' => 'Selecione um horário de término válido. Você pode encerrar exatamente no início do intervalo da clínica, mas não pode avançar para dentro dele.',
             'data_agendamento.after_or_equal' => 'A data do agendamento deve ser a partir de hoje.',
             'horario.after_or_equal' => 'O paciente já tem agendamento nesse horário.',
             'horario_final.after' => 'O horário de término deve ser depois do horário de início.',
             'clinic_hours.opening' => 'O horário inicial deve ser a partir da abertura da clínica.',
             'clinic_hours.closing' => 'O horário de término deve estar dentro do horário de funcionamento da clínica.',
-            'clinic_hours.lunch' => 'O horário selecionado está dentro de uma restrição do horário da clínica.',
+            'clinic_hours.lunch' => 'O agendamento pode terminar exatamente no início do intervalo da clínica, mas não pode avançar para dentro dele.',
         ];
     }
 
@@ -414,32 +480,38 @@ class AgendamentoController extends Controller
             ]);
         }
 
+        $existingPatient = $agendamento?->patient;
+        $existingProcedure = $agendamento?->procedure;
+        $existingProfessional = $agendamento?->professional;
+        $existingUnit = $agendamento?->unit;
+        $existingInsurance = $agendamento?->insurance;
+
         return [
-            'patient_id' => $patient?->id,
-            'procedure_id' => $procedure?->id,
-            'professional_id' => $professional?->id,
-            'unit_id' => $unit?->id,
-            'room_id' => $room?->id,
-            'insurance_id' => $insurance?->id,
-            'insurance_plan_id' => $plan?->id,
-            'nome' => $patient?->nome ?? $request->nome,
-            'email' => $patient?->email ?? $request->email,
-            'telefone' => $patient?->telefone ?? $request->telefone,
-            'servico' => $procedure?->nome ?? $request->servico,
-            'medico' => $professional?->nome ?? $request->medico,
-            'unidade' => $unit?->nome ?? $request->unidade,
-            'convenio' => $insurance?->nome ?? $request->convenio,
-            'numero_guia' => $request->numero_guia,
-            'numero_autorizacao' => $request->numero_autorizacao,
+            'patient_id' => $patient?->id ?? $agendamento?->patient_id,
+            'procedure_id' => $procedure?->id ?? $agendamento?->procedure_id,
+            'professional_id' => $professional?->id ?? $agendamento?->professional_id,
+            'unit_id' => $unit?->id ?? $agendamento?->unit_id,
+            'room_id' => $room?->id ?? $agendamento?->room_id,
+            'insurance_id' => $insurance?->id ?? $agendamento?->insurance_id,
+            'insurance_plan_id' => $plan?->id ?? $agendamento?->insurance_plan_id,
+            'nome' => $patient?->nome ?? $existingPatient?->nome ?? $request->nome,
+            'email' => $patient?->email ?? $existingPatient?->email ?? $request->email,
+            'telefone' => $patient?->telefone ?? $existingPatient?->telefone ?? $request->telefone,
+            'servico' => $procedure?->nome ?? $existingProcedure?->nome ?? $request->servico,
+            'medico' => $professional?->nome ?? $existingProfessional?->nome ?? $request->medico,
+            'unidade' => $unit?->nome ?? $existingUnit?->nome ?? $request->unidade ?? $agendamento?->unidade,
+            'convenio' => $insurance?->nome ?? $existingInsurance?->nome ?? $request->convenio ?? $agendamento?->convenio,
+            'numero_guia' => $request->filled('numero_guia') ? $request->numero_guia : $agendamento?->numero_guia,
+            'numero_autorizacao' => $request->filled('numero_autorizacao') ? $request->numero_autorizacao : $agendamento?->numero_autorizacao,
             'duracao_minutos' => $duration,
-            'motivo_consulta' => $request->motivo_consulta,
-            'observacao_alerta' => $request->observacao_alerta,
-            'prioridade' => $request->input('prioridade', 0),
-            'preferencia_turno' => $request->preferencia_turno,
-            'data_limite_espera' => $request->data_limite_espera,
+            'motivo_consulta' => $request->filled('motivo_consulta') ? $request->motivo_consulta : $agendamento?->motivo_consulta,
+            'observacao_alerta' => $request->filled('observacao_alerta') ? $request->observacao_alerta : $agendamento?->observacao_alerta,
+            'prioridade' => $request->filled('prioridade') ? $request->input('prioridade') : ($agendamento?->prioridade ?? 0),
+            'preferencia_turno' => $request->filled('preferencia_turno') ? $request->preferencia_turno : $agendamento?->preferencia_turno,
+            'data_limite_espera' => $request->filled('data_limite_espera') ? $request->data_limite_espera : $agendamento?->data_limite_espera,
             'data_agendamento' => $request->data_agendamento,
             'horario' => $request->horario,
-            'descricao' => $request->motivo_consulta,
+            'descricao' => $request->filled('motivo_consulta') ? $request->motivo_consulta : ($agendamento?->descricao ?? null),
             'status' => $agendamento?->status ?? 'pendente',
             'user_id' => $agendamento?->user_id ?? Auth::id(),
         ];
@@ -496,7 +568,7 @@ class AgendamentoController extends Controller
 
         if ($lunchStartTime && $lunchEndTime && ! ($endTime <= $lunchStartTime || $startTime >= $lunchEndTime)) {
             throw ValidationException::withMessages([
-                'horario' => $this->validationMessages()['clinic_hours.lunch'],
+                'horario_final' => $this->validationMessages()['clinic_hours.lunch'],
             ]);
         }
 
@@ -802,8 +874,7 @@ class AgendamentoController extends Controller
         $user = Auth::user();
 
         return (bool) $user
-            && $user->nivel === 'user'
-            && in_array($user->role, ['profissional', 'medico'], true);
+            && $user->normalizedRole() === 'profissional';
     }
 
     private function authenticatedProfessional(): ?Professional

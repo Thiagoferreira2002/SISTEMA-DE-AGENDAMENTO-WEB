@@ -196,7 +196,10 @@ class PatientController extends Controller
      */
     public function show(Patient $patient)
     {
-        $history = $patient->agendamentos()->latest('data_agendamento')->limit(10)->get();
+        $history = $patient->agendamentos()
+            ->latest('data_agendamento')
+            ->paginate(6, ['*'], 'history_page')
+            ->withQueryString();
 
         return view('admin.patients.show', compact('patient', 'history'));
     }

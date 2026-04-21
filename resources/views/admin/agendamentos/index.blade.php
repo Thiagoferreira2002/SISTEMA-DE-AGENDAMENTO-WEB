@@ -93,12 +93,19 @@
                                         <th class="text-center">Serviço</th>
                                         <th class="text-center">Data</th>
                                         <th class="text-center">Horário</th>
+                                        <th class="text-center">Horário Final</th>
                                         <th class="text-center">Status</th>
                                         <th class="text-center">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @forelse($agendamentos as $agendamento)
+                                    @php
+                                        $endTime = $agendamento->data_agendamento->copy()
+                                            ->setTimeFromTimeString(substr((string) $agendamento->horario, 0, 5))
+                                            ->addMinutes((int) ($agendamento->duracao_exibicao ?? $agendamento->duracao_minutos ?? 30))
+                                            ->format('H:i');
+                                    @endphp
                                     <tr>
                                         <td class="text-center align-middle">{{ $agendamento->nome }}</td>
                                         <td class="text-center align-middle">{{ $agendamento->cpf_exibicao ?: '-' }}</td>
@@ -106,22 +113,23 @@
                                         <td class="text-center align-middle">{{ $agendamento->servico }}</td>
                                         <td class="text-center align-middle">{{ $agendamento->data_agendamento->format('d/m/Y') }}</td>
                                         <td class="text-center align-middle">{{ $agendamento->horario }}</td>
+                                        <td class="text-center align-middle">{{ $endTime }}</td>
                                         <td class="text-center align-middle">
                                             <span class="badge text-white" style="background-color: {{ $agendamento->status_visual['color'] }};">{{ $agendamento->status_visual['label'] }}</span>
                                         </td>
                                         <td class="text-center align-middle">
-                                            <a href="{{ route('admin.agendamentos.show', $agendamento) }}" class="btn btn-sm btn-info">Ver</a>
-                                            <a href="{{ route('admin.agendamentos.edit', $agendamento) }}" class="btn btn-sm btn-warning">Editar</a>
-                                            <form action="{{ route('admin.agendamentos.destroy', $agendamento) }}" method="POST" class="d-inline">
+                                            <a href="{{ route('admin.agendamentos.show', ['agendamento' => $agendamento, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-info">Ver</a>
+                                            <a href="{{ route('admin.agendamentos.edit', ['agendamento' => $agendamento, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-warning">Editar</a>
+                                            <form action="{{ route('admin.agendamentos.cancel', $agendamento) }}" method="POST" class="d-inline">
                                                 @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Excluir agendamento?')">Excluir</button>
+                                                <input type="hidden" name="return_to" value="{{ url()->full() }}">
+                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Cancelar este agendamento?')">Cancelar</button>
                                             </form>
                                         </td>
                                     </tr>
                                     @empty
                                     <tr>
-                                        <td colspan="8" class="text-center">Nenhum agendamento encontrado</td>
+                                        <td colspan="9" class="text-center">Nenhum agendamento encontrado</td>
                                     </tr>
                                     @endforelse
                                 </tbody>

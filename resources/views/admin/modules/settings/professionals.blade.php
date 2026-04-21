@@ -5,6 +5,42 @@
         z-index: 10060;
     }
 
+    .professionals-table {
+        border-collapse: separate;
+        border-spacing: 0 14px;
+    }
+
+    .professionals-table thead th {
+        border-bottom: 0;
+    }
+
+    .professionals-table tbody tr {
+        background: #ffffff;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+    }
+
+    .professionals-table tbody td {
+        vertical-align: middle;
+        padding-top: 18px;
+        padding-bottom: 18px;
+        border-top: 1px solid #eef2f7;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .professionals-table tbody td:first-child {
+        border-left: 1px solid #eef2f7;
+        border-top-left-radius: 14px;
+        border-bottom-left-radius: 14px;
+        padding-left: 22px;
+    }
+
+    .professionals-table tbody td:last-child {
+        border-right: 1px solid #eef2f7;
+        border-top-right-radius: 14px;
+        border-bottom-right-radius: 14px;
+        padding-right: 22px;
+    }
+
     .professional-edit-dialog {
         width: 96vw;
         max-width: 1400px;
@@ -118,13 +154,12 @@
 
                     <div class="border rounded p-3 mt-2">
                         <h6 class="mb-3">Vínculo de agenda</h6>
-                        <p class="text-muted mb-3">Você pode escolher Segunda a Sexta de uma vez ou cadastrar os dias manualmente. Dias já escolhidos não poderão ser selecionados novamente.</p>
+                        <p class="text-muted mb-2">Você pode escolher Segunda a Sexta de uma vez ou cadastrar os dias manualmente. Dias já escolhidos não poderão ser selecionados novamente.</p>
+                        <p class="text-muted mb-3">Esta agenda segue automaticamente o horário da clínica: {{ $clinicHoursWindow['opening_time'] ?? '--:--' }} às {{ $clinicHoursWindow['closing_time'] ?? '--:--' }}@if(!empty($clinicHoursWindow['lunch_start_time']) && !empty($clinicHoursWindow['lunch_end_time'])) com intervalo da clínica das {{ $clinicHoursWindow['lunch_start_time'] }} às {{ $clinicHoursWindow['lunch_end_time'] }}@endif.</p>
                         @php
                             $scheduleRowsCount = max(
                                 count(old('schedule_day_of_week', [])),
                                 count(old('schedule_start_time', [])),
-                                count(old('schedule_break_start_time', [])),
-                                count(old('schedule_break_end_time', [])),
                                 count(old('schedule_end_time', [])),
                                 1
                             );
@@ -145,8 +180,6 @@
                                     </div>
                                 </div>
                                 <div class="col-md-2"><div class="form-group"><label>Início</label><input type="time" class="form-control" name="schedule_start_time[]" value="{{ old('schedule_start_time.' . $i) }}"></div></div>
-                                <div class="col-md-2"><div class="form-group"><label>Início do descanso</label><input type="time" class="form-control" name="schedule_break_start_time[]" value="{{ old('schedule_break_start_time.' . $i) }}"></div></div>
-                                <div class="col-md-2"><div class="form-group"><label>Fim do descanso</label><input type="time" class="form-control" name="schedule_break_end_time[]" value="{{ old('schedule_break_end_time.' . $i) }}"></div></div>
                                 <div class="col-md-2"><div class="form-group"><label>Fim</label><input type="time" class="form-control" name="schedule_end_time[]" value="{{ old('schedule_end_time.' . $i) }}"></div></div>
                                 <div class="col-md-12 mb-2 text-right">
                                     <button type="button" class="btn btn-outline-danger btn-sm remove-schedule-row" {{ $i === 0 && $scheduleRowsCount === 1 ? 'style=display:none;' : '' }}>Remover</button>
@@ -154,9 +187,9 @@
                             </div>
                         @endfor
                         </div>
+                        <small class="text-muted d-block mt-2">O profissional pode escolher livremente os dias e horários de atuação, desde que permaneçam dentro do horário da clínica.</small>
                         <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-schedule-row" id="add-schedule-row">Adicionar mais um</button>
                         @error('schedule_day_of_week')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
-                        @error('schedule_break_start_time')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
                     </div>
 
                     <button type="submit" class="btn btn-primary mt-3" {{ $availableUsers->isEmpty() ? 'disabled' : '' }}>Cadastrar profissional</button>
@@ -177,7 +210,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped professionals-table">
                         <thead>
                             <tr>
                                 <th>Profissão</th>
@@ -212,7 +245,7 @@
                                     <td><span class="badge" style="background: {{ $professional->agenda_color }}; color: #fff;">{{ $professional->agenda_color }}</span></td>
                                     <td>
                                         @forelse(($professional->display_schedules ?? collect()) as $schedule)
-                                            <span class="badge badge-light border mr-1 mb-1">{{ $weekDays[$schedule['day_of_week']] ?? $schedule['day_of_week'] }} {{ $schedule['start_time'] }} às {{ $schedule['end_time'] }}{{ $schedule['break_start_time'] && $schedule['break_end_time'] ? ' • descanso ' . $schedule['break_start_time'] . ' às ' . $schedule['break_end_time'] : '' }}</span>
+                                            <span class="badge badge-light border mr-1 mb-1">{{ $weekDays[$schedule['day_of_week']] ?? $schedule['day_of_week'] }} {{ $schedule['start_time'] }} às {{ $schedule['end_time'] }}{{ $schedule['break_start_time'] && $schedule['break_end_time'] ? ' • intervalo da clínica ' . $schedule['break_start_time'] . ' às ' . $schedule['break_end_time'] : '' }}</span>
                                         @empty
                                             <span class="text-muted">Sem agenda definida</span>
                                         @endforelse
@@ -258,7 +291,7 @@
                                 <div class="col-md-4 mb-3"><div class="border rounded p-3 h-100 bg-white"><div class="text-muted small text-uppercase">Especialidade</div><div class="mt-1">{{ $professional->especialidade_principal }}</div></div></div>
                                 <div class="col-md-4 mb-3"><div class="border rounded p-3 h-100 bg-white"><div class="text-muted small text-uppercase">CPF</div><div class="mt-1">{{ $formatCpf($professional->cpf) ?: 'Não informado' }}</div></div></div>
                                 <div class="col-md-4 mb-3"><div class="border rounded p-3 h-100 bg-white"><div class="text-muted small text-uppercase">Registro</div><div class="mt-1">{{ $professional->registro_completo }}</div></div></div>
-                                <div class="col-md-12 mb-3"><div class="border rounded p-3 h-100 bg-white"><div class="text-muted small text-uppercase">Disponibilidade</div><div class="mt-2">@forelse($professional->schedules as $schedule)<span class="badge badge-light border mr-1 mb-1">{{ $weekDays[$schedule->day_of_week] ?? $schedule->day_of_week }} {{ substr($schedule->start_time, 0, 5) }} às {{ substr($schedule->end_time, 0, 5) }}{{ $schedule->break_start_time && $schedule->break_end_time ? ' • descanso ' . substr($schedule->break_start_time, 0, 5) . ' às ' . substr($schedule->break_end_time, 0, 5) : '' }}</span>@empty<span class="text-muted">Sem agenda definida</span>@endforelse</div></div></div>
+                                <div class="col-md-12 mb-3"><div class="border rounded p-3 h-100 bg-white"><div class="text-muted small text-uppercase">Disponibilidade</div><div class="mt-2">@forelse(($professional->display_schedules ?? collect()) as $schedule)<span class="badge badge-light border mr-1 mb-1">{{ $weekDays[$schedule['day_of_week']] ?? $schedule['day_of_week'] }} {{ $schedule['start_time'] }} às {{ $schedule['end_time'] }}{{ $schedule['break_start_time'] && $schedule['break_end_time'] ? ' • intervalo da clínica ' . $schedule['break_start_time'] . ' às ' . $schedule['break_end_time'] : '' }}</span>@empty<span class="text-muted">Sem agenda definida</span>@endforelse</div></div></div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -329,6 +362,7 @@
 
                                 <div class="border rounded p-3 mt-2">
                                     <h6 class="mb-3">Vínculo de agenda</h6>
+                                    <p class="text-muted mb-3">Escolha os dias e horários de atuação do profissional dentro do horário da clínica.</p>
                                     <div class="schedule-rows-container">
                                         @for($i = 0; $i < $professionalScheduleRowsCount; $i++)
                                             @php
@@ -348,8 +382,6 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-md-2"><div class="form-group"><label>Início</label><input type="time" class="form-control" name="schedule_start_time[]" value="{{ $schedule ? substr($schedule->start_time, 0, 5) : '' }}"></div></div>
-                                                <div class="col-md-2"><div class="form-group"><label>Início do descanso</label><input type="time" class="form-control" name="schedule_break_start_time[]" value="{{ $schedule && $schedule->break_start_time ? substr($schedule->break_start_time, 0, 5) : '' }}"></div></div>
-                                                <div class="col-md-2"><div class="form-group"><label>Fim do descanso</label><input type="time" class="form-control" name="schedule_break_end_time[]" value="{{ $schedule && $schedule->break_end_time ? substr($schedule->break_end_time, 0, 5) : '' }}"></div></div>
                                                 <div class="col-md-2"><div class="form-group"><label>Fim</label><input type="time" class="form-control" name="schedule_end_time[]" value="{{ $schedule ? substr($schedule->end_time, 0, 5) : '' }}"></div></div>
                                                 <div class="col-md-12 mb-2 text-right">
                                                     <button type="button" class="btn btn-outline-danger btn-sm remove-schedule-row" {{ $i === 0 && $professionalScheduleRowsCount === 1 ? 'style=display:none;' : '' }}>Remover</button>
@@ -375,6 +407,8 @@
 @push('scripts')
 <script>
     $(function () {
+        var clinicHoursWindow = @json($clinicHoursWindow ?? null);
+
         function syncProfessionalFields(form) {
             var userSelect = form.find('.professional-user-select');
             var nameInput = form.find('.professional-name-input');
@@ -455,6 +489,45 @@
             form.find('.remove-schedule-row').toggle(form.find('.schedule-row').length > 1);
         }
 
+        function applyScheduleTimeConstraints(form) {
+            var openingTime = clinicHoursWindow && clinicHoursWindow.opening_time ? clinicHoursWindow.opening_time : '';
+            var closingTime = clinicHoursWindow && clinicHoursWindow.closing_time ? clinicHoursWindow.closing_time : '';
+
+            form.find('[name="schedule_start_time[]"], [name="schedule_end_time[]"]').each(function () {
+                if (openingTime) {
+                    this.min = openingTime;
+                }
+
+                if (closingTime) {
+                    this.max = closingTime;
+                }
+            });
+
+            form.find('.schedule-row').each(function () {
+                var row = $(this);
+                var startInput = row.find('[name="schedule_start_time[]"]');
+                var endInput = row.find('[name="schedule_end_time[]"]');
+                var startValue = startInput.val() || '';
+                var endValue = endInput.val() || '';
+
+                if (startValue) {
+                    endInput.attr('min', startValue);
+                } else if (openingTime) {
+                    endInput.attr('min', openingTime);
+                } else {
+                    endInput.removeAttr('min');
+                }
+
+                if (endValue) {
+                    startInput.attr('max', endValue);
+                } else if (closingTime) {
+                    startInput.attr('max', closingTime);
+                } else {
+                    startInput.removeAttr('max');
+                }
+            });
+        }
+
         function buildScheduleRow() {
             return [
                 '<div class="row schedule-row align-items-end" data-schedule-row>',
@@ -471,8 +544,6 @@
                 '        </div>',
                 '    </div>',
                 '    <div class="col-md-2"><div class="form-group"><label>Início</label><input type="time" class="form-control" name="schedule_start_time[]"></div></div>',
-                '    <div class="col-md-2"><div class="form-group"><label>Início do descanso</label><input type="time" class="form-control" name="schedule_break_start_time[]"></div></div>',
-                '    <div class="col-md-2"><div class="form-group"><label>Fim do descanso</label><input type="time" class="form-control" name="schedule_break_end_time[]"></div></div>',
                 '    <div class="col-md-2"><div class="form-group"><label>Fim</label><input type="time" class="form-control" name="schedule_end_time[]"></div></div>',
                 '    <div class="col-md-12 mb-2 text-right">',
                 '        <button type="button" class="btn btn-outline-danger btn-sm remove-schedule-row">Remover</button>',
@@ -494,6 +565,7 @@
 
             syncCouncilCategory(form);
             syncScheduleDayOptions(form);
+            applyScheduleTimeConstraints(form);
         });
 
         var createForm = $('form.professional-form').first();
@@ -511,19 +583,26 @@
             syncScheduleDayOptions($(this).closest('form'));
         });
 
+        $(document).on('change', '[name="schedule_start_time[]"], [name="schedule_end_time[]"]', function () {
+            applyScheduleTimeConstraints($(this).closest('form'));
+        });
+
         $(document).on('click', '.remove-schedule-row', function () {
             var form = $(this).closest('form');
             $(this).closest('.schedule-row').remove();
             syncScheduleDayOptions(form);
+            applyScheduleTimeConstraints(form);
         });
 
         $(document).on('click', '.add-schedule-row', function () {
             var form = $(this).closest('form');
             form.find('.schedule-rows-container').append(buildScheduleRow());
             syncScheduleDayOptions(form);
+            applyScheduleTimeConstraints(form);
         });
 
         syncScheduleDayOptions(createForm);
+        applyScheduleTimeConstraints(createForm);
     });
 </script>
 @endpush

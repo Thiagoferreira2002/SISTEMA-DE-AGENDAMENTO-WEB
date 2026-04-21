@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -22,6 +23,7 @@ class User extends Authenticatable
 
     protected $table = 'users';
     protected $fillable = [
+        'capa',
         'nome',
         'sobrenome',
         'cpf',
@@ -63,6 +65,35 @@ class User extends Authenticatable
         return trim(($this->nome ?? '') . ' ' . ($this->sobrenome ?? ''));
     }
 
+    public function getProfilePhotoUrlAttribute(): string
+    {
+        $path = trim((string) $this->capa);
+
+        if ($path === '') {
+            return asset('backend/assets/img/avatar/avatar-1.png');
+        }
+
+        $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
+
+        if (Str::startsWith($normalizedPath, ['http://', 'https://'])) {
+            return $normalizedPath;
+        }
+
+        if (Storage::disk('public')->exists($normalizedPath)) {
+            return asset('storage/' . $normalizedPath);
+        }
+
+        if (is_file(public_path($normalizedPath))) {
+            return asset($normalizedPath);
+        }
+
+        if (is_file(public_path('storage/' . $normalizedPath))) {
+            return asset('storage/' . $normalizedPath);
+        }
+
+        return asset('backend/assets/img/avatar/avatar-1.png');
+    }
+
     public function isPrimaryAdmin(): bool
     {
         $normalized = Str::of($this->full_name)
@@ -83,12 +114,19 @@ class User extends Authenticatable
         return $role === 'medico' ? 'profissional' : $role;
     }
 
+    public function isClinicManager(): bool
+    {
+        return $this->normalizedRole() === 'gestor_clinica';
+    }
+
     public static function submenuPermissionLabels(): array
     {
         return [
             'agendamentos' => 'Agendamentos',
             'pacientes' => 'Pacientes',
             'painel_doutor' => 'Painel do Profissional',
+            'cadastros_base' => 'Cadastros Base',
+            'minha_conta' => 'Minha Conta',
         ];
     }
 
@@ -99,6 +137,7 @@ class User extends Authenticatable
         return match ($normalizedRole) {
             'recepcionista' => ['agendamentos', 'pacientes'],
             'profissional' => ['agendamentos', 'pacientes', 'painel_doutor'],
+            'gestor_clinica' => array_keys(static::submenuPermissionLabels()),
             'admin' => array_keys(static::submenuPermissionLabels()),
             default => [],
         };
@@ -110,6 +149,8 @@ class User extends Authenticatable
             'agendamentos' => ['admin.agendamentos.'],
             'pacientes' => ['admin.patients.', 'admin.agendamentos.create'],
             'painel_doutor' => ['admin.doctor.'],
+            'cadastros_base' => ['admin.settings.'],
+            'minha_conta' => ['admin.account.'],
         ];
     }
 
@@ -137,6 +178,18 @@ class User extends Authenticatable
             return false;
         }
 
+        if ($routeName === 'admin.dashboard' && ($this->isClinicManager() || $this->submenuPermissions() !== [])) {
+            return true;
+        }
+
+        if ($routeName === 'admin.notifications.read') {
+            return $this->submenuPermissions() !== [];
+        }
+
+        if (str_starts_with($routeName, 'admin.account.')) {
+            return true;
+        }
+
         if ($this->nivel === 'admin' || $this->role === 'admin') {
             return true;
         }
@@ -150,6 +203,16 @@ class User extends Authenticatable
         }
 
         return false;
+    }
+
+    public function canManageCadastrosBase(): bool
+    {
+        return $this->nivel === 'admin' || $this->role === 'admin' || $this->isClinicManager();
+    }
+
+    public function canMutateOutsideCadastrosBase(): bool
+    {
+        return $this->nivel === 'admin' || $this->role === 'admin';
     }
 
     public function hasPermission(string $permission): bool

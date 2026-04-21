@@ -21,6 +21,15 @@ Route::middleware('auth', 'admin')->group(function () {
 Route::get('admin/dashboard', [AdminController::class, 'dashboard'])
 ->name('admin.dashboard');
 
+Route::get('admin/notificacoes/abrir', [AdminController::class, 'markNotificationsRead'])
+->name('admin.notifications.read');
+
+Route::get('admin/minha-conta', [AdminController::class, 'editAccount'])
+->name('admin.account.edit');
+
+Route::put('admin/minha-conta', [AdminController::class, 'updateAccount'])
+->name('admin.account.update');
+
 /**
  * ******************************************************
  * ******************************************************

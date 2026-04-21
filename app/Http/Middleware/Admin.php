@@ -37,9 +37,37 @@ class Admin
         }
 
         if ($user->nivel === 'user' && $user->canAccessRouteName($request->route()?->getName())) {
+            if ($user->isClinicManager() && ! $this->canClinicManagerProceed($request)) {
+                return redirect()->back()->with('warning', 'O Gestor da Clínica possui edição apenas em Cadastros Base. Neste módulo o acesso é somente para visualização.');
+            }
+
             return $next($request);
         }
 
-        return redirect()->route('cliente.dashboard')->with('warning', 'Seu perfil não possui acesso a este submenu.');
+        return redirect()->route('cliente.dashboard')->with('warning', 'Seu perfil não possui acesso a este módulo.');
+    }
+
+    private function canClinicManagerProceed(Request $request): bool
+    {
+        $routeName = (string) $request->route()?->getName();
+
+        if ($routeName === '') {
+            return false;
+        }
+
+        if (str_starts_with($routeName, 'admin.settings.')) {
+            return true;
+        }
+
+        if (! $request->isMethod('get')) {
+            return false;
+        }
+
+        return ! $this->isRestrictedReadOnlyGetRoute($routeName);
+    }
+
+    private function isRestrictedReadOnlyGetRoute(string $routeName): bool
+    {
+        return str_ends_with($routeName, '.create') || str_ends_with($routeName, '.edit');
     }
 }

@@ -56,7 +56,7 @@ class ClinicManagementController extends Controller
             ],
         ];
 
-        if (Auth::user()?->isPrimaryAdmin()) {
+        if (Auth::user()?->canManageCadastrosBase()) {
             $cards[] = [
                 'title' => 'Usuários e Permissões',
                 'description' => 'Defina níveis de acesso como Admin, Recepcionista e Profissional, controle permissões para editar prontuários e excluir agendamentos, e acompanhe logs de atividade.',
@@ -70,6 +70,10 @@ class ClinicManagementController extends Controller
                 'route' => route('admin.settings.activity-logs'),
                 'icon' => 'fas fa-history',
             ];
+        }
+
+        if (Auth::user()?->isPrimaryAdmin()) {
+            $cards[3]['description'] = 'Defina níveis de acesso como Admin, Recepcionista, Profissional e Gestor da Clínica, controle permissões por módulo e acompanhe logs de atividade.';
         }
 
         return view('admin.modules.settings.index', compact('cards'));
@@ -203,6 +207,8 @@ class ClinicManagementController extends Controller
         return [
             'opening_time' => substr((string) $clinicHours->opening_time, 0, 5),
             'closing_time' => substr((string) $clinicHours->closing_time, 0, 5),
+            'lunch_start_time' => $clinicHours->lunch_start_time ? substr((string) $clinicHours->lunch_start_time, 0, 5) : null,
+            'lunch_end_time' => $clinicHours->lunch_end_time ? substr((string) $clinicHours->lunch_end_time, 0, 5) : null,
         ];
     }
 
@@ -220,20 +226,22 @@ class ClinicManagementController extends Controller
             return null;
         }
 
-        $effectiveBreakStart = $breakStartTime;
-        $effectiveBreakEnd = $breakEndTime;
+        $effectiveBreakStart = null;
+        $effectiveBreakEnd = null;
+
+        if ($clinicHoursWindow && ! empty($clinicHoursWindow['lunch_start_time']) && ! empty($clinicHoursWindow['lunch_end_time'])) {
+            $effectiveBreakStart = max($clinicHoursWindow['lunch_start_time'], $effectiveStart);
+            $effectiveBreakEnd = min($clinicHoursWindow['lunch_end_time'], $effectiveEnd);
+        } elseif ($breakStartTime && $breakEndTime) {
+            $effectiveBreakStart = max($breakStartTime, $effectiveStart);
+            $effectiveBreakEnd = min($breakEndTime, $effectiveEnd);
+        }
 
         if ($effectiveBreakStart && $effectiveBreakEnd) {
-            $effectiveBreakStart = max($effectiveBreakStart, $effectiveStart);
-            $effectiveBreakEnd = min($effectiveBreakEnd, $effectiveEnd);
-
             if (! ($effectiveStart < $effectiveBreakStart && $effectiveBreakStart < $effectiveBreakEnd && $effectiveBreakEnd < $effectiveEnd)) {
                 $effectiveBreakStart = null;
                 $effectiveBreakEnd = null;
             }
-        } else {
-            $effectiveBreakStart = null;
-            $effectiveBreakEnd = null;
         }
 
         return [
@@ -247,87 +255,78 @@ class ClinicManagementController extends Controller
 
     public function confirmations(Request $request): View
     {
-        $hiddenPatientNames = [
-            'João Silva',
-            'matheus da silva santos',
-        ];
         $globalSearch = trim($request->string('q')->toString());
         $cpfSearch = preg_replace('/\D+/', '', $globalSearch);
-        $status = in_array($request->input('status'), ['pendente', 'confirmado', 'cancelado'], true)
-            ? $request->input('status')
-            : '';
         $period = in_array($request->input('period'), ['dia', 'semana', 'mes'], true)
             ? $request->input('period')
             : '';
 
-        $baseQuery = Agendamento::query()
+        $pendingBaseQuery = Agendamento::query()
             ->where(function ($query) {
-                $query->whereIn('status', ['pendente', 'confirmado', 'cancelado'])
+                $query->where('status', 'pendente')
                     ->orWhereNull('status');
-            })
-            ->whereNotIn('nome', $hiddenPatientNames);
+            });
 
         $authenticatedProfessional = $this->authenticatedProfessional();
 
         if ($authenticatedProfessional) {
-            $baseQuery->where(function ($query) use ($authenticatedProfessional) {
+            $applyProfessionalScope = function ($query) use ($authenticatedProfessional) {
                 $query->where('professional_id', $authenticatedProfessional->id)
                     ->orWhere('medico', $authenticatedProfessional->nome);
-            });
+            };
+
+            $pendingBaseQuery->where($applyProfessionalScope);
         } elseif ($this->isProfessionalUser()) {
-            $baseQuery->whereRaw('1 = 0');
+            $pendingBaseQuery->whereRaw('1 = 0');
         }
 
         if ($globalSearch !== '') {
-            $baseQuery->where(function ($query) use ($globalSearch, $cpfSearch) {
-                $query->where('nome', 'like', '%' . $globalSearch . '%');
+            $applySearchFilter = function ($query) use ($globalSearch, $cpfSearch) {
+                $query->where('nome', 'like', '%' . $globalSearch . '%')
+                    ->orWhereDate('data_agendamento', $globalSearch);
+
+                $dateSearch = preg_replace('/\D+/', '', $globalSearch);
+
+                if ($dateSearch !== '') {
+                    $query->orWhereRaw("DATE_FORMAT(data_agendamento, '%d%m%Y') like ?", ['%' . $dateSearch . '%'])
+                        ->orWhereRaw("DATE_FORMAT(data_agendamento, '%Y%m%d') like ?", ['%' . $dateSearch . '%']);
+                }
 
                 if ($cpfSearch !== '') {
                     $query->orWhereHas('patient', function ($patientQuery) use ($cpfSearch) {
                         $patientQuery->whereRaw("REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), '/', '') like ?", ['%' . $cpfSearch . '%']);
                     });
                 }
-            });
+            };
+
+            $pendingBaseQuery->where($applySearchFilter);
         }
 
         if ($period === 'dia') {
-            $baseQuery->whereDate('data_agendamento', now()->toDateString());
+            $pendingBaseQuery->whereDate('data_agendamento', now()->toDateString());
         }
 
         if ($period === 'semana') {
-            $baseQuery->whereBetween('data_agendamento', [
+            $dateWindow = [
                 now()->startOfWeek()->toDateString(),
                 now()->endOfWeek()->toDateString(),
-            ]);
+            ];
+
+            $pendingBaseQuery->whereBetween('data_agendamento', $dateWindow);
         }
 
         if ($period === 'mes') {
-            $baseQuery->whereYear('data_agendamento', now()->year)
+            $pendingBaseQuery->whereYear('data_agendamento', now()->year)
                 ->whereMonth('data_agendamento', now()->month);
         }
 
-        $appointmentsQuery = clone $baseQuery;
-
-        if ($status === 'pendente') {
-            $appointmentsQuery->where(function ($query) {
-                $query->where('status', 'pendente')
-                    ->orWhereNull('status');
-            });
-        } elseif ($status !== '') {
-            $appointmentsQuery->where('status', $status);
-        }
-
-        $appointments = $appointmentsQuery
+        $appointments = $pendingBaseQuery
             ->orderBy('data_agendamento')
             ->orderBy('horario')
             ->get();
 
-        $summaryBase = (clone $baseQuery)->get();
-
         $summary = [
-            'pendentes' => $summaryBase->filter(fn ($appointment) => in_array($appointment->status, [null, 'pendente'], true))->count(),
-            'confirmados' => $summaryBase->where('status', 'confirmado')->count(),
-            'cancelados' => $summaryBase->where('status', 'cancelado')->count(),
+            'pendentes' => $appointments->count(),
         ];
 
         return view('admin.modules.agendamentos.confirmations', compact('appointments', 'summary'));
@@ -338,8 +337,7 @@ class ClinicManagementController extends Controller
         $user = Auth::user();
 
         return (bool) $user
-            && $user->nivel === 'user'
-            && in_array($user->role, ['profissional', 'medico'], true);
+            && $user->normalizedRole() === 'profissional';
     }
 
     private function authenticatedProfessional(): ?Professional
@@ -402,7 +400,7 @@ class ClinicManagementController extends Controller
         $agendamento->update(['status' => 'confirmado']);
         $this->recordActivity('updated', $agendamento, 'Status do agendamento atualizado para confirmado.', ['status' => 'confirmado']);
 
-        return redirect()->route('admin.agendamentos.confirmations')->with('success', 'Status do agendamento atualizado para confirmado.');
+        return redirect()->route('admin.agendamentos.confirmations')->with('success', 'Agendamento confirmado com sucesso. Ele agora aparece apenas na Agenda Geral.');
     }
 
     public function pendAppointment(Agendamento $agendamento): RedirectResponse
@@ -415,14 +413,18 @@ class ClinicManagementController extends Controller
         return redirect()->route('admin.agendamentos.confirmations')->with('success', 'Status do agendamento atualizado para pendente.');
     }
 
-    public function cancelAppointment(Agendamento $agendamento): RedirectResponse
+    public function cancelAppointment(Request $request, Agendamento $agendamento): RedirectResponse
     {
         $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
 
-        $agendamento->update(['status' => 'cancelado']);
-        $this->recordActivity('updated', $agendamento, 'Status do agendamento atualizado para cancelado.', ['status' => 'cancelado']);
+        $this->recordActivity('deleted', $agendamento, 'Agendamento excluído a partir da tela de confirmações.', [
+            'nome' => $agendamento->nome,
+            'status' => $agendamento->status,
+        ]);
+        $agendamento->delete();
 
-        return redirect()->route('admin.agendamentos.confirmations')->with('success', 'Status do agendamento atualizado para cancelado.');
+        return redirect($request->input('return_to', route('admin.agendamentos.confirmations')))
+            ->with('success', 'Agendamento cancelado com sucesso.');
     }
 
     private function ensureAuthenticatedProfessionalCanAccessAppointment(Agendamento $agendamento): void
@@ -447,6 +449,9 @@ class ClinicManagementController extends Controller
         $period = in_array($request->input('period'), ['dia', 'semana', 'mes', 'ano'], true)
             ? $request->input('period')
             : '';
+        $search = trim((string) $request->input('q'));
+        $cpfSearch = preg_replace('/\D/', '', $search);
+        $professionalFilter = (string) $request->input('professional_id', '');
 
         $historyQuery = Agendamento::where('status', 'concluido');
 
@@ -459,6 +464,22 @@ class ClinicManagementController extends Controller
             });
         } elseif ($this->isProfessionalUser()) {
             $historyQuery->whereRaw('1 = 0');
+        }
+
+        if (! $authenticatedProfessional && $search !== '') {
+            $historyQuery->where(function ($query) use ($search, $cpfSearch) {
+                $query->where('nome', 'like', '%' . $search . '%');
+
+                if ($cpfSearch !== '') {
+                    $query->orWhereHas('patient', function ($patientQuery) use ($cpfSearch) {
+                        $patientQuery->whereRaw("REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), '/', '') like ?", ['%' . $cpfSearch . '%']);
+                    });
+                }
+            });
+        }
+
+        if (! $authenticatedProfessional && $professionalFilter !== '') {
+            $historyQuery->where('professional_id', (int) $professionalFilter);
         }
 
         if ($period === 'dia') {
@@ -495,7 +516,11 @@ class ClinicManagementController extends Controller
             return $item;
         });
 
-        return view('admin.modules.patients.history', compact('history', 'period', 'totalFinishedAppointments'));
+        $professionalOptions = ! $authenticatedProfessional && $this->hasTables(['professionals'])
+            ? Professional::query()->where('ativo', true)->orderBy('nome')->get(['id', 'nome'])
+            : collect();
+
+        return view('admin.modules.patients.history', compact('history', 'period', 'totalFinishedAppointments', 'search', 'professionalFilter', 'professionalOptions', 'authenticatedProfessional'));
     }
 
     public function patientDocuments(): View
@@ -554,27 +579,7 @@ class ClinicManagementController extends Controller
             ->orderBy('horario')
             ->get()
             ->values()
-            ->map(function ($item, $index) {
-                $scheduledAt = $item->data_agendamento?->copy()?->setTimeFromTimeString((string) $item->horario);
-                $minutesWaiting = $scheduledAt && now()->greaterThan($scheduledAt)
-                    ? $scheduledAt->diffInMinutes(now())
-                    : 0;
-
-                $arrivalStatuses = ['Já chegou', 'Em triagem', 'Próximo'];
-                $attendanceTypes = [
-                    ['label' => 'Primeira Consulta', 'icon' => 'fas fa-user-plus'],
-                    ['label' => 'Retorno', 'icon' => 'fas fa-redo'],
-                    ['label' => 'Urgência', 'icon' => 'fas fa-bolt'],
-                ];
-
-                $item->tempo_espera = $minutesWaiting;
-                $item->status_chegada = $arrivalStatuses[$index % count($arrivalStatuses)];
-                $item->status_chegada_classe = match ($item->status_chegada) {
-                    'Já chegou' => 'success',
-                    'Em triagem' => 'warning',
-                    default => 'primary',
-                };
-                $item->tipo_atendimento = $attendanceTypes[$index % count($attendanceTypes)];
+            ->map(function ($item) {
                 $item->profissional_fila = $item->professional?->nome ?: ($item->medico ?: 'Não informado');
 
                 return $item;
@@ -773,7 +778,7 @@ class ClinicManagementController extends Controller
             return $value ?: '';
         };
 
-        return view('admin.modules.settings.professionals', compact('professionals', 'availableUsers', 'weekDays', 'setupWarning', 'formatCpf', 'professionalCouncils', 'professionalUserSearch'));
+        return view('admin.modules.settings.professionals', compact('professionals', 'availableUsers', 'weekDays', 'setupWarning', 'formatCpf', 'professionalCouncils', 'professionalUserSearch', 'clinicHoursWindow'));
     }
 
     public function storeProfessional(Request $request): RedirectResponse
@@ -817,10 +822,6 @@ class ClinicManagementController extends Controller
             'schedule_day_of_week.*' => ['nullable', 'string', Rule::in(['weekdays', '1', '2', '3', '4', '5', '6', '7'])],
             'schedule_start_time' => 'nullable|array',
             'schedule_start_time.*' => 'nullable|date_format:H:i',
-            'schedule_break_start_time' => 'nullable|array',
-            'schedule_break_start_time.*' => 'nullable|date_format:H:i',
-            'schedule_break_end_time' => 'nullable|array',
-            'schedule_break_end_time.*' => 'nullable|date_format:H:i',
             'schedule_end_time' => 'nullable|array',
             'schedule_end_time.*' => 'nullable|date_format:H:i',
         ], [
@@ -833,9 +834,8 @@ class ClinicManagementController extends Controller
         $this->validateScheduleRows(
             $request->input('schedule_day_of_week', []),
             $request->input('schedule_start_time', []),
-            $request->input('schedule_break_start_time', []),
-            $request->input('schedule_break_end_time', []),
-            $request->input('schedule_end_time', [])
+            $request->input('schedule_end_time', []),
+            $this->clinicHoursWindow()
         );
 
         $linkedUser = User::findOrFail($request->input('user_id'));
@@ -856,8 +856,6 @@ class ClinicManagementController extends Controller
             $professional,
             $request->input('schedule_day_of_week', []),
             $request->input('schedule_start_time', []),
-            $request->input('schedule_break_start_time', []),
-            $request->input('schedule_break_end_time', []),
             $request->input('schedule_end_time', [])
         );
 
@@ -920,10 +918,6 @@ class ClinicManagementController extends Controller
             'schedule_day_of_week.*' => ['nullable', 'string', Rule::in(['weekdays', '1', '2', '3', '4', '5', '6', '7'])],
             'schedule_start_time' => 'nullable|array',
             'schedule_start_time.*' => 'nullable|date_format:H:i',
-            'schedule_break_start_time' => 'nullable|array',
-            'schedule_break_start_time.*' => 'nullable|date_format:H:i',
-            'schedule_break_end_time' => 'nullable|array',
-            'schedule_break_end_time.*' => 'nullable|date_format:H:i',
             'schedule_end_time' => 'nullable|array',
             'schedule_end_time.*' => 'nullable|date_format:H:i',
         ], [
@@ -936,9 +930,8 @@ class ClinicManagementController extends Controller
         $this->validateScheduleRows(
             $request->input('schedule_day_of_week', []),
             $request->input('schedule_start_time', []),
-            $request->input('schedule_break_start_time', []),
-            $request->input('schedule_break_end_time', []),
-            $request->input('schedule_end_time', [])
+            $request->input('schedule_end_time', []),
+            $this->clinicHoursWindow()
         );
 
         $previousValues = [
@@ -976,8 +969,6 @@ class ClinicManagementController extends Controller
             $professional,
             $request->input('schedule_day_of_week', []),
             $request->input('schedule_start_time', []),
-            $request->input('schedule_break_start_time', []),
-            $request->input('schedule_break_end_time', []),
             $request->input('schedule_end_time', [])
         );
 
@@ -1191,6 +1182,8 @@ class ClinicManagementController extends Controller
             'nome' => 'required|string|max:255|unique:procedures,nome',
             'duracao_minutos' => ['required', 'integer', Rule::in($durationOptions)],
             'professional_id' => $this->hasTables(['professionals']) ? 'required|exists:professionals,id' : 'nullable',
+        ], [
+            'nome.unique' => 'Já existe um procedimento cadastrado com esse nome.',
         ]);
 
         $procedure = Procedure::create([
@@ -1228,6 +1221,8 @@ class ClinicManagementController extends Controller
             'nome' => ['required', 'string', 'max:255', Rule::unique('procedures', 'nome')->ignore($procedure->id)],
             'duracao_minutos' => ['required', 'integer', Rule::in($durationOptions)],
             'professional_id' => $this->hasTables(['professionals']) ? 'required|exists:professionals,id' : 'nullable',
+        ], [
+            'nome.unique' => 'Já existe um procedimento cadastrado com esse nome.',
         ]);
 
         $before = [
@@ -1361,20 +1356,42 @@ class ClinicManagementController extends Controller
 
     public function usersPermissions(Request $request): View
     {
-        $this->ensurePrimaryAdminAccess();
+        $this->ensureCadastrosBaseManagerAccess();
 
-        $cpfSearch = preg_replace('/\D/', '', (string) $request->input('cpf_search'));
+        $userSearch = trim((string) $request->input('cpf_search'));
+        $cpfSearch = preg_replace('/\D/', '', $userSearch);
+        $roleFilter = in_array($request->input('role_filter'), ['recepcionista', 'profissional', 'gestor_clinica'], true)
+            ? $request->input('role_filter')
+            : '';
 
         $usersQuery = User::query()
             ->orderByRaw("CASE WHEN nivel = 'admin' OR role = 'admin' THEN 0 ELSE 1 END")
             ->orderBy('nome');
 
-        if ($cpfSearch !== '') {
-            $usersQuery->where('cpf', 'like', '%'.$cpfSearch.'%');
+        if ($userSearch !== '') {
+            $usersQuery->where(function ($query) use ($userSearch, $cpfSearch) {
+                if ($cpfSearch !== '') {
+                    $query->orWhere('cpf', 'like', '%' . $cpfSearch . '%');
+                }
+
+                $query->orWhere('nome', 'like', '%' . $userSearch . '%')
+                    ->orWhere('sobrenome', 'like', '%' . $userSearch . '%')
+                    ->orWhereRaw("CONCAT(COALESCE(nome, ''), ' ', COALESCE(sobrenome, '')) like ?", ['%' . $userSearch . '%']);
+            });
+        }
+
+        if ($roleFilter !== '') {
+            $usersQuery->where(function ($query) use ($roleFilter) {
+                $query->where('role', $roleFilter);
+
+                if ($roleFilter === 'profissional') {
+                    $query->orWhere('role', 'medico');
+                }
+            });
         }
 
         $users = $usersQuery->paginate(6, ['*'], 'users_page')->withQueryString();
-        $roles = ['recepcionista', 'profissional'];
+        $roles = ['recepcionista', 'profissional', 'gestor_clinica'];
         $availablePermissions = User::submenuPermissionLabels();
 
         $setupWarning = null;
@@ -1383,12 +1400,12 @@ class ClinicManagementController extends Controller
             $setupWarning = 'A configuração de papéis e acessos por módulo depende das migrations de perfis e permissões. A listagem funciona, mas é necessário executar as migrations antes de editar os papéis.';
         }
 
-        return view('admin.modules.settings.users', compact('users', 'roles', 'availablePermissions', 'setupWarning', 'cpfSearch'));
+        return view('admin.modules.settings.users', compact('users', 'roles', 'availablePermissions', 'setupWarning', 'userSearch', 'roleFilter'));
     }
 
     public function activityLogs(Request $request): View
     {
-        $this->ensurePrimaryAdminAccess();
+        $this->ensureCadastrosBaseManagerAccess();
 
         $activityLogs = collect();
         $subjectDisplayNames = collect();
@@ -1499,7 +1516,7 @@ class ClinicManagementController extends Controller
 
     public function storeUser(Request $request): RedirectResponse
     {
-        $this->ensurePrimaryAdminAccess();
+        $this->ensureCadastrosBaseManagerAccess();
 
         $normalizedPhone = preg_replace('/\D/', '', (string) $request->input('fone'));
 
@@ -1517,7 +1534,7 @@ class ClinicManagementController extends Controller
             'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
             'status' => 'required|in:ativo,cancelado',
-            'role' => 'required|in:recepcionista,profissional,medico',
+            'role' => 'required|in:recepcionista,profissional,medico,gestor_clinica',
         ];
 
         $request->validate($validationRules, [
@@ -1571,8 +1588,8 @@ class ClinicManagementController extends Controller
 
     public function updateUserPermissions(Request $request, User $user): RedirectResponse
     {
-        $this->ensurePrimaryAdminAccess();
-        $this->ensureManagedUser($user);
+        $this->ensureCadastrosBaseManagerAccess();
+        $this->ensureManagedUser($user, true);
 
         if (! Schema::hasColumn('users', 'role') || ! Schema::hasColumn('users', 'permissions')) {
             return redirect()->route('admin.settings.users')->with('warning', 'Execute as migrations dos cadastros base para editar papéis e acessos de submenu.');
@@ -1593,7 +1610,7 @@ class ClinicManagementController extends Controller
             'fone' => ['nullable', 'string', 'regex:/^\d{10,11}$/', Rule::unique('users', 'fone')->ignore($user->id)],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'status' => 'sometimes|required|in:ativo,cancelado',
-            'role' => 'required|in:recepcionista,profissional,medico',
+            'role' => ['required', Rule::in($user->isPrimaryAdmin() ? ['admin'] : ['recepcionista', 'profissional', 'medico', 'gestor_clinica'])],
             'password' => 'nullable|string|min:6|confirmed',
         ], [
             'cpf.size' => 'O CPF deve conter 11 dígitos.',
@@ -1613,7 +1630,9 @@ class ClinicManagementController extends Controller
         $previousPermissions = $user->permissions ?? [];
 
         $newRole = $request->role === 'medico' ? 'profissional' : $request->role;
-        $newPermissions = User::submenuPermissionsForRole($newRole);
+        $newPermissions = $newRole === 'admin'
+            ? array_keys(User::submenuPermissionLabels())
+            : User::submenuPermissionsForRole($newRole);
 
         $updatePayload = [
             'nome' => $request->input('nome', $user->nome),
@@ -1623,7 +1642,7 @@ class ClinicManagementController extends Controller
             'email' => $request->input('email', $user->email),
             'status' => $request->input('status', $user->status),
             'role' => $newRole,
-            'nivel' => 'user',
+            'nivel' => $newRole === 'admin' ? 'admin' : 'user',
             'permissions' => $newPermissions,
         ];
 
@@ -1667,7 +1686,7 @@ class ClinicManagementController extends Controller
 
     public function toggleUserStatus(User $user): RedirectResponse
     {
-        $this->ensurePrimaryAdminAccess();
+        $this->ensureCadastrosBaseManagerAccess();
         $this->ensureManagedUser($user);
 
         $previousStatus = $user->status;
@@ -1691,7 +1710,7 @@ class ClinicManagementController extends Controller
 
     public function destroyUser(User $user): RedirectResponse
     {
-        $this->ensurePrimaryAdminAccess();
+        $this->ensureCadastrosBaseManagerAccess();
         $this->ensureManagedUser($user);
 
         $this->recordActivity('deleted', $user, 'Usuário removido da área administrativa.', [
@@ -1712,14 +1731,12 @@ class ClinicManagementController extends Controller
         return redirect()->route('admin.settings.users')->with('success', 'Usuário excluído com sucesso.');
     }
 
-    private function syncSchedules(Professional $professional, array $days, array $starts, array $breakStarts, array $breakEnds, array $ends): void
+    private function syncSchedules(Professional $professional, array $days, array $starts, array $ends): void
     {
         $usedDays = [];
 
         foreach ($days as $index => $day) {
             $start = $starts[$index] ?? null;
-            $breakStart = $breakStarts[$index] ?? null;
-            $breakEnd = $breakEnds[$index] ?? null;
             $end = $ends[$index] ?? null;
 
             if (! $day || ! $start || ! $end || $start >= $end) {
@@ -1736,8 +1753,8 @@ class ClinicManagementController extends Controller
                 $professional->schedules()->create([
                     'day_of_week' => $targetDay,
                     'start_time' => $start,
-                    'break_start_time' => $breakStart ?: null,
-                    'break_end_time' => $breakEnd ?: null,
+                    'break_start_time' => null,
+                    'break_end_time' => null,
                     'end_time' => $end,
                 ]);
 
@@ -1746,17 +1763,15 @@ class ClinicManagementController extends Controller
         }
     }
 
-    private function validateScheduleRows(array $days, array $starts, array $breakStarts, array $breakEnds, array $ends): void
+    private function validateScheduleRows(array $days, array $starts, array $ends, ?array $clinicHoursWindow = null): void
     {
         $usedDays = [];
 
         foreach ($days as $index => $day) {
             $start = $starts[$index] ?? null;
-            $breakStart = $breakStarts[$index] ?? null;
-            $breakEnd = $breakEnds[$index] ?? null;
             $end = $ends[$index] ?? null;
 
-            if (! $day && ! $start && ! $breakStart && ! $breakEnd && ! $end) {
+            if (! $day && ! $start && ! $end) {
                 continue;
             }
 
@@ -1778,15 +1793,20 @@ class ClinicManagementController extends Controller
                 $usedDays[] = $targetDay;
             }
 
-            if (($breakStart && ! $breakEnd) || (! $breakStart && $breakEnd)) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'schedule_break_start_time' => 'Preencha o início e o fim do intervalo de descanso.',
-                ]);
+            if ($clinicHoursWindow) {
+                $openingTime = $clinicHoursWindow['opening_time'] ?? null;
+                $closingTime = $clinicHoursWindow['closing_time'] ?? null;
+
+                if (($openingTime && $start < $openingTime) || ($closingTime && $end > $closingTime)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'schedule_day_of_week' => 'Os horários do vínculo de agenda devem respeitar o horário configurado para a clínica.',
+                    ]);
+                }
             }
 
-            if ($breakStart && $breakEnd && ! ($start < $breakStart && $breakStart < $breakEnd && $breakEnd < $end)) {
+            if ($start >= $end) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
-                    'schedule_break_start_time' => 'O intervalo de descanso deve ficar entre o horário de início e o horário de fim.',
+                    'schedule_day_of_week' => 'O horário final do vínculo de agenda deve ser maior que o horário inicial.',
                 ]);
             }
         }
@@ -1884,8 +1904,19 @@ class ClinicManagementController extends Controller
         }
     }
 
-    private function ensureManagedUser(User $user): void
+    private function ensureCadastrosBaseManagerAccess(): void
     {
+        if (! Auth::user()?->canManageCadastrosBase()) {
+            abort(403, 'Seu perfil não possui permissão para gerenciar Cadastros Base.');
+        }
+    }
+
+    private function ensureManagedUser(User $user, bool $allowUpdate = false): void
+    {
+        if ($allowUpdate && Auth::user()?->isPrimaryAdmin() && ($user->isPrimaryAdmin() || $user->id === Auth::id())) {
+            return;
+        }
+
         if ($user->isPrimaryAdmin() || $user->id === Auth::id()) {
             abort(403, 'O administrador principal não pode ser alterado por esta tela.');
         }

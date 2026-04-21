@@ -75,8 +75,8 @@
                                             <span class="badge badge-{{ $patient->cadastro_status_class }}">{{ $patient->cadastro_status_label }}</span>
                                         </td>
                                         <td class="text-center align-middle">
-                                            <a href="{{ route('admin.agendamentos.create', ['patient_id' => $patient->id]) }}" class="btn btn-sm btn-success">Agendar</a>
-                                            <a href="{{ route('admin.patients.show', $patient) }}" class="btn btn-sm btn-info">Prontuário</a>
+                                            <a href="{{ route('admin.agendamentos.create', ['patient_id' => $patient->id, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-success">Agendar</a>
+                                            <a href="{{ route('admin.patients.show', $patient) }}" class="btn btn-sm btn-info">Detalhes</a>
                                             <a href="{{ route('admin.patients.edit', $patient) }}" class="btn btn-sm btn-warning">Editar</a>
                                             <form action="{{ route('admin.patients.destroy', $patient) }}" method="POST" class="d-inline">
                                                 @csrf
