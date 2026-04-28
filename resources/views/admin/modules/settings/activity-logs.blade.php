@@ -99,6 +99,7 @@
             'agendamentos' => 'Agendamentos',
             'pacientes' => 'Pacientes',
             'painel_doutor' => 'Painel do Profissional',
+            'minha_conta' => 'Minha Conta',
         ];
 
         $weekDays = [
@@ -335,6 +336,7 @@
             <div class="card-header d-flex flex-wrap justify-content-between align-items-center" style="gap: 12px;">
                 <h4 class="mb-0">Logs de atividade</h4>
                 <form action="{{ route('admin.settings.activity-logs') }}#logs-atividade" method="GET" class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                    <input type="text" class="form-control logs-filter-control" id="responsible-search" name="responsible" value="{{ $responsibleSearch ?? '' }}" placeholder="Responsável pela ação">
                     <input type="text" class="form-control cpf-mask logs-filter-control" id="affected-user-cpf-search" name="affected_user_cpf" value="{{ $formatCpf($affectedUserCpfSearch ?? '') }}" placeholder="CPF do usuário afetado" maxlength="14" inputmode="numeric">
                     <input type="date" class="form-control logs-filter-control" id="activity-date-search" name="activity_date" value="{{ $activityDateSearch ?? '' }}">
                     <select class="form-control logs-filter-control logs-filter-select" id="logs-action-type-search" name="action_type">
@@ -344,7 +346,7 @@
                         <option value="deleted" {{ ($actionTypeSearch ?? '') === 'deleted' ? 'selected' : '' }}>Exclusão</option>
                     </select>
                     <button type="submit" class="btn btn-primary">Pesquisar</button>
-                    @if(!empty($affectedUserCpfSearch) || !empty($activityDateSearch) || !empty($actionTypeSearch))
+                    @if(!empty($responsibleSearch) || !empty($affectedUserCpfSearch) || !empty($activityDateSearch) || !empty($actionTypeSearch))
                         <a href="{{ route('admin.settings.activity-logs') }}#logs-atividade" class="btn btn-light border">Limpar</a>
                     @endif
                     <div class="w-100 small text-muted mt-1">

@@ -2,22 +2,47 @@
 @section('content')
 <section class="section">
     <div class="section-header">
-        <h1>Fila de Espera</h1>
+        <h1>{{ $pageTitle ?? 'Fila de Espera' }}</h1>
     </div>
 
     <div class="section-body">
+        @if(($baseRoute ?? '') === 'admin.doctor.pending-finalization')
+            <div class="row mb-4">
+                <div class="col-lg-4 col-md-6 col-12">
+                    <div class="card card-statistic-1 mb-0">
+                        <div class="card-icon bg-warning"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div class="card-wrap">
+                            <div class="card-header"><h4>Atendimentos em Atraso</h4></div>
+                            <div class="card-body">{{ $totalPatientsInQueue }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if(($baseRoute ?? '') === 'admin.doctor.pending-finalization' && !empty($hasDelayedAppointments))
+            <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center" style="gap: 12px;">
+                <div>
+                    <strong>Existem atendimentos em atraso aguardando finalização.</strong>
+                    <div class="small mt-1">Total encontrado: {{ $totalPatientsInQueue }}</div>
+                </div>
+                <a href="{{ route('admin.doctor.pending-finalization') }}" class="btn btn-warning">Visualizar todos os atrasos</a>
+            </div>
+        @endif
+
         <div class="card mb-4">
             <div class="card-header">
                 <h4>Filtros da fila</h4>
             </div>
             <div class="card-body">
                 <div class="mb-3 d-flex flex-wrap" style="gap: 8px;">
-                    <a href="{{ route('admin.doctor.queue', array_merge(request()->except('page', 'date'), ['period' => 'dia'])) }}" class="btn {{ $period === 'dia' && empty($selectedDate) ? 'btn-primary' : 'btn-outline-primary' }}">Dia</a>
-                    <a href="{{ route('admin.doctor.queue', array_merge(request()->except('page', 'date'), ['period' => 'semana'])) }}" class="btn {{ $period === 'semana' && empty($selectedDate) ? 'btn-primary' : 'btn-outline-primary' }}">Semana</a>
-                    <a href="{{ route('admin.doctor.queue', array_merge(request()->except('page', 'date'), ['period' => 'mes'])) }}" class="btn {{ $period === 'mes' && empty($selectedDate) ? 'btn-primary' : 'btn-outline-primary' }}">Mês</a>
+                    <a href="{{ route($baseRoute ?? 'admin.doctor.queue', array_merge(request()->except('page', 'date'), ['period' => 'dia'])) }}" class="btn {{ $period === 'dia' && empty($selectedDate) ? 'btn-primary' : 'btn-outline-primary' }}">Dia</a>
+                    <a href="{{ route($baseRoute ?? 'admin.doctor.queue', array_merge(request()->except('page', 'date'), ['period' => 'semana'])) }}" class="btn {{ $period === 'semana' && empty($selectedDate) ? 'btn-primary' : 'btn-outline-primary' }}">Semana</a>
+                    <a href="{{ route($baseRoute ?? 'admin.doctor.queue', array_merge(request()->except('page', 'date'), ['period' => 'mes'])) }}" class="btn {{ $period === 'mes' && empty($selectedDate) ? 'btn-primary' : 'btn-outline-primary' }}">Mês</a>
+                    <a href="{{ route($baseRoute ?? 'admin.doctor.queue') }}" class="btn btn-light border">Visualizar todos</a>
                 </div>
 
-                <form method="GET" action="{{ route('admin.doctor.queue') }}">
+                <form method="GET" action="{{ route($baseRoute ?? 'admin.doctor.queue') }}">
                     <input type="hidden" name="period" value="{{ $period }}">
 
                     <div class="row align-items-end">
@@ -35,7 +60,7 @@
                         </div>
                         <div class="col-md-5 d-flex flex-wrap align-items-center" style="gap: 8px;">
                             <button type="submit" class="btn btn-primary">Pesquisar</button>
-                            <a href="{{ route('admin.doctor.queue') }}" class="btn btn-light">Limpar</a>
+                            <a href="{{ route($baseRoute ?? 'admin.doctor.queue') }}" class="btn btn-light">Limpar</a>
                         </div>
                     </div>
                 </form>
@@ -44,7 +69,7 @@
 
         <div class="card">
             <div class="card-header">
-                <h4>Pacientes na fila</h4>
+                <h4>{{ $cardTitle ?? 'Pacientes na fila' }}</h4>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -53,6 +78,7 @@
                             <tr>
                                 <th>Data</th>
                                 <th>Horário</th>
+                                <th>Horário Final</th>
                                 <th>Paciente</th>
                                 <th>Profissional</th>
                                 <th>Serviço</th>
@@ -65,6 +91,7 @@
                                 <tr>
                                     <td>{{ $item->data_agendamento->format('d/m/Y') }}</td>
                                     <td>{{ $item->horario }}</td>
+                                    <td>{{ $item->horario_final_exibicao ?: '-' }}</td>
                                     <td>{{ $item->nome }}</td>
                                     <td>{{ $item->profissional_fila }}</td>
                                     <td>{{ $item->servico }}</td>
@@ -88,7 +115,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center">Nenhum paciente encontrado na fila para os filtros informados.</td>
+                                    <td colspan="8" class="text-center">{{ $emptyMessage ?? 'Nenhum paciente encontrado na fila para os filtros informados.' }}</td>
                                 </tr>
                             @endforelse
                         </tbody>

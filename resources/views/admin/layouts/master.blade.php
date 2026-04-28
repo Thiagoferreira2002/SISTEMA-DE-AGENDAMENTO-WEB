@@ -54,9 +54,10 @@
   $authenticatedUser = auth()->user();
   $isClinicManager = $authenticatedUser?->isClinicManager() ?? false;
   $isCadastrosBaseRoute = request()->routeIs('admin.settings.*');
+  $successMessage = session('success');
 @endphp
 
-<body class="sidebar-gone {{ $isClinicManager ? 'clinic-manager-user' : '' }} {{ $isClinicManager && ! $isCadastrosBaseRoute ? 'clinic-manager-readonly' : '' }}">
+<body class="{{ $isClinicManager ? 'clinic-manager-user' : '' }} {{ $isClinicManager && ! $isCadastrosBaseRoute ? 'clinic-manager-readonly' : '' }}">
   <style>
     .sidebar-toggle-fixed {
       position: fixed;
@@ -82,6 +83,12 @@
       transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease, left .2s ease;
     }
 
+    @media (min-width: 1025px) {
+      .sidebar-toggle-fixed {
+        display: none;
+      }
+    }
+
     .sidebar-toggle-fixed:hover,
     .sidebar-toggle-fixed:focus {
       background: linear-gradient(135deg, rgba(10, 46, 82, 1) 0%, rgba(24, 102, 175, 1) 100%);
@@ -101,6 +108,11 @@
     .sidebar-toggle-fixed[data-state="open"]:focus {
       background: #ffffff;
       color: #0d3358;
+    }
+
+    .section .section-body > .alert:first-child,
+    .section .section-body > .account-shell > .alert:first-child {
+      margin-top: 34px;
     }
 
     body.sidebar-gone .navbar {
@@ -158,7 +170,7 @@
       <!-- START FOOTER - MAYKONSILVEIRA.COM.BR -->
       <footer class="main-footer">
         <div class="footer-left">
-          Todos os Direitos Reservados &copy; @date('Y') <div class="bullet"></div> Desenvolvido Thiago Cruz Ferreira De Melo Versão 1.0
+          Todos os Direitos Reservados <div class="bullet"></div> Desenvolvido Thiago Cruz Ferreira De Melo Versão 1.0
         </div>
         <div class="footer-right">
 
@@ -225,10 +237,105 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
+      var sidebarStateStorageKey = 'admin.ui.sidebar-state';
+      var sidebarMenusStorageKey = 'admin.ui.sidebar-open-menus';
       var sidebarToggleButton = document.getElementById('sidebar-toggle-fixed');
+      var sidebarDropdownLinks = Array.from(document.querySelectorAll('.main-sidebar .nav-link.has-dropdown'));
+
+      function getSidebarMenuKey(link) {
+        var label = link ? link.textContent : '';
+        return (label || '').replace(/\s+/g, ' ').trim();
+      }
+
+      function applySidebarStateFromStorage() {
+        if (window.innerWidth > 1024) {
+          document.body.classList.remove('sidebar-gone');
+          document.body.classList.remove('sidebar-mini');
+          document.body.classList.remove('sidebar-show');
+          return;
+        }
+
+        if (!window.localStorage) {
+          return;
+        }
+
+        var savedState = window.localStorage.getItem(sidebarStateStorageKey);
+
+        if (savedState === 'open') {
+          document.body.classList.remove('sidebar-gone');
+          document.body.classList.remove('sidebar-mini');
+        }
+
+        if (savedState === 'closed') {
+          document.body.classList.add('sidebar-gone');
+          document.body.classList.remove('sidebar-show');
+        }
+      }
+
+      function restoreOpenSidebarMenus() {
+        if (!window.localStorage || window.innerWidth > 1024) {
+          return;
+        }
+
+        var storedMenus = [];
+
+        try {
+          storedMenus = JSON.parse(window.localStorage.getItem(sidebarMenusStorageKey) || '[]');
+        } catch (error) {
+          storedMenus = [];
+        }
+
+        sidebarDropdownLinks.forEach(function (link) {
+          var dropdown = link.closest('.dropdown');
+          var menu = dropdown ? dropdown.querySelector('.dropdown-menu') : null;
+          var shouldBeOpen = storedMenus.indexOf(getSidebarMenuKey(link)) !== -1;
+
+          if (!dropdown || !menu) {
+            return;
+          }
+
+          if (shouldBeOpen) {
+            dropdown.classList.add('active');
+            link.setAttribute('aria-expanded', 'true');
+            menu.style.display = 'block';
+            menu.classList.add('persisted-open');
+          } else {
+            dropdown.classList.remove('active');
+            link.setAttribute('aria-expanded', 'false');
+            menu.style.display = '';
+            menu.classList.remove('persisted-open');
+          }
+        });
+      }
+
+      function persistSidebarPreferences() {
+        if (!window.localStorage || window.innerWidth > 1024) {
+          return;
+        }
+
+        var isClosed = document.body.classList.contains('sidebar-gone') && !document.body.classList.contains('sidebar-show');
+        var openMenus = sidebarDropdownLinks
+          .filter(function (link) {
+            var dropdown = link.closest('.dropdown');
+            return dropdown && dropdown.classList.contains('active');
+          })
+          .map(getSidebarMenuKey);
+
+        window.localStorage.setItem(sidebarStateStorageKey, isClosed ? 'closed' : 'open');
+        window.localStorage.setItem(sidebarMenusStorageKey, JSON.stringify(openMenus));
+      }
+
+      applySidebarStateFromStorage();
+      restoreOpenSidebarMenus();
+      window.setTimeout(restoreOpenSidebarMenus, 180);
+      window.setTimeout(restoreOpenSidebarMenus, 650);
 
       if (sidebarToggleButton) {
         var updateSidebarToggleLabel = function () {
+          if (window.innerWidth > 1024) {
+            return;
+          }
+
           var isClosed = document.body.classList.contains('sidebar-gone') && !document.body.classList.contains('sidebar-show');
 
           sidebarToggleButton.textContent = isClosed ? 'Abrir lateral' : 'Fechar lateral';
@@ -240,12 +347,42 @@
         updateSidebarToggleLabel();
 
         sidebarToggleButton.addEventListener('click', function () {
-          window.setTimeout(updateSidebarToggleLabel, 20);
+          window.setTimeout(function () {
+            updateSidebarToggleLabel();
+            persistSidebarPreferences();
+          }, 20);
         });
 
-        var sidebarObserver = new MutationObserver(updateSidebarToggleLabel);
+        var sidebarObserver = new MutationObserver(function () {
+          updateSidebarToggleLabel();
+          persistSidebarPreferences();
+        });
         sidebarObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
       }
+
+      sidebarDropdownLinks.forEach(function (link) {
+        link.addEventListener('click', function () {
+          window.setTimeout(function () {
+            persistSidebarPreferences();
+          }, 520);
+        });
+      });
+
+      window.addEventListener('resize', function () {
+        applySidebarStateFromStorage();
+        restoreOpenSidebarMenus();
+      });
+
+      document.querySelectorAll('.main-sidebar .dropdown-menu a').forEach(function (link) {
+        link.addEventListener('click', function () {
+          persistSidebarPreferences();
+        });
+      });
+
+      window.addEventListener('load', function () {
+        restoreOpenSidebarMenus();
+        persistSidebarPreferences();
+      });
 
       if (document.body.classList.contains('clinic-manager-readonly')) {
         var mainContent = document.querySelector('.main-content');
@@ -288,6 +425,45 @@
 
       if (window.sessionStorage) {
         window.sessionStorage.removeItem('admin.form-draft.last-submitted-key');
+      }
+    });
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var successMessage = @json($successMessage);
+
+      if (!successMessage || successMessage.indexOf('Agendamento criado com sucesso') === -1) {
+        return;
+      }
+
+      try {
+        var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
+        if (!AudioContextClass) {
+          return;
+        }
+
+        var audioContext = new AudioContextClass();
+        var now = audioContext.currentTime;
+
+        [523.25, 659.25, 783.99].forEach(function (frequency, index) {
+          var oscillator = audioContext.createOscillator();
+          var gainNode = audioContext.createGain();
+
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(frequency, now + (index * 0.12));
+          gainNode.gain.setValueAtTime(0.0001, now + (index * 0.12));
+          gainNode.gain.exponentialRampToValueAtTime(0.08, now + (index * 0.12) + 0.02);
+          gainNode.gain.exponentialRampToValueAtTime(0.0001, now + (index * 0.12) + 0.18);
+
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          oscillator.start(now + (index * 0.12));
+          oscillator.stop(now + (index * 0.12) + 0.2);
+        });
+      } catch (error) {
+        // Ignora falhas silenciosamente para não interferir no fluxo da página.
       }
     });
   </script>

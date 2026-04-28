@@ -50,30 +50,35 @@ class AgendamentoController extends Controller
         $professionalOptions = $this->professionalOptions();
         $hideProfessionalFilter = $this->isProfessionalUser();
         $selectedProfessionalId = $request->string('professional_id')->toString();
+        $selectedCalendarDate = $request->string('calendar_date')->toString();
         $returnUrl = $this->resolveReturnUrl($request);
+        $clinicHours = $this->clinicHoursConfig();
 
         return view('admin.agendamentos.calendar', compact(
             'professionalOptions',
             'hideProfessionalFilter',
             'selectedProfessionalId',
+            'selectedCalendarDate',
+            'clinicHours',
             'returnUrl'
         ));
     }
 
     public function calendarEvents(Request $request): JsonResponse
     {
-        [$agendamentos] = $this->filteredAppointments($request);
+        [$agendamentos] = $this->filteredAppointments($request, true);
 
         return response()->json($this->buildCalendarEvents($agendamentos));
     }
 
-    private function filteredAppointments(Request $request): array
+    private function filteredAppointments(Request $request, bool $includeCalendarHistory = false): array
     {
         $focusedAppointmentId = $request->integer('open_agendamento');
         $professionals = $this->professionals();
         $units = $this->units();
         $insurances = $this->insurances();
         $globalSearch = trim($request->string('q')->toString());
+        $selectedCalendarDate = $request->string('calendar_date')->toString();
         $period = in_array($request->input('period'), ['dia', 'semana', 'mes'], true)
             ? $request->input('period')
             : '';
@@ -88,18 +93,36 @@ class AgendamentoController extends Controller
             ->orderBy('horario')
             ->get()
             ->map(fn (Agendamento $agendamento) => $this->decorateAppointment($agendamento, $professionals, $units, $insurances, $professionalById, $professionalByName))
-            ->reject(function (Agendamento $agendamento) use ($focusedAppointmentId) {
+            ->reject(function (Agendamento $agendamento) use ($focusedAppointmentId, $includeCalendarHistory) {
                 if ($focusedAppointmentId && (int) $agendamento->id === $focusedAppointmentId) {
                     return false;
                 }
 
-                return in_array((string) $agendamento->status, ['concluido', 'cancelado'], true);
+                if ((string) $agendamento->status === 'cancelado') {
+                    return true;
+                }
+
+                if ($includeCalendarHistory) {
+                    return false;
+                }
+
+                if ((string) $agendamento->status === 'concluido') {
+                    return true;
+                }
+
+                return $this->appointmentHasPassedEndTime($agendamento);
             })
             ->values();
 
         $agendamentos = $this->restrictAppointmentsForAuthenticatedProfessional($agendamentos);
 
         $selectedProfessionalId = $request->string('professional_id')->toString();
+        $selectedDoctors = collect((array) $request->input('medicos', []))
+            ->filter(fn ($value) => trim((string) $value) !== '')
+            ->map(fn ($value) => trim((string) $value))
+            ->unique()
+            ->take(3)
+            ->values();
 
         if ($selectedProfessionalId !== '') {
             $agendamentos = $agendamentos->filter(function (Agendamento $agendamento) use ($selectedProfessionalId) {
@@ -107,7 +130,20 @@ class AgendamentoController extends Controller
             })->values();
         }
 
-        if ($request->filled('medico')) {
+        if ($selectedCalendarDate !== '') {
+            $agendamentos = $agendamentos->filter(function (Agendamento $agendamento) use ($selectedCalendarDate) {
+                return $agendamento->data_agendamento
+                    && $agendamento->data_agendamento->format('Y-m-d') === $selectedCalendarDate;
+            })->values();
+        }
+
+        if ($selectedDoctors->isNotEmpty() && ! $this->isProfessionalUser()) {
+            $allowedDoctors = $selectedDoctors->all();
+
+            $agendamentos = $agendamentos->filter(function (Agendamento $agendamento) use ($allowedDoctors) {
+                return in_array((string) $agendamento->medico_exibicao, $allowedDoctors, true);
+            })->values();
+        } elseif ($request->filled('medico')) {
             $agendamentos = $agendamentos->where('medico_exibicao', $request->string('medico')->toString())->values();
         }
 
@@ -182,23 +218,26 @@ class AgendamentoController extends Controller
     {
         return $agendamentos->map(function (Agendamento $agendamento) {
             $startTime = substr((string) $agendamento->horario, 0, 5);
-            $endTime = $agendamento->data_agendamento->copy()
-                ->setTimeFromTimeString($startTime)
-                ->addMinutes((int) $agendamento->duracao_exibicao);
+            $endTime = $this->appointmentEndDateTime($agendamento);
 
             return [
                 'id' => $agendamento->id,
                 'title' => trim(($agendamento->nome ?? '') . ' - ' . ($agendamento->servico ?? 'Consulta')),
                 'start' => $agendamento->data_agendamento->format('Y-m-d') . 'T' . $startTime . ':00',
                 'end' => $endTime->format('Y-m-d\TH:i:s'),
-                'backgroundColor' => $agendamento->professional?->agenda_color ?: $agendamento->status_visual['color'],
-                'borderColor' => $agendamento->professional?->agenda_color ?: $agendamento->status_visual['color'],
+                'backgroundColor' => $agendamento->status === 'concluido'
+                    ? $agendamento->status_visual['color']
+                    : ($agendamento->professional?->agenda_color ?: $agendamento->status_visual['color']),
+                'borderColor' => $agendamento->status === 'concluido'
+                    ? $agendamento->status_visual['color']
+                    : ($agendamento->professional?->agenda_color ?: $agendamento->status_visual['color']),
                 'textColor' => '#ffffff',
                 'nome' => $agendamento->nome,
                 'email' => $agendamento->email,
                 'telefone' => $agendamento->telefone,
                 'servico' => $agendamento->servico,
                 'status' => $agendamento->status_visual['label'],
+                'is_finalized' => $agendamento->status === 'concluido',
                 'horario' => $startTime,
                 'horario_final' => $endTime->format('H:i'),
                 'medico' => $agendamento->medico_exibicao,
@@ -206,6 +245,28 @@ class AgendamentoController extends Controller
                 'agendamento_id' => $agendamento->id,
             ];
         })->values()->all();
+    }
+
+    private function appointmentEndDateTime(Agendamento $agendamento): ?Carbon
+    {
+        if (! $agendamento->data_agendamento || ! $agendamento->horario) {
+            return null;
+        }
+
+        return $agendamento->data_agendamento->copy()
+            ->setTimeFromTimeString(substr((string) $agendamento->horario, 0, 5))
+            ->addMinutes((int) ($agendamento->duracao_exibicao ?? $agendamento->duracao_minutos ?? 30));
+    }
+
+    private function appointmentHasPassedEndTime(Agendamento $agendamento): bool
+    {
+        if (in_array((string) $agendamento->status, ['concluido', 'cancelado'], true)) {
+            return false;
+        }
+
+        $endTime = $this->appointmentEndDateTime($agendamento);
+
+        return $endTime ? $endTime->lessThanOrEqualTo(now()) : false;
     }
 
     public function create(Request $request)
@@ -390,7 +451,7 @@ class AgendamentoController extends Controller
             'horario.required' => 'O campo horário inicial é obrigatório.',
             'horario_final.required' => 'Selecione um horário de término válido. Você pode encerrar exatamente no início do intervalo da clínica, mas não pode avançar para dentro dele.',
             'data_agendamento.after_or_equal' => 'A data do agendamento deve ser a partir de hoje.',
-            'horario.after_or_equal' => 'O paciente já tem agendamento nesse horário.',
+            'horario.after_or_equal' => 'O horário inicial não pode ser anterior ao horário atual.',
             'horario_final.after' => 'O horário de término deve ser depois do horário de início.',
             'clinic_hours.opening' => 'O horário inicial deve ser a partir da abertura da clínica.',
             'clinic_hours.closing' => 'O horário de término deve estar dentro do horário de funcionamento da clínica.',
@@ -678,6 +739,10 @@ class AgendamentoController extends Controller
 
     private function resolveVisualStatus(Agendamento $agendamento): array
     {
+        if ($agendamento->status === 'concluido') {
+            return ['label' => 'Finalizado', 'color' => '#5f6b7a'];
+        }
+
         if ($agendamento->status === 'confirmado') {
             return ['label' => 'Confirmado', 'color' => '#28a745'];
         }

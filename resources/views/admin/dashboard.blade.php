@@ -89,10 +89,12 @@
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(244, 249, 255, 0.98) 100%);
     border-top: 4px solid var(--dashboard-accent-deep);
     border: 1px solid var(--dashboard-soft-border);
+    height: 100%;
   }
 
   .dashboard-metric-link {
     display: block;
+    height: 100%;
     color: inherit;
     text-decoration: none;
   }
@@ -109,6 +111,9 @@
 
   .dashboard-metric-card .card-body {
     padding: 22px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   .dashboard-metric-card .metric-icon {
@@ -142,6 +147,7 @@
 
   .dashboard-metric-card .metric-footnote {
     margin-top: 10px;
+    margin-top: auto;
     color: #587693;
     font-size: 13px;
   }
@@ -244,7 +250,7 @@
  <section class="section">
   <div class="dashboard-shell">
     <div class="section-header border-0 mb-4">
-      <h1>{{ $dashboardTitle ?? 'Painel de Controle' }}</h1>
+      <h1>Página Inicial</h1>
     </div>
 
     <div class="card dashboard-hero mb-4">
@@ -253,7 +259,7 @@
           <i class="fas fa-wave-square"></i>
           {{ ($isProfessionalDashboard ?? false) ? 'Visão do profissional' : 'Visão geral da clínica' }}
         </span>
-        <h2>{{ ($isProfessionalDashboard ?? false) ? ($dashboardWelcome ?? 'Boas-vindas') : ($dashboardTitle ?? 'Painel de Controle') }}</h2>
+        <h2>{{ ($isProfessionalDashboard ?? false) ? ($dashboardWelcome ?? 'Boas-vindas') : 'Painel de Controle' }}</h2>
         <p>{{ $dashboardSubtitle ?? 'Acompanhe os indicadores e os próximos atendimentos.' }}</p>
       </div>
     </div>
@@ -266,7 +272,7 @@
               <div class="metric-icon"><i class="far fa-calendar"></i></div>
               <h4>Total de Agendamentos</h4>
               <div class="metric-value">{{ $totalAgendamentos }}</div>
-              <div class="metric-footnote">Conta apenas agendamentos ativos, sem cancelados e sem finalizados.</div>
+              <div class="metric-footnote">{{ ($isProfessionalDashboard ?? false) ? 'Mostra apenas os seus agendamentos ativos.' : 'Conta apenas agendamentos ativos, sem cancelados e sem finalizados.' }}</div>
             </div>
           </div>
         </a>
@@ -278,7 +284,7 @@
               <div class="metric-icon"><i class="far fa-clock"></i></div>
               <h4>Agendamentos Pendentes</h4>
               <div class="metric-value">{{ $agendamentosPendentes }}</div>
-              <div class="metric-footnote">Itens pendentes ou sem status, excluindo cancelados e finalizados.</div>
+              <div class="metric-footnote">{{ ($isProfessionalDashboard ?? false) ? 'Mostra apenas pendências vinculadas ao seu perfil.' : 'Itens pendentes ou sem status, excluindo cancelados e finalizados.' }}</div>
             </div>
           </div>
         </a>
@@ -290,11 +296,14 @@
               <div class="metric-icon"><i class="far fa-check-circle"></i></div>
               <h4>Agendamentos Confirmados</h4>
               <div class="metric-value">{{ $agendamentosConfirmados }}</div>
-              <div class="metric-footnote">Somente agendamentos confirmados e ainda não concluídos.</div>
+              <div class="metric-footnote">{{ ($isProfessionalDashboard ?? false) ? 'Mostra apenas confirmações vinculadas ao seu perfil.' : 'Somente agendamentos confirmados e ainda não concluídos.' }}</div>
             </div>
           </div>
         </a>
       </div>
+    </div>
+
+    <div class="row mt-4">
       @unless($isProfessionalDashboard ?? false)
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <a href="{{ $dashboardLinks['complementar'] ?? route('admin.patients.index') }}" class="dashboard-metric-link">
@@ -329,7 +338,7 @@
       <div class="col-lg-12 col-md-12 col-12 col-sm-12">
         <div class="card dashboard-list-card" style="animation-delay:.34s;">
           <div class="card-header">
-            <h4>Próximos Agendamentos</h4>
+            <h4>{{ ($isProfessionalDashboard ?? false) ? 'Seus Próximos Agendamentos' : 'Próximos Agendamentos' }}</h4>
             <div class="card-header-action">
               <a href="{{ ($isProfessionalDashboard ?? false) ? route('admin.doctor.queue') : route('admin.agendamentos.index') }}" class="btn btn-primary">Ver todos</a>
             </div>
@@ -352,7 +361,7 @@
                     <tr>
                       <td>{{ $agendamento->nome }}</td>
                       <td>{{ $agendamento->servico }}</td>
-                      <td>{{ $agendamento->professional->nome ?? 'Não informado' }}</td>
+                      <td>{{ $agendamento->professional->nome ?? $agendamento->medico ?? 'Não informado' }}</td>
                       <td>{{ optional($agendamento->data_agendamento)->format('d/m/Y') }}</td>
                       <td>{{ $agendamento->horario }}</td>
                       <td>

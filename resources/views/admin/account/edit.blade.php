@@ -52,11 +52,25 @@
         border: 1px solid rgba(30, 144, 255, 0.16);
         background: #eef6ff;
     }
+
+    .account-access-card {
+        border: 1px solid rgba(13, 51, 88, 0.08);
+        border-radius: 16px;
+        background: #f8fbff;
+        padding: 18px 18px 8px;
+    }
+
+    .account-access-card ul {
+        padding-left: 18px;
+        margin-bottom: 0;
+    }
 </style>
 <section class="section">
     @php
         $avatarUrl = $user->profile_photo_url;
-        $roleLabel = $user->normalizedRole() === 'profissional' ? 'Profissional' : ($user->isClinicManager() ? 'Gestor da Clínica' : 'Administrador');
+        $roleLabel = $user->roleLabel();
+        $roleSummary = $user->roleCapabilitySummary();
+        $canEditCpf = $user->canEditCpf();
     @endphp
 
     <div class="section-header">
@@ -76,24 +90,19 @@
                         <div>
                             <div class="text-uppercase small" style="letter-spacing: .08em; opacity: .82;">Configurações do perfil</div>
                             <h2 class="mb-1" style="font-weight: 700;">{{ $user->full_name }}</h2>
-                            <div style="opacity: .88;">{{ $roleLabel }} com acesso ao painel administrativo.</div>
+                            <div style="opacity: .88;">{{ $roleLabel }} com permissões automáticas conforme o perfil vinculado à conta.</div>
                         </div>
                     </div>
-                    <div class="text-left text-lg-right">
-                        @if($user->normalizedRole() !== 'admin')
-                            <div class="small text-uppercase" style="letter-spacing: .08em; opacity: .82;">Segurança</div>
-                            <div>A senha não pode ser alterada aqui. Apenas um administrador pode atualizar essa informação.</div>
-                        @endif
-                    </div>
+                    <div class="text-left text-lg-right"></div>
                 </div>
             </div>
 
             @if(session('success'))
-                <div class="alert alert-success">{{ session('success') }}</div>
+                <div class="alert alert-success mt-4">{{ session('success') }}</div>
             @endif
 
             @if($errors->any())
-                <div class="alert alert-danger">
+                <div class="alert alert-danger mt-4">
                     <strong>Não foi possível atualizar sua conta.</strong>
                     <ul class="mb-0 mt-2 pl-3">
                         @foreach($errors->all() as $error)
@@ -134,7 +143,10 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="cpf">CPF</label>
-                                            <input type="text" class="form-control @error('cpf') is-invalid @enderror" id="cpf" name="cpf" value="{{ old('cpf', $user->cpf ? preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', preg_replace('/\D+/', '', $user->cpf)) : '') }}" maxlength="14">
+                                            <input type="text" class="form-control @error('cpf') is-invalid @enderror" id="cpf" name="cpf" value="{{ old('cpf', $user->cpf ? preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', preg_replace('/\D+/', '', $user->cpf)) : '') }}" maxlength="14" {{ $canEditCpf ? '' : 'readonly' }}>
+                                            @if(! $canEditCpf)
+                                                <small class="text-muted d-block mt-2">O CPF só pode ser alterado por Administrador ou Gestor da Clínica.</small>
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -155,13 +167,18 @@
                                             <input type="text" class="form-control" value="{{ $roleLabel }}" readonly>
                                         </div>
                                     </div>
+                                    <div class="col-12">
+                                        <div class="account-access-card mt-2">
+                                            <label class="font-weight-bold d-block">Funções desta conta</label>
+                                            <ul>
+                                                @foreach($roleSummary as $summaryItem)
+                                                    <li>{{ $summaryItem }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                @if($user->normalizedRole() !== 'admin')
-                                    <div class="alert alert-light border mt-2 mb-0">
-                                        Senha: por segurança, a troca de senha não está disponível nesta área. Solicite a atualização a um administrador.
-                                    </div>
-                                @endif
                             </div>
                         </div>
 

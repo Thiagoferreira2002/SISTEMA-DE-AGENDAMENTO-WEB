@@ -16,6 +16,7 @@ use App\Models\Room;
 use App\Models\Unit;
 use App\Models\User;
 use App\Traits\RecordsActivity;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -157,6 +158,25 @@ class ClinicManagementController extends Controller
             }
         }
 
+        $conflictingAppointment = Agendamento::query()
+            ->where(function ($query) {
+                $query->whereNull('status')
+                    ->orWhereIn('status', ['pendente', 'confirmado']);
+            })
+            ->whereDate('data_agendamento', '>=', now()->toDateString())
+            ->orderBy('data_agendamento')
+            ->orderBy('horario')
+            ->get()
+            ->first(fn (Agendamento $agendamento) => ! $this->appointmentFitsClinicWindow($agendamento, $validated));
+
+        if ($conflictingAppointment) {
+            return redirect()->route('admin.settings.clinic-hours')
+                ->withErrors([
+                    'opening_time' => 'Nao e possivel alterar o horario da clinica porque existe um agendamento ativo em conflito: ' . $conflictingAppointment->nome . ' em ' . optional($conflictingAppointment->data_agendamento)->format('d/m/Y') . ' das ' . substr((string) $conflictingAppointment->horario, 0, 5) . ' as ' . $this->appointmentEndTimeLabel($conflictingAppointment) . '.',
+                ])
+                ->withInput();
+        }
+
         $clinicHours = ClinicHour::query()->firstOrCreate([], [
             'opening_time' => '07:00:00',
             'closing_time' => '19:00:00',
@@ -190,6 +210,32 @@ class ClinicManagementController extends Controller
         ]);
 
         return redirect()->route('admin.settings.clinic-hours')->with('success', 'Horário da clínica atualizado com sucesso.');
+    }
+
+    private function appointmentFitsClinicWindow(Agendamento $agendamento, array $validatedHours): bool
+    {
+        $startTime = substr((string) $agendamento->horario, 0, 5);
+        $endTime = $this->appointmentEndTimeLabel($agendamento);
+
+        if ($startTime < $validatedHours['opening_time'] || $endTime > $validatedHours['closing_time']) {
+            return false;
+        }
+
+        $lunchStart = $validatedHours['lunch_start_time'] ?? null;
+        $lunchEnd = $validatedHours['lunch_end_time'] ?? null;
+
+        if (! $lunchStart || ! $lunchEnd) {
+            return true;
+        }
+
+        return ! ($startTime < $lunchEnd && $endTime > $lunchStart);
+    }
+
+    private function appointmentEndTimeLabel(Agendamento $agendamento): string
+    {
+        return Carbon::createFromFormat('H:i', substr((string) $agendamento->horario, 0, 5))
+            ->addMinutes((int) ($agendamento->duracao_minutos ?: 30))
+            ->format('H:i');
     }
 
     private function clinicHoursWindow(): ?array
@@ -323,7 +369,9 @@ class ClinicManagementController extends Controller
         $appointments = $pendingBaseQuery
             ->orderBy('data_agendamento')
             ->orderBy('horario')
-            ->get();
+            ->get()
+            ->filter(fn (Agendamento $item) => ! $this->appointmentHasPassedEndTime($item))
+            ->values();
 
         $summary = [
             'pendentes' => $appointments->count(),
@@ -520,7 +568,19 @@ class ClinicManagementController extends Controller
             ? Professional::query()->where('ativo', true)->orderBy('nome')->get(['id', 'nome'])
             : collect();
 
-        return view('admin.modules.patients.history', compact('history', 'period', 'totalFinishedAppointments', 'search', 'professionalFilter', 'professionalOptions', 'authenticatedProfessional'));
+        return view('admin.modules.patients.history', [
+            'history' => $history,
+            'period' => $period,
+            'totalFinishedAppointments' => $totalFinishedAppointments,
+            'search' => $search,
+            'professionalFilter' => $professionalFilter,
+            'professionalOptions' => $professionalOptions,
+            'authenticatedProfessional' => $authenticatedProfessional,
+            'moduleTitle' => 'Agendamentos Finalizados',
+            'moduleCardTitle' => 'Lista de agendamentos finalizados',
+            'moduleRoute' => route('admin.agendamentos.completed'),
+            'moduleCounterLabel' => 'Agendamentos Finalizados',
+        ]);
     }
 
     public function patientDocuments(): View
@@ -533,12 +593,78 @@ class ClinicManagementController extends Controller
 
     public function doctorQueue(Request $request): View
     {
+        $queueQuery = $this->baseDoctorQueueQuery();
         $search = trim($request->string('q')->toString());
         $selectedDate = $request->filled('date') ? (string) $request->input('date') : '';
         $period = in_array($request->input('period'), ['dia', 'semana', 'mes'], true)
             ? $request->input('period')
             : 'dia';
 
+        $this->applyDoctorQueueFilters($queueQuery, $search, $selectedDate, $period);
+
+        $queue = $queueQuery
+            ->orderBy('data_agendamento')
+            ->orderBy('horario')
+            ->get()
+            ->values()
+            ->filter(fn (Agendamento $item) => ! $this->appointmentHasPassedEndTime($item))
+            ->map(function ($item) {
+                $item->profissional_fila = $item->professional?->nome ?: ($item->medico ?: 'Não informado');
+                $item->horario_final_exibicao = optional($this->appointmentEndDateTime($item))->format('H:i');
+
+                return $item;
+            })
+            ->values();
+
+        $totalPatientsInQueue = $queue->count();
+        $hasDelayedAppointments = $totalPatientsInQueue > 0;
+
+        $pageTitle = 'Fila de Espera';
+        $cardTitle = 'Pacientes na fila';
+        $emptyMessage = 'Nenhum paciente encontrado na fila para os filtros informados.';
+        $baseRoute = 'admin.doctor.queue';
+
+        return view('admin.modules.doctor.queue', compact('queue', 'period', 'search', 'selectedDate', 'totalPatientsInQueue', 'pageTitle', 'cardTitle', 'emptyMessage', 'baseRoute', 'hasDelayedAppointments'));
+    }
+
+    public function doctorPendingFinalization(Request $request): View
+    {
+        $queueQuery = $this->baseDoctorQueueQuery();
+        $search = trim($request->string('q')->toString());
+        $selectedDate = $request->filled('date') ? (string) $request->input('date') : '';
+        $period = in_array($request->input('period'), ['dia', 'semana', 'mes'], true)
+            ? $request->input('period')
+            : '';
+
+        $this->applyDoctorQueueFilters($queueQuery, $search, $selectedDate, $period);
+
+        $queue = $queueQuery
+            ->orderBy('data_agendamento')
+            ->orderBy('horario')
+            ->get()
+            ->values()
+            ->filter(fn (Agendamento $item) => $this->appointmentHasPassedEndTime($item))
+            ->map(function ($item) {
+                $item->profissional_fila = $item->professional?->nome ?: ($item->medico ?: 'Não informado');
+                $item->horario_final_exibicao = optional($this->appointmentEndDateTime($item))->format('H:i');
+
+                return $item;
+            })
+            ->values();
+
+        $totalPatientsInQueue = $queue->count();
+        $hasDelayedAppointments = $totalPatientsInQueue > 0;
+
+        $pageTitle = 'Atendimentos em Atraso';
+        $cardTitle = 'Agendamentos não finalizados';
+        $emptyMessage = 'Nenhum atendimento atrasado encontrado para os filtros informados.';
+        $baseRoute = 'admin.doctor.pending-finalization';
+
+        return view('admin.modules.doctor.queue', compact('queue', 'period', 'search', 'selectedDate', 'totalPatientsInQueue', 'pageTitle', 'cardTitle', 'emptyMessage', 'baseRoute', 'hasDelayedAppointments'));
+    }
+
+    private function baseDoctorQueueQuery()
+    {
         $queueQuery = Agendamento::with('professional')
             ->where(function ($query) {
                 $query->whereIn('status', ['pendente', 'confirmado'])
@@ -556,6 +682,11 @@ class ClinicManagementController extends Controller
             $queueQuery->whereRaw('1 = 0');
         }
 
+        return $queueQuery;
+    }
+
+    private function applyDoctorQueueFilters($queueQuery, string $search, string $selectedDate, string $period): void
+    {
         if ($search !== '') {
             $queueQuery->where('nome', 'like', '%' . $search . '%');
         }
@@ -573,21 +704,28 @@ class ClinicManagementController extends Controller
             $queueQuery->whereYear('data_agendamento', now()->year)
                 ->whereMonth('data_agendamento', now()->month);
         }
+    }
 
-        $queue = $queueQuery
-            ->orderBy('data_agendamento')
-            ->orderBy('horario')
-            ->get()
-            ->values()
-            ->map(function ($item) {
-                $item->profissional_fila = $item->professional?->nome ?: ($item->medico ?: 'Não informado');
+    private function appointmentEndDateTime(Agendamento $agendamento): ?Carbon
+    {
+        if (! $agendamento->data_agendamento || ! $agendamento->horario) {
+            return null;
+        }
 
-                return $item;
-            });
+        return $agendamento->data_agendamento->copy()
+            ->setTimeFromTimeString(substr((string) $agendamento->horario, 0, 5))
+            ->addMinutes((int) ($agendamento->duracao_minutos ?: 30));
+    }
 
-        $totalPatientsInQueue = $queue->count();
+    private function appointmentHasPassedEndTime(Agendamento $agendamento): bool
+    {
+        if (in_array((string) $agendamento->status, ['concluido', 'cancelado'], true)) {
+            return false;
+        }
 
-        return view('admin.modules.doctor.queue', compact('queue', 'period', 'search', 'selectedDate', 'totalPatientsInQueue'));
+        $endTime = $this->appointmentEndDateTime($agendamento);
+
+        return $endTime ? $endTime->lessThanOrEqualTo(now()) : false;
     }
 
     public function finishAppointment(Request $request, Agendamento $agendamento): RedirectResponse
@@ -607,11 +745,11 @@ class ClinicManagementController extends Controller
         }
 
         $agendamento->update(['status' => 'concluido']);
-        $this->recordActivity('updated', $agendamento, 'Atendimento finalizado e enviado para Serviços Finalizados.', ['status' => 'concluido']);
+        $this->recordActivity('updated', $agendamento, 'Atendimento finalizado e enviado para Agendamentos Finalizados.', ['status' => 'concluido']);
 
         return redirect()
             ->route('admin.doctor.queue', $request->only(['q', 'date', 'period']))
-            ->with('success', 'Atendimento finalizado com sucesso. O registro já está em Serviços Finalizados.');
+            ->with('success', 'Atendimento finalizado com sucesso. O registro já está em Agendamentos Finalizados.');
     }
 
     public function medicalRecords(): View
@@ -1409,6 +1547,7 @@ class ClinicManagementController extends Controller
 
         $activityLogs = collect();
         $subjectDisplayNames = collect();
+        $responsibleSearch = trim((string) $request->input('responsible'));
         $affectedUserCpfSearch = preg_replace('/\D/', '', (string) $request->input('affected_user_cpf'));
         $activityDateSearch = trim((string) $request->input('activity_date'));
         $actionTypeSearch = in_array($request->input('action_type'), ['created', 'updated', 'deleted'], true)
@@ -1420,6 +1559,13 @@ class ClinicManagementController extends Controller
 
             if ($actionTypeSearch !== '') {
                 $activityLogsQuery->where('action', $actionTypeSearch);
+            }
+
+            if ($responsibleSearch !== '') {
+                $activityLogsQuery->whereHas('user', function ($query) use ($responsibleSearch) {
+                    $query->whereRaw("TRIM(CONCAT(COALESCE(nome, ''), ' ', COALESCE(sobrenome, ''))) like ?", ['%' . $responsibleSearch . '%'])
+                        ->orWhere('email', 'like', '%' . $responsibleSearch . '%');
+                });
             }
 
             if ($activityDateSearch !== '') {
@@ -1511,7 +1657,7 @@ class ClinicManagementController extends Controller
             }
         }
 
-        return view('admin.modules.settings.activity-logs', compact('activityLogs', 'subjectDisplayNames', 'affectedUserCpfSearch', 'activityDateSearch', 'actionTypeSearch'));
+        return view('admin.modules.settings.activity-logs', compact('activityLogs', 'subjectDisplayNames', 'responsibleSearch', 'affectedUserCpfSearch', 'activityDateSearch', 'actionTypeSearch'));
     }
 
     public function storeUser(Request $request): RedirectResponse
@@ -1796,10 +1942,18 @@ class ClinicManagementController extends Controller
             if ($clinicHoursWindow) {
                 $openingTime = $clinicHoursWindow['opening_time'] ?? null;
                 $closingTime = $clinicHoursWindow['closing_time'] ?? null;
+                $lunchStartTime = $clinicHoursWindow['lunch_start_time'] ?? null;
+                $lunchEndTime = $clinicHoursWindow['lunch_end_time'] ?? null;
 
                 if (($openingTime && $start < $openingTime) || ($closingTime && $end > $closingTime)) {
                     throw \Illuminate\Validation\ValidationException::withMessages([
                         'schedule_day_of_week' => 'Os horários do vínculo de agenda devem respeitar o horário configurado para a clínica.',
+                    ]);
+                }
+
+                if ($lunchStartTime && $lunchEndTime && ! ($end <= $lunchStartTime || $start >= $lunchEndTime)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'schedule_day_of_week' => 'Os horários do vínculo de agenda não podem avançar sobre o intervalo da clínica.',
                     ]);
                 }
             }

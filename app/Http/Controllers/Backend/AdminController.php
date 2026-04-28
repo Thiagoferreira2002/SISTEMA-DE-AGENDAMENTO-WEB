@@ -6,6 +6,7 @@ use App\Models\Agendamento;
 use App\Models\Patient;
 use App\Models\Professional;
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Auth;
@@ -27,7 +28,7 @@ class AdminController extends Controller
            'pendentes' => route('admin.agendamentos.confirmations'),
            'confirmados' => route('admin.agendamentos.index'),
            'complementar' => route('admin.patients.index'),
-           'finalizados' => route('admin.patients.history'),
+           'finalizados' => route('admin.agendamentos.completed'),
        ];
 
        $appointmentsQuery = Agendamento::query();
@@ -38,13 +39,7 @@ class AdminController extends Controller
        $completedAppointmentsQuery = Agendamento::query()->where('status', 'concluido');
        $upcomingAppointmentsQuery = Agendamento::query()
            ->with('professional')
-           ->where(function ($query) {
-               $query->whereDate('data_agendamento', '>', now()->toDateString())
-                   ->orWhere(function ($todayQuery) {
-                       $todayQuery->whereDate('data_agendamento', now()->toDateString())
-                           ->where('horario', '>=', now()->format('H:i'));
-                   });
-           })
+           ->whereDate('data_agendamento', '>=', now()->toDateString())
            ->where(function ($query) {
                $query->whereNull('status')
                    ->orWhereIn('status', ['pendente', 'confirmado']);
@@ -59,13 +54,13 @@ class AdminController extends Controller
            $professional = $this->authenticatedProfessional();
 
            if ($professional) {
-               $appointmentsQuery->where('professional_id', $professional->id);
-               $activeAppointmentsQuery->where('professional_id', $professional->id);
-               $completedAppointmentsQuery->where('professional_id', $professional->id);
-               $upcomingAppointmentsQuery->where('professional_id', $professional->id);
+               $this->applyProfessionalAppointmentScope($appointmentsQuery, $professional, $user);
+               $this->applyProfessionalAppointmentScope($activeAppointmentsQuery, $professional, $user);
+               $this->applyProfessionalAppointmentScope($completedAppointmentsQuery, $professional, $user);
+               $this->applyProfessionalAppointmentScope($upcomingAppointmentsQuery, $professional, $user);
                $dashboardLinks['confirmados'] = route('admin.doctor.queue');
-               $dashboardLinks['complementar'] = route('admin.patients.history');
-               $dashboardLinks['finalizados'] = route('admin.patients.history');
+               $dashboardLinks['complementar'] = route('admin.agendamentos.completed');
+               $dashboardLinks['finalizados'] = route('admin.agendamentos.completed');
                $totalPacientes = null;
            } else {
                $appointmentsQuery->whereRaw('1 = 0');
@@ -74,6 +69,12 @@ class AdminController extends Controller
                $upcomingAppointmentsQuery->whereRaw('1 = 0');
                $totalPacientes = null;
            }
+       } elseif ($user && $user->normalizedRole() === 'recepcionista') {
+           $dashboardSubtitle = 'Acompanhe a agenda ativa, as confirmações pendentes e o fluxo operacional da recepção.';
+           $totalPacientes = Patient::count();
+       } elseif ($user && $user->isClinicManager()) {
+           $dashboardSubtitle = 'Acompanhe os indicadores operacionais da clínica, os atendimentos e os serviços finalizados.';
+           $totalPacientes = Patient::count();
        } else {
            $totalPacientes = Patient::count();
        }
@@ -87,8 +88,10 @@ class AdminController extends Controller
        $proximosAgendamentos = $upcomingAppointmentsQuery
            ->orderBy('data_agendamento')
            ->orderBy('horario')
-           ->limit(6)
-           ->get();
+           ->get()
+           ->filter(fn (Agendamento $agendamento) => ! $this->appointmentHasPassedEndTime($agendamento))
+           ->take(6)
+           ->values();
 
        return view('admin.dashboard', compact(
            'totalAgendamentos',
@@ -122,7 +125,17 @@ class AdminController extends Controller
            return redirect()->route('admin.login');
        }
 
-       session(['navbar_notifications_seen_at' => now()->toIso8601String()]);
+       $notificationId = $request->integer('notification_id');
+
+       if ($notificationId > 0) {
+           $notification = Agendamento::query()->find($notificationId);
+
+           if ($notification && $this->userCanReadNotification($user, $notification)) {
+               $this->markNotificationAsRead($notification, (int) $user->id);
+           }
+       } else {
+           $this->markVisibleNotificationsAsRead($user);
+       }
 
        $fallback = route('admin.agendamentos.confirmations');
 
@@ -139,11 +152,12 @@ class AdminController extends Controller
    public function updateAccount(Request $request)
    {
        $user = $request->user();
+       $canEditCpf = $user->canEditCpf();
 
        $validated = $request->validate([
            'nome' => ['required', 'string', 'max:255'],
            'sobrenome' => ['nullable', 'string', 'max:255'],
-           'cpf' => ['nullable', 'string', 'size:14', Rule::unique('users', 'cpf')->ignore($user->id)],
+           'cpf' => $canEditCpf ? ['nullable', 'string', 'size:14', Rule::unique('users', 'cpf')->ignore($user->id)] : ['nullable'],
            'fone' => ['nullable', 'string', 'max:20'],
            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
            'capa' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
@@ -154,7 +168,12 @@ class AdminController extends Controller
            'capa.max' => 'A foto do perfil deve ter no máximo 2 MB.',
        ]);
 
-       $validated['cpf'] = preg_replace('/\D+/', '', (string) ($validated['cpf'] ?? '')) ?: null;
+       if ($canEditCpf) {
+           $validated['cpf'] = preg_replace('/\D+/', '', (string) ($validated['cpf'] ?? '')) ?: null;
+       } else {
+           unset($validated['cpf']);
+       }
+
        $validated['fone'] = preg_replace('/\D+/', '', (string) ($validated['fone'] ?? '')) ?: null;
 
        if ($request->hasFile('capa')) {
@@ -172,8 +191,127 @@ class AdminController extends Controller
        }
 
        $user->update($validated);
+       $this->syncLinkedProfiles($user->fresh());
 
        return redirect()->route('admin.account.edit')->with('success', 'Seus dados foram atualizados com sucesso.');
+   }
+
+   private function markVisibleNotificationsAsRead($user): void
+   {
+       $query = Agendamento::query();
+
+       if ($user->normalizedRole() === 'profissional') {
+           $professional = $this->authenticatedProfessional();
+
+           if (! $professional) {
+               return;
+           }
+
+           $this->applyProfessionalAppointmentScope($query, $professional, $user);
+
+           $query->whereDate('data_agendamento', '>=', now()->toDateString())
+               ->whereNotIn('status', ['cancelado', 'concluido']);
+       }
+
+       $query->get()->each(function (Agendamento $notification) use ($user) {
+           $this->markNotificationAsRead($notification, (int) $user->id);
+       });
+   }
+
+   private function markNotificationAsRead(Agendamento $notification, int $userId): void
+   {
+       $readBy = collect($notification->notification_read_by ?? [])
+           ->map(fn ($value) => (int) $value)
+           ->push($userId)
+           ->unique()
+           ->values()
+           ->all();
+
+       $notification->forceFill([
+           'notification_read_by' => $readBy,
+       ])->save();
+   }
+
+   private function userCanReadNotification($user, Agendamento $notification): bool
+   {
+       if ($user->normalizedRole() !== 'profissional') {
+           return true;
+       }
+
+       $professional = $this->authenticatedProfessional();
+
+       return $professional && $this->appointmentMatchesProfessional($notification, $professional, $user);
+   }
+
+   private function applyProfessionalAppointmentScope($query, Professional $professional, $user): void
+   {
+       $nameCandidates = $this->professionalNameCandidates($professional, $user);
+
+       $query->where(function ($scopedQuery) use ($professional, $nameCandidates) {
+           $scopedQuery->where('professional_id', $professional->id);
+
+           foreach ($nameCandidates as $name) {
+               $scopedQuery->orWhereRaw('LOWER(TRIM(medico)) = ?', [mb_strtolower(trim($name))]);
+           }
+       });
+   }
+
+   private function appointmentEndDateTime(Agendamento $agendamento): ?Carbon
+   {
+       if (! $agendamento->data_agendamento || ! $agendamento->horario) {
+           return null;
+       }
+
+       return $agendamento->data_agendamento->copy()
+           ->setTimeFromTimeString(substr((string) $agendamento->horario, 0, 5))
+           ->addMinutes((int) ($agendamento->duracao_minutos ?: 30));
+   }
+
+   private function appointmentHasPassedEndTime(Agendamento $agendamento): bool
+   {
+       if (in_array((string) $agendamento->status, ['cancelado', 'concluido'], true)) {
+           return false;
+       }
+
+       $endTime = $this->appointmentEndDateTime($agendamento);
+
+       return $endTime ? $endTime->lessThanOrEqualTo(now()) : false;
+   }
+
+   private function appointmentMatchesProfessional(Agendamento $appointment, Professional $professional, $user): bool
+   {
+       if ((int) $appointment->professional_id === (int) $professional->id) {
+           return true;
+       }
+
+       $appointmentProfessionalName = mb_strtolower(trim((string) ($appointment->professional?->nome ?: $appointment->medico)));
+
+       if ($appointmentProfessionalName === '') {
+           return false;
+       }
+
+       foreach ($this->professionalNameCandidates($professional, $user) as $nameCandidate) {
+           if ($appointmentProfessionalName === mb_strtolower(trim($nameCandidate))) {
+               return true;
+           }
+       }
+
+       return false;
+   }
+
+   private function professionalNameCandidates(Professional $professional, $user): array
+   {
+       return collect([
+           $professional->nome,
+           $user?->full_name,
+           trim((string) (($user?->nome ?? '') . ' ' . ($user?->sobrenome ?? ''))),
+           $user?->nome,
+       ])
+           ->filter(fn ($value) => trim((string) $value) !== '')
+           ->map(fn ($value) => trim((string) $value))
+           ->unique()
+           ->values()
+           ->all();
    }
 
    private function resolveSafeRedirect(string $candidate, string $fallback): string
@@ -256,5 +394,21 @@ class AdminController extends Controller
            ->first(function (Professional $item) use ($fullName) {
                return mb_strtolower(trim((string) $item->nome)) === $fullName;
            });
+   }
+
+   private function syncLinkedProfiles($user): void
+   {
+       $professional = Professional::query()
+           ->where('user_id', $user->id)
+           ->first();
+
+       if (! $professional) {
+           return;
+       }
+
+       $professional->update([
+           'nome' => $user->full_name,
+           'cpf' => $user->cpf ?: $professional->cpf,
+       ]);
    }
 }

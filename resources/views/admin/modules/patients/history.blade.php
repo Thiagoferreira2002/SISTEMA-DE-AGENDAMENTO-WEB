@@ -2,7 +2,7 @@
 @section('content')
 <section class="section">
     <div class="section-header">
-        <h1>Serviços Finalizados</h1>
+        <h1>{{ $moduleTitle ?? 'Agendamentos Finalizados' }}</h1>
     </div>
 
     <div class="section-body">
@@ -11,7 +11,7 @@
                 <div class="card card-statistic-1 mb-0">
                     <div class="card-icon bg-primary"><i class="fas fa-check-circle"></i></div>
                     <div class="card-wrap">
-                        <div class="card-header"><h4>Serviços Finalizados</h4></div>
+                        <div class="card-header"><h4>{{ $moduleCounterLabel ?? 'Agendamentos Finalizados' }}</h4></div>
                         <div class="card-body">{{ $totalFinishedAppointments }}</div>
                     </div>
                 </div>
@@ -23,7 +23,7 @@
                 <h4>Filtros</h4>
             </div>
             <div class="card-body">
-                <form method="GET" action="{{ route('admin.patients.history') }}">
+                <form method="GET" action="{{ $moduleRoute ?? route('admin.agendamentos.completed') }}">
                     <div class="row align-items-end">
                         <div class="col-md-3">
                             <div class="form-group mb-md-0">
@@ -58,7 +58,7 @@
                         @endif
                         <div class="col-md-2 d-flex flex-wrap align-items-center" style="gap: 8px;">
                             <button type="submit" class="btn btn-primary">Filtrar</button>
-                            <a href="{{ route('admin.patients.history') }}" class="btn btn-light">Limpar</a>
+                            <a href="{{ $moduleRoute ?? route('admin.agendamentos.completed') }}" class="btn btn-light">Limpar</a>
                         </div>
                     </div>
                 </form>
@@ -67,7 +67,7 @@
 
         <div class="card">
             <div class="card-header">
-                <h4>Lista de serviços finalizados</h4>
+                <h4>{{ $moduleCardTitle ?? 'Lista de agendamentos finalizados' }}</h4>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -79,6 +79,7 @@
                                 <th>Profissional</th>
                                 <th>Serviço</th>
                                 <th>Status</th>
+                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -89,10 +90,23 @@
                                     <td>{{ $item->medico_historico }}</td>
                                     <td>{{ $item->servico }}</td>
                                     <td>{{ ucfirst($item->status) }}</td>
+                                    <td>
+                                        <div class="d-flex flex-wrap" style="gap: 8px;">
+                                            <a href="{{ route('admin.agendamentos.show', ['agendamento' => $item, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-info">Ver</a>
+                                            @if(auth()->user()?->canMutateOutsideCadastrosBase())
+                                                <a href="{{ route('admin.agendamentos.edit', ['agendamento' => $item, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-warning">Editar</a>
+                                                <form action="{{ route('admin.agendamentos.cancel', $item) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    <input type="hidden" name="return_to" value="{{ url()->full() }}">
+                                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Cancelar este agendamento?')">Cancelar</button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center">Nenhum histórico disponível.</td>
+                                    <td colspan="6" class="text-center">Nenhum histórico disponível.</td>
                                 </tr>
                             @endforelse
                         </tbody>

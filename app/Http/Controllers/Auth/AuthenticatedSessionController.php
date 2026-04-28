@@ -41,7 +41,9 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         // 3. Redireciona para o dashboard correto por tipo de usuário
-        $redirect = Auth::user()->nivel === 'admin'
+        $user = Auth::user();
+
+        $redirect = $user && $user->canAccessRouteName('admin.dashboard')
             ? route('admin.dashboard')
             : route('cliente.dashboard');
 

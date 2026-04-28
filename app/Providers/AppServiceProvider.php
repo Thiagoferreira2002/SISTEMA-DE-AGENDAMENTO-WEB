@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Agendamento;
 use App\Models\Professional;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Auth;
@@ -31,11 +32,13 @@ class AppServiceProvider extends ServiceProvider
             $user = Auth::user();
             $notifications = collect();
             $notificationTargetUrl = route('admin.agendamentos.calendar');
-            $seenAt = session('navbar_notifications_seen_at');
-            $seenAtCarbon = $seenAt ? Carbon::parse($seenAt) : null;
-
             if ($user) {
                 $notificationQuery = Agendamento::query()->with('professional');
+                $notificationQuery->whereDate('data_agendamento', '>=', now()->toDateString())
+                    ->where(function ($query) {
+                        $query->whereNull('status')
+                            ->orWhereIn('status', ['pendente', 'confirmado']);
+                    });
 
                 $viewerProfessional = null;
                 $isProfessionalUser = $user->normalizedRole() === 'profissional';
@@ -44,10 +47,7 @@ class AppServiceProvider extends ServiceProvider
                     $viewerProfessional = $this->resolveProfessionalFromUser($user);
 
                     if ($viewerProfessional) {
-                        $notificationQuery->where('professional_id', $viewerProfessional->id)
-                            ->whereDate('data_agendamento', '>=', now()->toDateString())
-                            ->whereNotIn('status', ['cancelado', 'concluido'])
-                            ->limit(6);
+                        $this->applyProfessionalScope($notificationQuery, $viewerProfessional, $user);
                     } else {
                         $notificationQuery->whereRaw('1 = 0');
                     }
@@ -60,10 +60,11 @@ class AppServiceProvider extends ServiceProvider
                 $notifications = $notificationQuery
                     ->orderByDesc('created_at')
                     ->orderByDesc('id')
+                    ->limit(6)
                     ->get()
-                    ->map(function ($notification) use ($seenAtCarbon, $viewerProfessional, $isProfessionalUser) {
-                        $referenceDate = $notification->updated_at ?? $notification->created_at;
-                        $notification->navbar_is_unread = ! $seenAtCarbon || ($referenceDate && $referenceDate->greaterThan($seenAtCarbon));
+                    ->map(function ($notification) use ($user, $viewerProfessional, $isProfessionalUser) {
+                        $readBy = collect($notification->notification_read_by ?? [])->map(fn ($value) => (int) $value)->all();
+                        $notification->navbar_is_unread = ! in_array((int) $user->id, $readBy, true);
                         $notification->navbar_target_url = $this->buildNotificationTargetUrl($notification, $viewerProfessional, $isProfessionalUser);
 
                         return $notification;
@@ -135,5 +136,28 @@ class AppServiceProvider extends ServiceProvider
         }
 
         return route('admin.agendamentos.calendar', array_filter($parameters, fn ($value) => $value !== null && $value !== ''));
+    }
+
+    private function applyProfessionalScope(Builder $query, Professional $professional, $user): void
+    {
+        $nameCandidates = collect([
+            $professional->nome,
+            $user?->full_name,
+            trim((string) (($user?->nome ?? '') . ' ' . ($user?->sobrenome ?? ''))),
+            $user?->nome,
+        ])
+            ->filter(fn ($value) => trim((string) $value) !== '')
+            ->map(fn ($value) => trim((string) $value))
+            ->unique()
+            ->values()
+            ->all();
+
+        $query->where(function ($scopedQuery) use ($professional, $nameCandidates) {
+            $scopedQuery->where('professional_id', $professional->id);
+
+            foreach ($nameCandidates as $name) {
+                $scopedQuery->orWhereRaw('LOWER(TRIM(medico)) = ?', [mb_strtolower($name)]);
+            }
+        });
     }
 }

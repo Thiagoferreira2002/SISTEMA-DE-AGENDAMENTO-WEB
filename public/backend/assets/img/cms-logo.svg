@@ -1,0 +1,21 @@
+<svg width="460" height="126" viewBox="0 0 460 126" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cmsBlue" x1="24" y1="12" x2="178" y2="108" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#57B9FF"/>
+      <stop offset="1" stop-color="#29C7BE"/>
+    </linearGradient>
+    <linearGradient id="cmsText" x1="192" y1="24" x2="388" y2="106" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D5CAB"/>
+      <stop offset="1" stop-color="#0A4D98"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <circle cx="74" cy="58" r="41" stroke="url(#cmsBlue)" stroke-width="10"/>
+    <path d="M60 31C60 27.6863 62.6863 25 66 25H82C85.3137 25 88 27.6863 88 31V44H101C104.314 44 107 46.6863 107 50V66C107 69.3137 104.314 72 101 72H88V85C88 88.3137 85.3137 91 82 91H66C62.6863 91 60 88.3137 60 85V72H47C43.6863 72 41 69.3137 41 66V50C41 46.6863 43.6863 44 47 44H60V31Z" fill="url(#cmsBlue)" fill-opacity="0.94"/>
+    <path d="M45 60.5L59 74L108 22" stroke="url(#cmsBlue)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <path d="M176 28.8C176 18.8 184 11.2 194.4 11.2H225.6C235 11.2 242.4 17.2 245.2 25.6L227.2 32.4C225.8 28.6 222.4 26 218.2 26H201.6C196.6 26 192.8 29.6 192.8 34.8V83.2C192.8 88.2 196.6 92 201.6 92H218.2C222.6 92 226 89.2 227.4 85.2L245.6 91.8C242.8 100.8 235.2 106.8 225.6 106.8H194.4C184 106.8 176 99.2 176 89.2V28.8Z" fill="url(#cmsText)"/>
+  <path d="M259 13H281.6L313.4 57.6L345.4 13H367.8V105H350V40.8L321.6 80.2H305L276.8 41V105H259V13Z" fill="url(#cmsText)"/>
+  <path d="M378.4 92.4L388.6 79.6C395.2 87.8 404.6 92.4 414.2 92.4C422.2 92.4 427.2 88.8 427.2 83.2C427.2 77.6 422.4 75.6 414.2 73.4L404.6 70.8C391 67.2 381.2 60.8 381.2 45.8C381.2 29.6 395.6 12 420 12C431.8 12 443.4 16.8 451.2 25.2L442 36.8C435.6 31 428.6 28 420 28C413.2 28 408.8 31.2 408.8 36.2C408.8 41.6 414.2 43.8 422.8 46L432.2 48.4C448.4 52.6 455 60 455 73.2C455 89.6 441 108.4 413.6 108.4C399.8 108.4 386.6 103 378.4 92.4Z" fill="url(#cmsText)"/>
+  <text x="191" y="118" fill="#0F5AA6" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">Consulta Mais Simples</text>
+</svg>

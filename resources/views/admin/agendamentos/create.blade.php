@@ -14,6 +14,31 @@
         border-radius: 12px;
     }
 
+    .appointment-planner-shell .planner-date {
+        border: 1px solid rgba(30, 144, 255, 0.18);
+        background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 100%);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+    }
+
+    .planner-field-feedback {
+        display: none;
+        margin-top: 8px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .planner-field-feedback.is-visible {
+        display: block;
+    }
+
+    .planner-field-feedback.is-danger {
+        color: #c0392b;
+    }
+
+    .planner-field-feedback.is-success {
+        color: #1f7a3d;
+    }
+
     .appointment-planner-shell .planner-select option:disabled {
         color: #6c757d;
         background: #eef1f4;
@@ -83,11 +108,6 @@
                         @endif
                         @if(!empty($setupWarning))
                             <div class="alert alert-warning">{{ $setupWarning }}</div>
-                        @endif
-                        @if(!empty($clinicHours))
-                            <div class="alert alert-light border">
-                                Horário da clínica: {{ $clinicHours['opening_time'] }} às {{ $clinicHours['closing_time'] }}.
-                            </div>
                         @endif
                         @if(! $isPatientForm && $errors->any())
                             <div class="alert alert-danger">
@@ -196,7 +216,8 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="data_agendamento">Data *</label>
-                                                <input type="date" class="form-control planner-date @error('data_agendamento') is-invalid @enderror" id="data_agendamento" name="data_agendamento" value="{{ old('data_agendamento') }}" required>
+                                                <input type="date" class="form-control planner-date @error('data_agendamento') is-invalid @enderror" id="data_agendamento" name="data_agendamento" value="{{ old('data_agendamento') }}" min="{{ now()->format('Y-m-d') }}" required>
+                                                <div id="date-validation-feedback" class="planner-field-feedback"></div>
                                                 <div id="professional-availability-feedback" class="small mt-2" style="display:none;"></div>
                                                 @error('data_agendamento')
                                                     <div class="text-danger">{{ $message }}</div>
@@ -210,6 +231,7 @@
                                                 <select class="form-control planner-select @error('horario') is-invalid @enderror" id="horario" name="horario" required>
                                                     <option value="">Selecione</option>
                                                 </select>
+                                                <div id="time-validation-feedback" class="planner-field-feedback"></div>
                                                 @error('horario')
                                                     <div class="text-danger">{{ $message }}</div>
                                                 @enderror
@@ -328,6 +350,8 @@
         var initialStartTime = '{{ old('horario') }}';
         var initialEndTime = '{{ old('horario_final') }}';
         var availabilityFeedback = document.getElementById('professional-availability-feedback');
+        var dateValidationFeedback = document.getElementById('date-validation-feedback');
+        var timeValidationFeedback = document.getElementById('time-validation-feedback');
         var appointmentDayOverview = document.getElementById('appointment-day-overview');
         var endTimeGuidance = document.getElementById('end-time-guidance');
         var appointmentForm = document.querySelector('form[action="{{ route('admin.agendamentos.store') }}"]');
@@ -428,6 +452,66 @@
         function currentTimeValue() {
             var now = new Date();
             return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+        }
+
+        function setFieldFeedback(element, message, type) {
+            if (!element) {
+                return;
+            }
+
+            if (!message) {
+                element.className = 'planner-field-feedback';
+                element.textContent = '';
+                return;
+            }
+
+            element.className = 'planner-field-feedback is-visible is-' + (type || 'danger');
+            element.textContent = message;
+        }
+
+        function validateAppointmentDateField() {
+            if (!appointmentDateInput || !appointmentDateInput.value) {
+                setFieldFeedback(dateValidationFeedback, '', 'danger');
+                if (appointmentDateInput) {
+                    appointmentDateInput.setCustomValidity('');
+                }
+                return true;
+            }
+
+            if (appointmentDateInput.value < currentDateValue()) {
+                var dateMessage = 'A data do agendamento não pode ser anterior a hoje.';
+                setFieldFeedback(dateValidationFeedback, dateMessage, 'danger');
+                appointmentDateInput.setCustomValidity(dateMessage);
+                return false;
+            }
+
+            setFieldFeedback(dateValidationFeedback, 'Data válida para agendamento.', 'success');
+            appointmentDateInput.setCustomValidity('');
+            return true;
+        }
+
+        function validateAppointmentTimeField() {
+            if (!startTimeInput || !appointmentDateInput || !appointmentDateInput.value || !startTimeInput.value) {
+                if (startTimeInput) {
+                    startTimeInput.setCustomValidity('');
+                }
+                setFieldFeedback(timeValidationFeedback, '', 'danger');
+                return true;
+            }
+
+            var selectedMinutes = minutesFromTime(startTimeInput.value);
+            var nowMinutes = minutesFromTime(currentTimeValue());
+
+            if (appointmentDateInput.value === currentDateValue() && selectedMinutes !== null && nowMinutes !== null && selectedMinutes < nowMinutes) {
+                var timeMessage = 'O horário inicial não pode ser anterior ao horário atual.';
+                startTimeInput.setCustomValidity(timeMessage);
+                setFieldFeedback(timeValidationFeedback, timeMessage, 'danger');
+                return false;
+            }
+
+            startTimeInput.setCustomValidity('');
+            setFieldFeedback(timeValidationFeedback, 'Horário inicial válido.', 'success');
+            return true;
         }
 
         function minutesFromTime(time) {
@@ -878,6 +962,7 @@
 
             initialStartTime = '';
             initialEndTime = '';
+            validateAppointmentTimeField();
             updateSubmitState();
         }
 
@@ -998,14 +1083,18 @@
             startTimeInput.addEventListener('change', function() {
                 updateTimeOptions();
                 updateEndTimeFromProcedure();
+                validateAppointmentTimeField();
             });
         }
 
         if (appointmentDateInput) {
             appointmentDateInput.addEventListener('change', function() {
+                validateAppointmentDateField();
                 updateProfessionalAvailabilityFeedback();
                 enforceStartTimeMinimum();
+                validateAppointmentTimeField();
             });
+            validateAppointmentDateField();
             enforceStartTimeMinimum();
         }
 
@@ -1023,6 +1112,7 @@
 
         updateEndTimeFromProcedure();
         updateProfessionalAvailabilityFeedback();
+        validateAppointmentTimeField();
         updateSubmitState();
 
         if (patientSearch) {
@@ -1134,6 +1224,17 @@
         }
 
         bindCepLookup('p_cep', 'p_endereco', 'p_bairro');
+
+        if (appointmentForm) {
+            appointmentForm.addEventListener('submit', function(event) {
+                var dateValid = validateAppointmentDateField();
+                var timeValid = validateAppointmentTimeField();
+
+                if (!dateValid || !timeValid) {
+                    event.preventDefault();
+                }
+            });
+        }
     });
 </script>
 @endsection

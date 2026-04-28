@@ -21,6 +21,48 @@
           flex: 1 1 auto;
         }
 
+        .main-navbar-cms .navbar-brand-cms {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 48px;
+          padding: 7px 14px;
+          border-radius: 16px;
+          background: linear-gradient(180deg, #0a2847 0%, #0f4f86 46%, #1973bb 100%);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          box-shadow: 0 10px 24px rgba(8, 37, 66, 0.18);
+          text-decoration: none !important;
+        }
+
+        .main-navbar-cms .navbar-brand-logo {
+          width: 132px;
+          max-width: 100%;
+          height: auto;
+          display: block;
+        }
+
+        .main-navbar-cms .navbar-sidebar-toggle {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          min-height: 48px;
+          padding: 10px 16px;
+          border-radius: 16px;
+          background: rgba(255, 255, 255, 0.12);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          color: #ffffff !important;
+          font-weight: 700;
+          text-decoration: none !important;
+          transition: background-color .2s ease, transform .2s ease;
+        }
+
+        .main-navbar-cms .navbar-sidebar-toggle:hover,
+        .main-navbar-cms .navbar-sidebar-toggle:focus {
+          background: rgba(255, 255, 255, 0.18);
+          transform: translateY(-1px);
+        }
+
         .main-navbar-cms .navbar-pill {
           display: inline-flex;
           align-items: center;
@@ -37,6 +79,25 @@
         .main-navbar-cms .navbar-pill:focus {
           background: rgba(255, 255, 255, 0.18);
           transform: translateY(-1px);
+        }
+
+        .main-navbar-cms .navbar-right {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .main-navbar-cms .navbar-action-item {
+          width: 228px;
+          display: flex;
+          align-items: stretch;
+        }
+
+        .main-navbar-cms .navbar-action-link {
+          width: 100%;
+          min-width: 228px;
+          height: 48px;
+          justify-content: center;
         }
 
         .main-navbar-cms .notification-badge {
@@ -59,6 +120,19 @@
             border-radius: 18px;
             overflow: hidden;
             box-shadow: 0 22px 46px rgba(17, 39, 65, 0.22);
+            opacity: 0;
+            transform: translateY(10px) scale(.98);
+            transform-origin: top right;
+            transition: opacity .22s ease, transform .22s ease;
+            display: block;
+            pointer-events: none;
+          }
+
+          .main-navbar-cms .dropdown-list.show,
+          .main-navbar-cms .profile-dropdown.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
           }
 
           .main-navbar-cms .dropdown-list .dropdown-header {
@@ -73,6 +147,12 @@
           .main-navbar-cms .dropdown-list .dropdown-header a {
             color: #176fbe;
             font-weight: 700;
+          }
+
+          .main-navbar-cms .dropdown-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
           }
 
           .main-navbar-cms .dropdown-list-content {
@@ -120,7 +200,7 @@
           }
 
           .main-navbar-cms .user-pill {
-            min-width: 250px;
+            min-width: 228px;
             justify-content: space-between;
           }
 
@@ -163,6 +243,16 @@
             border-radius: 18px;
             overflow: hidden;
             box-shadow: 0 22px 46px rgba(17, 39, 65, 0.22);
+            opacity: 0;
+            transform: translateY(10px) scale(.98);
+            transform-origin: top right;
+            transition: opacity .22s ease, transform .22s ease;
+            display: block;
+            pointer-events: none;
+          }
+
+          .main-navbar-cms .user-pill.dropdown-toggle::after {
+            display: none !important;
           }
 
           .main-navbar-cms .profile-dropdown-header {
@@ -213,27 +303,46 @@
 
     </style>
 
-    <nav class="navbar navbar-expand-lg main-navbar main-navbar-cms">
+    <nav class="navbar navbar-expand-lg main-navbar main-navbar-cms" style="position:sticky;top:0;z-index:1050;">
         <div class="navbar-left-actions mr-auto">
+          <button id="sidebarToggle" class="btn btn-light btn-sm mr-3 d-inline-flex d-lg-none align-items-center justify-content-center" style="border-radius:8px;min-width:40px;min-height:40px;box-shadow:0 2px 8px rgba(30,144,255,0.08);position:relative;top:0;left:0;z-index:1100;" onclick="document.body.classList.toggle('sidebar-mini')" title="Abrir/Fechar Menu">
+            <i class="fas fa-bars"></i>
+          </button>
+          <a href="{{ route('admin.dashboard') }}" class="navbar-brand-cms" aria-label="CMS Consulta Mais Simples">
+            <img src="{{ asset('backend/assets/img/cms-logo.svg') }}" alt="CMS Consulta Mais Simples" class="navbar-brand-logo">
+          </a>
+          <a href="#" data-toggle="sidebar" class="navbar-sidebar-toggle d-none d-lg-inline-flex" aria-label="Fechar lateral">
+            <i class="fas fa-columns"></i>
+            <span>Lateral</span>
+          </a>
           <a href="#" data-toggle="search" class="nav-link nav-link-lg d-sm-none"><i class="fas fa-search"></i></a>
         </div>
-        <ul class="navbar-nav navbar-right" >
+        <ul class="navbar-nav navbar-right align-items-center" style="gap:18px;">
           @php
               $notificationOpenUrl = route('admin.notifications.read', ['redirect_to' => $navbarNotificationTargetUrl ?? route('admin.agendamentos.index')]);
+              $notificationClearUrl = route('admin.notifications.read', ['redirect_to' => request()->fullUrl()]);
               $userDisplayName = trim((string) ((Auth::user()->nome ?? '') . ' ' . (Auth::user()->sobrenome ?? '')));
-              $userRoleLabel = Auth::user()->normalizedRole() === 'profissional' ? 'Profissional' : 'Administrador';
+                $userRoleLabel = Auth::user()->roleLabel();
               $userAvatar = Auth::user()->profile_photo_url;
           @endphp
-          <li class="dropdown dropdown-list-toggle"><a href="#" data-toggle="dropdown" class="nav-link notification-toggle nav-link-lg navbar-pill {{ ($navbarNotificationCount ?? 0) > 0 ? 'beep' : '' }}"><i class="far fa-bell"></i><span class="d-none d-lg-inline">Notificações</span>@if(($navbarNotificationCount ?? 0) > 0)<span class="notification-badge">{{ $navbarNotificationCount }}</span>@endif</a>
+          <li class="dropdown dropdown-list-toggle navbar-action-item">
+            <a href="#" data-toggle="dropdown" class="nav-link notification-toggle nav-link-lg navbar-pill navbar-action-link {{ ($navbarNotificationCount ?? 0) > 0 ? 'beep' : '' }}" style="display:flex;align-items:center;">
+              <i class="far fa-bell"></i>
+              <span class="d-none d-lg-inline">Notificações</span>
+              @if(($navbarNotificationCount ?? 0) > 0)
+                <span class="notification-badge">{{ $navbarNotificationCount }}</span>
+              @endif
+            </a>
             <div class="dropdown-menu dropdown-list dropdown-menu-right">
               <div class="dropdown-header">Notificações
-                <div class="float-right">
+                <div class="float-right dropdown-header-actions">
+                  <a href="{{ $notificationClearUrl }}">Limpar alertas</a>
                   <a href="{{ $notificationOpenUrl }}">Ver agenda</a>
                 </div>
               </div>
               <div class="dropdown-list-content dropdown-list-icons">
                 @forelse(($navbarNotifications ?? collect()) as $notification)
-                  <a href="{{ route('admin.notifications.read', ['redirect_to' => $notification->navbar_target_url ?? ($navbarNotificationTargetUrl ?? route('admin.agendamentos.calendar'))]) }}" class="dropdown-item {{ !empty($notification->navbar_is_unread) ? 'dropdown-item-unread' : '' }}">
+                  <a href="{{ route('admin.notifications.read', ['notification_id' => $notification->id, 'redirect_to' => $notification->navbar_target_url ?? ($navbarNotificationTargetUrl ?? route('admin.agendamentos.calendar'))]) }}" class="dropdown-item {{ !empty($notification->navbar_is_unread) ? 'dropdown-item-unread' : '' }}">
                     <div class="dropdown-item-icon bg-primary text-white">
                       <i class="far fa-calendar-check"></i>
                     </div>
@@ -258,19 +367,22 @@
                 @endforelse
               </div>
               <div class="dropdown-footer text-center">
+                <a href="{{ $notificationClearUrl }}" class="mr-3">Limpar alertas</a>
                 <a href="{{ $notificationOpenUrl }}">Veja tudo <i class="fas fa-chevron-right"></i></a>
               </div>
             </div>
           </li>
-          <li class="dropdown"><a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user navbar-pill user-pill">
-            <div class="user-pill-content">
-              <img src="{{ $userAvatar }}" class="user-avatar" alt="">
-              <div class="user-meta">
-                <span class="user-name">{{ $userDisplayName }}</span>
-                <span class="user-role">{{ $userRoleLabel }}</span>
+          <li class="dropdown navbar-action-item">
+            <a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user navbar-pill navbar-action-link user-pill" style="display:flex;align-items:center;">
+              <div class="user-pill-content">
+                <img src="{{ $userAvatar }}" class="user-avatar" alt="">
+                <div class="user-meta">
+                  <span class="user-name">{{ $userDisplayName }}</span>
+                  <span class="user-role">{{ $userRoleLabel }}</span>
+                </div>
               </div>
-            </div>
-            <i class="fas fa-chevron-down"></i></a>
+              <i class="fas fa-chevron-down"></i>
+            </a>
             <div class="dropdown-menu dropdown-menu-right profile-dropdown">
               <div class="profile-dropdown-header">
                 <span class="profile-name">{{ $userDisplayName }}</span>

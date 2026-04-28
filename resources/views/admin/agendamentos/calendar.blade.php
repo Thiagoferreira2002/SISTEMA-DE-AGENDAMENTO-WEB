@@ -17,6 +17,10 @@
                     <div class="card-header d-flex align-items-center justify-content-between">
                         <h4 class="mb-0"><i class="fas fa-calendar-alt mr-2"></i>Calendário</h4>
                         <div class="card-header-action d-flex align-items-center flex-wrap" style="gap: 10px;">
+                            <div>
+                                <label for="calendar-date-filter" class="sr-only">Filtrar data</label>
+                                <input type="date" id="calendar-date-filter" class="form-control form-control-sm" value="{{ $selectedCalendarDate ?? '' }}">
+                            </div>
                             @if(!($hideProfessionalFilter ?? false))
                                 <div>
                                     <label for="calendar-professional-filter" class="sr-only">Filtrar profissional</label>
@@ -55,9 +59,13 @@
 <script>
     var calendarEventsUrl = '{{ route('admin.agendamentos.calendar.events') }}';
     var fullCalendarScriptUrl = '{{ asset('backend/assets/modules/fullcalendar/fullcalendar.min.js') }}';
-    var calendarFocusDate = @json(request('focus_date'));
+    var clinicOpeningTime = @json(($clinicHours['opening_time'] ?? '07:00') . ':00');
+    var clinicClosingTime = @json(($clinicHours['closing_time'] ?? '19:00') . ':00');
+    var clinicClosingDisplayTime = @json(optional(\Carbon\Carbon::createFromFormat('H:i', $clinicHours['closing_time'] ?? '19:00')->addHour())->format('H:i:s'));
+    var calendarFocusDate = @json(request('focus_date') ?: ($selectedCalendarDate ?? null));
     var calendarOpenAppointmentId = @json(request('open_agendamento'));
     var calendarShouldShowDetails = @json((bool) request('show_details'));
+    var selectedCalendarDate = @json($selectedCalendarDate ?? '');
     var appointmentShowBaseUrl = '{{ url('admin/agendamentos') }}';
     var appointmentEditBaseUrl = '{{ url('admin/agendamentos') }}';
     var appointmentReturnUrl = @json(url()->full());
@@ -72,6 +80,7 @@
 
             var calendarEl = window.jQuery('#calendar');
             var professionalFilter = document.getElementById('calendar-professional-filter');
+            var dateFilter = document.getElementById('calendar-date-filter');
             var pendingAutoOpenId = calendarOpenAppointmentId ? String(calendarOpenAppointmentId) : '';
             var hasAutoOpenedAppointment = false;
             if (!calendarEl.length) return;
@@ -168,8 +177,12 @@
                 height: 'auto',
                 allDaySlot: false,
                 slotDuration: '00:30:00',
-                minTime: '06:00:00',
-                maxTime: '22:00:00',
+                minTime: clinicOpeningTime,
+                maxTime: clinicClosingDisplayTime || clinicClosingTime,
+                scrollTime: clinicOpeningTime,
+                slotEventOverlap: false,
+                eventOverlap: false,
+                selectOverlap: false,
                 timeFormat: 'H:mm',
                 slotLabelFormat: 'H:mm',
                 eventLimit: true,
@@ -185,6 +198,7 @@
                     data: function() {
                         return {
                             professional_id: professionalFilter ? professionalFilter.value : '',
+                            calendar_date: dateFilter ? dateFilter.value : '',
                             open_agendamento: pendingAutoOpenId || ''
                         };
                     },
@@ -198,6 +212,16 @@
                 eventRender: function(event, element) {
                     element.attr('data-agendamento-id', event.agendamento_id);
                     element.attr('title', (event.telefone || '') + ' • ' + (event.motivo || ''));
+
+                    if (event.is_finalized) {
+                        element.addClass('calendar-event-finalized');
+
+                        var titleElement = element.find('.fc-title');
+
+                        if (titleElement.length) {
+                            titleElement.append(' • Finalizado');
+                        }
+                    }
 
                     if (pendingAutoOpenId && String(event.agendamento_id) === pendingAutoOpenId) {
                         element.addClass('calendar-event-highlight');
@@ -227,6 +251,16 @@
                     calendarEl.fullCalendar('refetchEvents');
                 });
             }
+
+            if (dateFilter) {
+                dateFilter.addEventListener('change', function() {
+                    if (dateFilter.value) {
+                        calendarEl.fullCalendar('gotoDate', dateFilter.value);
+                    }
+
+                    calendarEl.fullCalendar('refetchEvents');
+                });
+            }
         }
 
         if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.fullCalendar === 'function') {
@@ -246,7 +280,7 @@
 
 <style>
     .fc { font-family: inherit; }
-    .card-header-action .form-control-sm { min-width: 230px; }
+    .card-header-action .form-control-sm { min-width: 190px; }
     .fc .fc-button-primary { background-color: #007bff; border-color: #007bff; }
     .fc .fc-button-primary:hover { background-color: #0056b3; border-color: #0056b3; }
     .fc .fc-button-primary.fc-button-active { background-color: #0056b3; border-color: #0056b3; }
@@ -259,6 +293,45 @@
         box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.75), 0 0 18px rgba(255, 193, 7, 0.45);
         transform: scale(1.02);
         z-index: 5;
+    }
+    .fc .calendar-event-finalized {
+        opacity: .78;
+        border-style: dashed !important;
+    }
+    .fc .calendar-event-finalized .fc-time,
+    .fc .calendar-event-finalized .fc-title {
+        text-decoration: line-through;
+    }
+    .fc-agendaDay-view .fc-time-grid-event .fc-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 4px 8px;
+    }
+    .fc-agendaDay-view .fc-time-grid-event .fc-time {
+        min-width: 54px;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .fc-agendaDay-view .fc-time-grid-event .fc-title {
+        font-size: 15px;
+        line-height: 1.25;
+        white-space: normal;
+    }
+    .fc-agendaDay-view .fc-axis {
+        font-size: 14px;
+        font-weight: 700;
+    }
+    .fc-time-grid-event {
+        margin-right: 4px;
+        min-height: 38px;
+    }
+    .fc-time-grid-event .fc-content {
+        padding: 3px 6px;
+    }
+    .fc-time-grid .fc-event-container {
+        margin-right: 2px;
     }
 </style>
 @endsection

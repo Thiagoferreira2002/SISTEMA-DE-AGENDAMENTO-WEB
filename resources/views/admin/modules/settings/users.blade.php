@@ -5,6 +5,27 @@
         z-index: 10060;
     }
 
+    .users-page-alert {
+        margin-top: 72px;
+    }
+
+    .users-actions {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    .users-actions form {
+        margin: 0;
+    }
+
+    .users-actions .btn,
+    .users-actions .text-muted {
+        white-space: nowrap;
+    }
+
     .user-edit-modal + .modal-backdrop,
     .modal-backdrop.show {
         z-index: 10050;
@@ -63,6 +84,7 @@
             'pacientes' => 'Pacientes',
             'painel_doutor' => 'Painel do Profissional',
             'cadastros_base' => 'Cadastros Base',
+            'minha_conta' => 'Minha Conta',
         ];
 
         $renderPermissionBadges = function ($permissions) use ($permissionLabels) {
@@ -105,7 +127,7 @@
 
     <div class="section-body">
         @if($errors->any())
-            <div class="alert alert-danger">
+            <div class="alert alert-danger users-page-alert">
                 <strong>Não foi possível salvar o usuário.</strong>
                 <ul class="mb-0 mt-2 pl-3">
                     @foreach($errors->all() as $error)
@@ -115,16 +137,16 @@
             </div>
         @endif
         @if(session('error'))
-            <div class="alert alert-danger">{{ session('error') }}</div>
+            <div class="alert alert-danger users-page-alert">{{ session('error') }}</div>
         @endif
         @if(session('warning'))
-            <div class="alert alert-warning">{{ session('warning') }}</div>
+            <div class="alert alert-warning users-page-alert">{{ session('warning') }}</div>
         @endif
         @if(session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
+            <div class="alert alert-success users-page-alert">{{ session('success') }}</div>
         @endif
         @if(!empty($setupWarning))
-            <div class="alert alert-warning">{{ $setupWarning }}</div>
+            <div class="alert alert-warning users-page-alert">{{ $setupWarning }}</div>
         @endif
 
         <div class="card mb-4">
@@ -137,7 +159,7 @@
                         <div class="col-md-3"><div class="form-group"><label>Sobrenome</label><input type="text" class="form-control @error('sobrenome') is-invalid @enderror" name="sobrenome" value="{{ old('sobrenome') }}">@error('sobrenome')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div></div>
                         <div class="col-md-3"><div class="form-group"><label>CPF</label><input type="text" class="form-control cpf-mask @error('cpf') is-invalid @enderror" id="new-user-cpf" name="cpf" value="{{ old('cpf') }}" placeholder="000.000.000-00" maxlength="14" inputmode="numeric">@error('cpf')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div></div>
                         <div class="col-md-3"><div class="form-group"><label>Telefone</label><input type="text" class="form-control phone-mask @error('fone') is-invalid @enderror" id="new-user-phone" name="fone" value="{{ old('fone') }}" placeholder="(11) 99999-9999" maxlength="15" inputmode="numeric">@error('fone')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div></div>
-                        <div class="col-md-3"><div class="form-group"><label>Status *</label><select class="form-control @error('status') is-invalid @enderror" name="status" required><option value="ativo" {{ old('status', 'ativo') === 'ativo' ? 'selected' : '' }}>Ativo</option><option value="cancelado" {{ old('status') === 'cancelado' ? 'selected' : '' }}>Cancelado</option></select>@error('status')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Status *</label><select class="form-control @error('status') is-invalid @enderror" name="status" required><option value="ativo" {{ old('status', 'ativo') === 'ativo' ? 'selected' : '' }}>Ativo</option><option value="cancelado" {{ old('status') === 'cancelado' ? 'selected' : '' }}>Inativar</option></select>@error('status')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div></div>
                         <div class="col-md-3"><div class="form-group"><label>E-mail *</label><input type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required>@error('email')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div></div>
                         <div class="col-md-3">
                             <div class="form-group">
@@ -244,7 +266,7 @@
                                     </td>
                                     <td>
                                         @if($user->isPrimaryAdmin())
-                                            <div class="d-flex flex-wrap align-items-center" style="gap: 6px;">
+                                            <div class="users-actions">
                                                 <button type="button" class="btn btn-sm btn-secondary" data-toggle="modal" data-target="#view-user-modal-{{ $user->id }}">Ver</button>
                                                 @if($authenticatedUser?->isPrimaryAdmin())
                                                     <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#edit-user-modal-{{ $user->id }}">Editar</button>
@@ -253,7 +275,7 @@
                                                 @endif
                                             </div>
                                         @else
-                                            <div class="d-flex flex-wrap" style="gap: 6px;">
+                                            <div class="users-actions">
                                                 <button type="button" class="btn btn-sm btn-secondary" data-toggle="modal" data-target="#view-user-modal-{{ $user->id }}">Ver</button>
                                                 @if(! $isAuthenticatedClinicManagerOwnAccount)
                                                     <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#edit-user-modal-{{ $user->id }}">Editar</button>
@@ -408,7 +430,7 @@
                                         <div class="col-md-6"><div class="form-group"><label>CPF</label><input type="text" class="form-control user-edit-cpf-mask" name="cpf" value="{{ old('cpf', $formatCpf($user->cpf)) }}" placeholder="000.000.000-00" maxlength="14" inputmode="numeric"></div></div>
                                         <div class="col-md-6"><div class="form-group"><label>Telefone</label><input type="text" class="form-control user-edit-phone-mask" name="fone" value="{{ old('fone', $user->fone) }}" placeholder="(11) 99999-9999" maxlength="15" inputmode="numeric"></div></div>
                                         <div class="col-md-6"><div class="form-group"><label>E-mail *</label><input type="email" class="form-control" name="email" value="{{ old('email', $user->email) }}" required></div></div>
-                                        <div class="col-md-4"><div class="form-group"><label>Status *</label><select class="form-control" name="status" required {{ $user->isPrimaryAdmin() ? 'disabled' : '' }}><option value="ativo" {{ old('status', $user->status) === 'ativo' ? 'selected' : '' }}>Ativo</option><option value="cancelado" {{ old('status', $user->status) === 'cancelado' ? 'selected' : '' }}>Cancelado</option></select>@if($user->isPrimaryAdmin())<input type="hidden" name="status" value="{{ old('status', $user->status) }}">@endif</div></div>
+                                        <div class="col-md-4"><div class="form-group"><label>Status *</label><select class="form-control" name="status" required {{ $user->isPrimaryAdmin() ? 'disabled' : '' }}><option value="ativo" {{ old('status', $user->status) === 'ativo' ? 'selected' : '' }}>Ativo</option><option value="cancelado" {{ old('status', $user->status) === 'cancelado' ? 'selected' : '' }}>Inativar</option></select>@if($user->isPrimaryAdmin())<input type="hidden" name="status" value="{{ old('status', $user->status) }}">@endif</div></div>
                                         <div class="col-md-4"><div class="form-group"><label>Papel *</label><select class="form-control" name="role" required {{ $user->isPrimaryAdmin() ? 'disabled' : '' }}>@if($user->isPrimaryAdmin())<option value="admin" selected>Administrador</option>@else @foreach($roles as $role)<option value="{{ $role }}" {{ ($role === 'profissional' ? in_array(old('role', $user->role ?? $user->nivel), ['profissional', 'medico'], true) : old('role', $user->role ?? $user->nivel) === $role) ? 'selected' : '' }}>{{ $roleLabels[$role] ?? ucfirst($role) }}</option>@endforeach @endif</select>@if($user->isPrimaryAdmin())<input type="hidden" name="role" value="admin">@endif</div></div>
                                         <div class="col-md-4"><div class="form-group"><label>Nova senha</label><input type="password" class="form-control" name="password" placeholder="Preencha apenas se quiser alterar"></div></div>
                                         <div class="col-md-4"><div class="form-group"><label>Confirmar nova senha</label><input type="password" class="form-control" name="password_confirmation"></div></div>

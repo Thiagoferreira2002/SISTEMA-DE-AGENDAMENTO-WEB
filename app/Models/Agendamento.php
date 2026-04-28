@@ -39,6 +39,7 @@ class Agendamento extends Model
     protected $casts = [
         'data_agendamento' => 'datetime',
         'data_limite_espera' => 'date',
+        'notification_read_by' => 'array',
     ];
 
     public function patient()

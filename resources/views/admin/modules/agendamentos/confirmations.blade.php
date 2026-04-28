@@ -3,7 +3,47 @@
 <section class="section">
     @php
         $isClinicManager = auth()->user()?->isClinicManager();
+        $messageTemplates = [
+            'confirmacao_padrao' => 'Olá {nome}, estamos confirmando seu atendimento de {servico} no dia {data} às {horario}. Pode nos responder confirmando sua presença?',
+            'lembrete_comparecimento' => 'Olá {nome}, este é um lembrete do seu atendimento de {servico} marcado para {data} às {horario}. Se precisar de suporte, fale conosco por aqui.',
+            'confirmacao_objetiva' => 'Olá {nome}, tudo bem? Seu horário de {servico} está reservado para {data} às {horario}. Por favor, confirme o recebimento desta mensagem.',
+        ];
     @endphp
+    <style>
+        .confirmation-contact-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            min-width: 280px;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        .confirmation-contact-block {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: #f7fbff;
+            border: 1px solid #dbe9f7;
+            text-align: left;
+        }
+
+        .confirmation-contact-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            color: #5b7895;
+        }
+
+        .confirmation-contact-stack .btn {
+            align-self: center;
+            min-width: 170px;
+        }
+    </style>
     <div class="section-header">
         <h1>Confirmações</h1>
     </div>
@@ -63,7 +103,8 @@
                                 <th class="text-center">Paciente</th>
                                 <th class="text-center">Data</th>
                                 <th class="text-center">Serviço</th>
-                                <th class="text-center">Canal sugerido</th>
+                                <th class="text-center">Tipo de confirmação</th>
+                                <th class="text-center">Contato com o paciente</th>
                                 @if(! $isClinicManager)
                                     <th class="text-center">Ações</th>
                                 @endif
@@ -76,7 +117,18 @@
                                     <td class="text-center align-middle">{{ $appointment->data_agendamento->format('d/m/Y') }} às {{ $appointment->horario }}</td>
                                     <td class="text-center align-middle">{{ $appointment->servico }}</td>
                                     <td class="text-center align-middle">
-                                        <a href="https://wa.me/{{ preg_replace('/\D+/', '', $appointment->telefone) }}?text={{ urlencode('Olá ' . $appointment->nome . ', confirmamos sua consulta amanhã às ' . $appointment->horario . '?') }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success d-inline-flex align-items-center justify-content-center" style="min-width: 110px;">WhatsApp</a>
+                                        <div class="confirmation-contact-block mx-auto" style="max-width: 320px;">
+                                            <select class="form-control form-control-sm js-message-template" data-target="message-link-{{ $appointment->id }}" data-name="{{ $appointment->nome }}" data-service="{{ $appointment->servico }}" data-date="{{ $appointment->data_agendamento->format('d/m/Y') }}" data-time="{{ $appointment->horario }}" data-phone="{{ preg_replace('/\D+/', '', $appointment->telefone) }}">
+                                                @foreach($messageTemplates as $templateKey => $templateText)
+                                                    <option value="{{ $templateText }}">{{ str($templateKey)->replace('_', ' ')->title() }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </td>
+                                    <td class="text-center align-middle">
+                                        <div class="confirmation-contact-block text-center mx-auto" style="max-width: 220px;">
+                                            <a id="message-link-{{ $appointment->id }}" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success d-inline-flex align-items-center justify-content-center js-whatsapp-message">Enviar por WhatsApp</a>
+                                        </div>
                                     </td>
                                     @if(! $isClinicManager)
                                         <td class="text-center align-middle">
@@ -95,7 +147,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ $isClinicManager ? 4 : 5 }}" class="text-center">Nenhum agendamento disponível para confirmação.</td>
+                                    <td colspan="{{ $isClinicManager ? 5 : 6 }}" class="text-center">Nenhum agendamento disponível para confirmação.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -105,4 +157,44 @@
         </div>
     </div>
 </section>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var templateFields = document.querySelectorAll('.js-message-template');
+
+        function buildMessage(template, data) {
+            return template
+                .replaceAll('{nome}', data.name)
+                .replaceAll('{servico}', data.service)
+                .replaceAll('{data}', data.date)
+                .replaceAll('{horario}', data.time);
+        }
+
+        function refreshMessageLink(field) {
+            var linkId = field.getAttribute('data-target');
+            var link = document.getElementById(linkId);
+
+            if (!link) {
+                return;
+            }
+
+            var phone = field.getAttribute('data-phone') || '';
+            var template = field.value || '';
+            var message = buildMessage(template, {
+                name: field.getAttribute('data-name') || '',
+                service: field.getAttribute('data-service') || '',
+                date: field.getAttribute('data-date') || '',
+                time: field.getAttribute('data-time') || ''
+            });
+
+            link.href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(message);
+        }
+
+        templateFields.forEach(function (field) {
+            refreshMessageLink(field);
+            field.addEventListener('change', function () {
+                refreshMessageLink(field);
+            });
+        });
+    });
+</script>
 @endsection

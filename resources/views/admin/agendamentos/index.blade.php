@@ -1,6 +1,102 @@
 @extends('admin.layouts.master')
 @section('content')
 <section class="section">
+    @php
+        $selectedProfessionals = collect((array) request()->input('medicos', []))
+            ->filter(fn ($value) => trim((string) $value) !== '')
+            ->values();
+        $shouldGroupAppointments = $selectedProfessionals->count() > 1;
+        $groupedAgendamentos = $shouldGroupAppointments
+            ? $agendamentos->groupBy(fn ($agendamento) => $agendamento->medico_exibicao ?: 'Profissional não informado')
+            : collect(['Lista de Agendamentos' => $agendamentos]);
+    @endphp
+    <style>
+        .agenda-group-card {
+            border: 1px solid #dce9f7;
+            border-radius: 18px;
+            box-shadow: 0 12px 28px rgba(15, 61, 107, 0.08);
+            overflow: hidden;
+        }
+
+        .agenda-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 18px 22px;
+            background: linear-gradient(135deg, #f4f9ff 0%, #e9f3ff 100%);
+            border-bottom: 1px solid #d9e8f7;
+        }
+
+        .agenda-group-title {
+            margin: 0;
+            color: #0f3d6b;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .agenda-group-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 42px;
+            height: 42px;
+            padding: 0 14px;
+            border-radius: 999px;
+            background: #0f5aa6;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .agenda-enhanced-table thead th {
+            background: #f7fbff;
+            color: #41617d;
+            border-top: 0;
+            font-size: 12px;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .agenda-enhanced-table {
+            min-width: 1180px;
+        }
+
+        .agenda-enhanced-table td {
+            white-space: nowrap;
+        }
+
+        .agenda-enhanced-table td:nth-child(1),
+        .agenda-enhanced-table td:nth-child(3),
+        .agenda-enhanced-table td:nth-child(4) {
+            white-space: normal;
+            min-width: 170px;
+        }
+
+        .agenda-enhanced-table tbody tr:hover {
+            background: rgba(15, 90, 166, 0.05);
+        }
+
+        .agenda-status-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 110px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 12px;
+            color: #fff;
+        }
+
+        @media (max-width: 991.98px) {
+            .agenda-group-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
     <div class="section-header">
         <h1>Agenda Geral</h1>
         <div class="section-header-breadcrumb">
@@ -40,13 +136,30 @@
                                         @if(empty($hideProfessionalFilter))
                                             <div class="col-lg-4 col-md-6 col-12">
                                                 <div class="form-group">
-                                                    <label for="medico">Médico</label>
+                                                    <label for="medico">Profissional</label>
                                                     <select class="form-control" id="medico" name="medico">
                                                         <option value="">Todos</option>
                                                         @foreach($professionals as $professional)
                                                             <option value="{{ $professional['nome'] }}" {{ request('medico') === $professional['nome'] ? 'selected' : '' }}>{{ $professional['nome'] }}</option>
                                                         @endforeach
                                                     </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-12 col-12 mt-2">
+                                                <label class="d-block">Visualizar até 3 Profissionais</label>
+                                                <div class="row">
+                                                    @for($doctorIndex = 0; $doctorIndex < 3; $doctorIndex++)
+                                                        <div class="col-lg-4 col-md-6 col-12">
+                                                            <div class="form-group">
+                                                                <select class="form-control" name="medicos[]">
+                                                                    <option value="">Selecione o Profissional {{ $doctorIndex + 1 }}</option>
+                                                                    @foreach($professionals as $professional)
+                                                                        <option value="{{ $professional['nome'] }}" {{ (request('medicos.' . $doctorIndex) === $professional['nome']) ? 'selected' : '' }}>{{ $professional['nome'] }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    @endfor
                                                 </div>
                                             </div>
                                         @endif
@@ -83,58 +196,74 @@
                             <div class="alert alert-success">{{ session('success') }}</div>
                         @endif
 
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th class="text-center">Nome</th>
-                                        <th class="text-center">CPF</th>
-                                        <th class="text-center">Médico</th>
-                                        <th class="text-center">Serviço</th>
-                                        <th class="text-center">Data</th>
-                                        <th class="text-center">Horário</th>
-                                        <th class="text-center">Horário Final</th>
-                                        <th class="text-center">Status</th>
-                                        <th class="text-center">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($agendamentos as $agendamento)
-                                    @php
-                                        $endTime = $agendamento->data_agendamento->copy()
-                                            ->setTimeFromTimeString(substr((string) $agendamento->horario, 0, 5))
-                                            ->addMinutes((int) ($agendamento->duracao_exibicao ?? $agendamento->duracao_minutos ?? 30))
-                                            ->format('H:i');
-                                    @endphp
-                                    <tr>
-                                        <td class="text-center align-middle">{{ $agendamento->nome }}</td>
-                                        <td class="text-center align-middle">{{ $agendamento->cpf_exibicao ?: '-' }}</td>
-                                        <td class="text-center align-middle">{{ $agendamento->medico_exibicao }}</td>
-                                        <td class="text-center align-middle">{{ $agendamento->servico }}</td>
-                                        <td class="text-center align-middle">{{ $agendamento->data_agendamento->format('d/m/Y') }}</td>
-                                        <td class="text-center align-middle">{{ $agendamento->horario }}</td>
-                                        <td class="text-center align-middle">{{ $endTime }}</td>
-                                        <td class="text-center align-middle">
-                                            <span class="badge text-white" style="background-color: {{ $agendamento->status_visual['color'] }};">{{ $agendamento->status_visual['label'] }}</span>
-                                        </td>
-                                        <td class="text-center align-middle">
-                                            <a href="{{ route('admin.agendamentos.show', ['agendamento' => $agendamento, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-info">Ver</a>
-                                            <a href="{{ route('admin.agendamentos.edit', ['agendamento' => $agendamento, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-warning">Editar</a>
-                                            <form action="{{ route('admin.agendamentos.cancel', $agendamento) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                <input type="hidden" name="return_to" value="{{ url()->full() }}">
-                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Cancelar este agendamento?')">Cancelar</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="9" class="text-center">Nenhum agendamento encontrado</td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
+                        @forelse($groupedAgendamentos as $groupTitle => $appointmentsGroup)
+                            <div class="agenda-group-card {{ $loop->first ? '' : 'mt-4' }}">
+                                @if($shouldGroupAppointments)
+                                    <div class="agenda-group-header">
+                                        <h5 class="agenda-group-title">{{ $groupTitle }}</h5>
+                                        <span class="agenda-group-count">{{ $appointmentsGroup->count() }}</span>
+                                    </div>
+                                @endif
+                                <div class="table-responsive">
+                                    <table class="table table-striped agenda-enhanced-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">Nome</th>
+                                                <th class="text-center">CPF</th>
+                                                <th class="text-center">Profissional</th>
+                                                <th class="text-center">Serviço</th>
+                                                <th class="text-center">Data</th>
+                                                <th class="text-center">Horário</th>
+                                                <th class="text-center">Horário Final</th>
+                                                <th class="text-center">Status</th>
+                                                <th class="text-center">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($appointmentsGroup as $agendamento)
+                                                @php
+                                                    $endTime = $agendamento->data_agendamento->copy()
+                                                        ->setTimeFromTimeString(substr((string) $agendamento->horario, 0, 5))
+                                                        ->addMinutes((int) ($agendamento->duracao_exibicao ?? $agendamento->duracao_minutos ?? 30))
+                                                        ->format('H:i');
+                                                @endphp
+                                                <tr>
+                                                    <td class="text-center align-middle">{{ $agendamento->nome }}</td>
+                                                    <td class="text-center align-middle">{{ $agendamento->cpf_exibicao ?: '-' }}</td>
+                                                    <td class="text-center align-middle">{{ $agendamento->medico_exibicao }}</td>
+                                                    <td class="text-center align-middle">{{ $agendamento->servico }}</td>
+                                                    <td class="text-center align-middle">{{ $agendamento->data_agendamento->format('d/m/Y') }}</td>
+                                                    <td class="text-center align-middle">{{ $agendamento->horario }}</td>
+                                                    <td class="text-center align-middle">{{ $endTime }}</td>
+                                                    <td class="text-center align-middle">
+                                                        <span class="agenda-status-badge" style="background-color: {{ $agendamento->status_visual['color'] }};">{{ $agendamento->status_visual['label'] }}</span>
+                                                    </td>
+                                                    <td class="text-center align-middle">
+                                                        <a href="{{ route('admin.agendamentos.show', ['agendamento' => $agendamento, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-info">Ver</a>
+                                                        <a href="{{ route('admin.agendamentos.edit', ['agendamento' => $agendamento, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-warning">Editar</a>
+                                                        <form action="{{ route('admin.agendamentos.cancel', $agendamento) }}" method="POST" class="d-inline">
+                                                            @csrf
+                                                            <input type="hidden" name="return_to" value="{{ url()->full() }}">
+                                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Cancelar este agendamento?')">Cancelar</button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="table-responsive">
+                                <table class="table table-striped agenda-enhanced-table mb-0">
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="9" class="text-center">Nenhum agendamento encontrado</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endforelse
                     </div>
                 </div>
             </div>

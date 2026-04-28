@@ -70,11 +70,17 @@ Route::post('admin/agendamentos/{agendamento}/cancelar', [ClinicManagementContro
 Route::get('admin/patients/historico', [ClinicManagementController::class, 'patientHistory'])
 ->name('admin.patients.history');
 
+Route::get('admin/agendamentos/finalizados', [ClinicManagementController::class, 'patientHistory'])
+->name('admin.agendamentos.completed');
+
 Route::get('admin/patients/documentos', [ClinicManagementController::class, 'patientDocuments'])
 ->name('admin.patients.documents');
 
 Route::get('admin/doctor/fila-espera', [ClinicManagementController::class, 'doctorQueue'])
 ->name('admin.doctor.queue');
+
+Route::get('admin/doctor/atendimentos-em-atraso', [ClinicManagementController::class, 'doctorPendingFinalization'])
+->name('admin.doctor.pending-finalization');
 
 Route::post('admin/doctor/fila-espera/{agendamento}/finalizar', [ClinicManagementController::class, 'finishAppointment'])
 ->name('admin.doctor.queue.finish');

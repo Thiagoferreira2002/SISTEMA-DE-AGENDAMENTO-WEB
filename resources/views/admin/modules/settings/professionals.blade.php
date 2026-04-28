@@ -187,7 +187,7 @@
                             </div>
                         @endfor
                         </div>
-                        <small class="text-muted d-block mt-2">O profissional pode escolher livremente os dias e horários de atuação, desde que permaneçam dentro do horário da clínica.</small>
+                        <small class="text-muted d-block mt-2">O profissional pode escolher livremente os dias e horários de atuação, desde que permaneçam dentro do horário da clínica e fora do intervalo configurado.</small>
                         <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-schedule-row" id="add-schedule-row">Adicionar mais um</button>
                         @error('schedule_day_of_week')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
                     </div>
@@ -492,6 +492,8 @@
         function applyScheduleTimeConstraints(form) {
             var openingTime = clinicHoursWindow && clinicHoursWindow.opening_time ? clinicHoursWindow.opening_time : '';
             var closingTime = clinicHoursWindow && clinicHoursWindow.closing_time ? clinicHoursWindow.closing_time : '';
+            var lunchStartTime = clinicHoursWindow && clinicHoursWindow.lunch_start_time ? clinicHoursWindow.lunch_start_time : '';
+            var lunchEndTime = clinicHoursWindow && clinicHoursWindow.lunch_end_time ? clinicHoursWindow.lunch_end_time : '';
 
             form.find('[name="schedule_start_time[]"], [name="schedule_end_time[]"]').each(function () {
                 if (openingTime) {
@@ -501,6 +503,8 @@
                 if (closingTime) {
                     this.max = closingTime;
                 }
+
+                this.setCustomValidity('');
             });
 
             form.find('.schedule-row').each(function () {
@@ -524,6 +528,12 @@
                     startInput.attr('max', closingTime);
                 } else {
                     startInput.removeAttr('max');
+                }
+
+                if (lunchStartTime && lunchEndTime && startValue && endValue && ! (endValue <= lunchStartTime || startValue >= lunchEndTime)) {
+                    var message = 'O vínculo de agenda não pode avançar sobre o intervalo da clínica.';
+                    startInput[0].setCustomValidity(message);
+                    endInput[0].setCustomValidity(message);
                 }
             });
         }

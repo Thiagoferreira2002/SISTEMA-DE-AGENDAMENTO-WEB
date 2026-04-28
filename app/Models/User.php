@@ -114,6 +114,49 @@ class User extends Authenticatable
         return $role === 'medico' ? 'profissional' : $role;
     }
 
+    public function roleLabel(): string
+    {
+        return match ($this->normalizedRole()) {
+            'admin' => 'Administrador',
+            'recepcionista' => 'Recepcionista',
+            'profissional' => 'Profissional',
+            'gestor_clinica' => 'Gestor da Clínica',
+            default => 'Usuário do sistema',
+        };
+    }
+
+    public function roleCapabilitySummary(): array
+    {
+        return match ($this->normalizedRole()) {
+            'admin' => [
+                'Acesso completo a agendamentos, pacientes e cadastros base.',
+                'Gerenciamento de usuários, permissões e configurações do sistema.',
+                'Edição de dados sensíveis, incluindo CPF e perfis de acesso.',
+            ],
+            'recepcionista' => [
+                'Gestão de agenda, confirmações e cadastro de pacientes.',
+                'Acompanhamento de notificações e atualização da própria conta.',
+                'Sem acesso administrativo aos cadastros base avançados.',
+            ],
+            'profissional' => [
+                'Visualização da própria agenda, fila de atendimento e serviços finalizados.',
+                'Acompanhamento de notificações vinculadas ao próprio atendimento.',
+                'Atualização da própria conta sem alterar dados sensíveis restritos.',
+            ],
+            'gestor_clinica' => [
+                'Acompanhamento operacional da clínica, agenda e pacientes.',
+                'Acesso aos cadastros base e ajustes operacionais do sistema.',
+                'Permissão para atualizar CPF e dados cadastrais estratégicos.',
+            ],
+            default => ['Acesso limitado conforme permissões atribuídas.'],
+        };
+    }
+
+    public function canEditCpf(): bool
+    {
+        return $this->normalizedRole() === 'admin' || $this->isClinicManager();
+    }
+
     public function isClinicManager(): bool
     {
         return $this->normalizedRole() === 'gestor_clinica';
