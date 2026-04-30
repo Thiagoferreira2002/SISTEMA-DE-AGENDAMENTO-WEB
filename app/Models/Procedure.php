@@ -2,12 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLegacyAttributeAliases;
 use Illuminate\Database\Eloquent\Model;
 
 class Procedure extends Model
 {
+    use HasLegacyAttributeAliases;
+
+    protected $table = 'procedimentos';
+
     protected $fillable = [
         'professional_id',
+        'profissional_id',
         'nome',
         'duracao_minutos',
         'codigo_tuss',
@@ -20,13 +26,15 @@ class Procedure extends Model
         'ativo' => 'boolean',
     ];
 
-    public function prices()
+    protected function legacyAttributeAliases(): array
     {
-        return $this->hasMany(ProcedurePrice::class)->with(['insurance', 'plan']);
+        return [
+            'professional_id' => 'profissional_id',
+        ];
     }
 
     public function professional()
     {
-        return $this->belongsTo(Professional::class);
+        return $this->belongsTo(Professional::class, 'profissional_id');
     }
 }

@@ -227,9 +227,7 @@
             return match ($log->subject_type) {
                 \App\Models\User::class => 'Usuários e Permissões',
                 \App\Models\Professional::class => 'Profissionais de Saúde',
-                \App\Models\Insurance::class, \App\Models\InsurancePlan::class, \App\Models\ProcedurePrice::class => 'Convênios',
                 \App\Models\Procedure::class => 'Procedimentos',
-                \App\Models\Unit::class, \App\Models\Room::class => 'Unidades',
                 \App\Models\Agendamento::class => 'Agendamentos',
                 default => 'Não identificado',
             };

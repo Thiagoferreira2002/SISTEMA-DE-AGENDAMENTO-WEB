@@ -5,6 +5,13 @@
         z-index: 10060;
     }
 
+    .schedule-row-feedback {
+        display: block;
+        margin-top: -2px;
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
     .professionals-table {
         border-collapse: separate;
         border-spacing: 0 14px;
@@ -19,6 +26,11 @@
         box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
     }
 
+    html[data-theme="dark"] .professionals-table tbody tr {
+        background: rgba(19, 33, 49, 0.98);
+        box-shadow: 0 16px 28px rgba(2, 8, 15, 0.28);
+    }
+
     .professionals-table tbody td {
         vertical-align: middle;
         padding-top: 18px;
@@ -27,11 +39,22 @@
         border-bottom: 1px solid #eef2f7;
     }
 
+    html[data-theme="dark"] .professionals-table tbody td {
+        border-top-color: rgba(143, 197, 255, 0.12);
+        border-bottom-color: rgba(143, 197, 255, 0.12);
+    }
+
     .professionals-table tbody td:first-child {
         border-left: 1px solid #eef2f7;
         border-top-left-radius: 14px;
         border-bottom-left-radius: 14px;
         padding-left: 22px;
+    }
+
+    html[data-theme="dark"] .professionals-table tbody td:first-child,
+    html[data-theme="dark"] .professionals-table tbody td:last-child {
+        border-left-color: rgba(143, 197, 255, 0.12);
+        border-right-color: rgba(143, 197, 255, 0.12);
     }
 
     .professionals-table tbody td:last-child {
@@ -64,6 +87,14 @@
     .professional-modal + .modal-backdrop,
     .modal-backdrop.show {
         z-index: 10050;
+    }
+
+    html[data-theme="dark"] .professional-modal .bg-white,
+    html[data-theme="dark"] .professional-modal .badge-light,
+    html[data-theme="dark"] .professionals-table .badge-light {
+        background: rgba(22, 40, 59, 0.94) !important;
+        color: var(--text-primary) !important;
+        border-color: rgba(143, 197, 255, 0.16) !important;
     }
 </style>
 <section class="section">
@@ -184,10 +215,13 @@
                                 <div class="col-md-12 mb-2 text-right">
                                     <button type="button" class="btn btn-outline-danger btn-sm remove-schedule-row" {{ $i === 0 && $scheduleRowsCount === 1 ? 'style=display:none;' : '' }}>Remover</button>
                                 </div>
+                                <div class="col-md-12">
+                                    <small class="schedule-row-feedback text-muted" data-schedule-feedback></small>
+                                </div>
                             </div>
                         @endfor
                         </div>
-                        <small class="text-muted d-block mt-2">O profissional pode escolher livremente os dias e horários de atuação, desde que permaneçam dentro do horário da clínica e fora do intervalo configurado.</small>
+                        <small class="text-muted d-block mt-2">O profissional pode escolher livremente os dias e horários de atuação dentro do horário da clínica. Se o turno atravessar o intervalo configurado, a pausa será aplicada automaticamente.</small>
                         <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-schedule-row" id="add-schedule-row">Adicionar mais um</button>
                         @error('schedule_day_of_week')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
                     </div>
@@ -362,7 +396,7 @@
 
                                 <div class="border rounded p-3 mt-2">
                                     <h6 class="mb-3">Vínculo de agenda</h6>
-                                    <p class="text-muted mb-3">Escolha os dias e horários de atuação do profissional dentro do horário da clínica.</p>
+                                    <p class="text-muted mb-3">Escolha os dias e horários de atuação do profissional dentro do horário da clínica. Se o turno atravessar o intervalo da clínica, a pausa será aplicada automaticamente.</p>
                                     <div class="schedule-rows-container">
                                         @for($i = 0; $i < $professionalScheduleRowsCount; $i++)
                                             @php
@@ -385,6 +419,9 @@
                                                 <div class="col-md-2"><div class="form-group"><label>Fim</label><input type="time" class="form-control" name="schedule_end_time[]" value="{{ $schedule ? substr($schedule->end_time, 0, 5) : '' }}"></div></div>
                                                 <div class="col-md-12 mb-2 text-right">
                                                     <button type="button" class="btn btn-outline-danger btn-sm remove-schedule-row" {{ $i === 0 && $professionalScheduleRowsCount === 1 ? 'style=display:none;' : '' }}>Remover</button>
+                                                </div>
+                                                <div class="col-md-12">
+                                                    <small class="schedule-row-feedback text-muted" data-schedule-feedback></small>
                                                 </div>
                                             </div>
                                         @endfor
@@ -495,6 +532,34 @@
             var lunchStartTime = clinicHoursWindow && clinicHoursWindow.lunch_start_time ? clinicHoursWindow.lunch_start_time : '';
             var lunchEndTime = clinicHoursWindow && clinicHoursWindow.lunch_end_time ? clinicHoursWindow.lunch_end_time : '';
 
+            function toMinutes(timeValue) {
+                if (!timeValue || timeValue.indexOf(':') === -1) {
+                    return null;
+                }
+
+                var parts = timeValue.split(':');
+                return (parseInt(parts[0], 10) * 60) + parseInt(parts[1], 10);
+            }
+
+            function isWithinTimeRange(timeValue, rangeStart, rangeEnd) {
+                var valueInMinutes = toMinutes(timeValue);
+                var startInMinutes = toMinutes(rangeStart);
+                var endInMinutes = toMinutes(rangeEnd);
+
+                if (valueInMinutes === null || startInMinutes === null || endInMinutes === null) {
+                    return false;
+                }
+
+                return valueInMinutes > startInMinutes && valueInMinutes < endInMinutes;
+            }
+
+            function toTimeString(totalMinutes) {
+                var hours = Math.floor(totalMinutes / 60);
+                var minutes = totalMinutes % 60;
+
+                return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+            }
+
             form.find('[name="schedule_start_time[]"], [name="schedule_end_time[]"]').each(function () {
                 if (openingTime) {
                     this.min = openingTime;
@@ -511,8 +576,57 @@
                 var row = $(this);
                 var startInput = row.find('[name="schedule_start_time[]"]');
                 var endInput = row.find('[name="schedule_end_time[]"]');
+                var feedback = row.find('[data-schedule-feedback]');
                 var startValue = startInput.val() || '';
                 var endValue = endInput.val() || '';
+                var startInInterval = lunchStartTime && lunchEndTime && isWithinTimeRange(startValue, lunchStartTime, lunchEndTime);
+                var endInInterval = lunchStartTime && lunchEndTime && isWithinTimeRange(endValue, lunchStartTime, lunchEndTime);
+
+                feedback.text('').removeClass('text-info text-warning').addClass('text-muted');
+
+                if (startInInterval && endInInterval) {
+                    var duration = (toMinutes(endValue) || 0) - (toMinutes(startValue) || 0);
+                    var adjustedStartMinutes = toMinutes(lunchEndTime);
+                    var adjustedEndMinutes = adjustedStartMinutes + Math.max(duration, 30);
+                    var closingInMinutes = toMinutes(closingTime);
+
+                    if (closingInMinutes !== null && adjustedEndMinutes > closingInMinutes) {
+                        adjustedEndMinutes = closingInMinutes;
+                        adjustedStartMinutes = Math.max(toMinutes(lunchEndTime), adjustedEndMinutes - Math.max(duration, 30));
+                    }
+
+                    startValue = toTimeString(adjustedStartMinutes);
+                    endValue = toTimeString(adjustedEndMinutes);
+                    startInput.val(startValue);
+                    endInput.val(endValue);
+                    feedback.text('O horário foi ajustado para depois do intervalo da clínica.');
+                } else if (startInInterval) {
+                    startValue = lunchEndTime;
+                    startInput.val(startValue);
+                    feedback.text('O início foi ajustado para depois do intervalo da clínica.');
+                }
+
+                if (endInInterval && ! startInInterval) {
+                    var startInMinutes = toMinutes(startValue);
+                    var lunchEndInMinutes = toMinutes(lunchEndTime);
+                    var closingInMinutesForEnd = toMinutes(closingTime);
+
+                    if (startInMinutes !== null && lunchEndInMinutes !== null && startInMinutes >= lunchEndInMinutes) {
+                        var suggestedEndMinutes = startInMinutes + 30;
+
+                        if (closingInMinutesForEnd !== null) {
+                            suggestedEndMinutes = Math.min(suggestedEndMinutes, closingInMinutesForEnd);
+                        }
+
+                        endValue = toTimeString(suggestedEndMinutes);
+                        endInput.val(endValue);
+                        feedback.text('O fim foi ajustado para depois do intervalo da clínica.');
+                    } else {
+                        endValue = lunchStartTime;
+                        endInput.val(endValue);
+                        feedback.text('O fim foi ajustado para antes do intervalo da clínica.');
+                    }
+                }
 
                 if (startValue) {
                     endInput.attr('min', startValue);
@@ -530,8 +644,15 @@
                     startInput.removeAttr('max');
                 }
 
-                if (lunchStartTime && lunchEndTime && startValue && endValue && ! (endValue <= lunchStartTime || startValue >= lunchEndTime)) {
-                    var message = 'O vínculo de agenda não pode avançar sobre o intervalo da clínica.';
+                if (lunchStartTime && lunchEndTime && startValue && endValue && startValue < lunchStartTime && endValue > lunchEndTime) {
+                    feedback
+                        .text('Este vínculo terá a pausa da clínica aplicada automaticamente entre ' + lunchStartTime + ' e ' + lunchEndTime + '.')
+                        .removeClass('text-muted text-warning')
+                        .addClass('text-info');
+                }
+
+                if (startValue && endValue && startValue >= endValue) {
+                    var message = 'O horário final do vínculo de agenda deve ser maior que o horário inicial.';
                     startInput[0].setCustomValidity(message);
                     endInput[0].setCustomValidity(message);
                 }
@@ -557,6 +678,9 @@
                 '    <div class="col-md-2"><div class="form-group"><label>Fim</label><input type="time" class="form-control" name="schedule_end_time[]"></div></div>',
                 '    <div class="col-md-12 mb-2 text-right">',
                 '        <button type="button" class="btn btn-outline-danger btn-sm remove-schedule-row">Remover</button>',
+                '    </div>',
+                '    <div class="col-md-12">',
+                '        <small class="schedule-row-feedback text-muted" data-schedule-feedback></small>',
                 '    </div>',
                 '</div>'
             ].join('');
@@ -595,6 +719,10 @@
 
         $(document).on('change', '[name="schedule_start_time[]"], [name="schedule_end_time[]"]', function () {
             applyScheduleTimeConstraints($(this).closest('form'));
+        });
+
+        $(document).on('submit', '.professional-form', function () {
+            applyScheduleTimeConstraints($(this));
         });
 
         $(document).on('click', '.remove-schedule-row', function () {

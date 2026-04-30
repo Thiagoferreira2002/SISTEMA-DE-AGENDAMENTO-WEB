@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Professional extends Model
 {
+    protected $table = 'profissionais';
+
     protected $fillable = [
         'user_id',
         'nome',
@@ -25,7 +27,7 @@ class Professional extends Model
 
     public function schedules()
     {
-        return $this->hasMany(ProfessionalSchedule::class)->orderBy('day_of_week')->orderBy('start_time');
+        return $this->hasMany(ProfessionalSchedule::class, 'profissional_id')->orderBy('day_of_week')->orderBy('start_time');
     }
 
     public function user()
@@ -35,12 +37,12 @@ class Professional extends Model
 
     public function agendamentos()
     {
-        return $this->hasMany(Agendamento::class);
+        return $this->hasMany(Agendamento::class, 'profissional_id');
     }
 
     public function procedures()
     {
-        return $this->hasMany(Procedure::class);
+        return $this->hasMany(Procedure::class, 'profissional_id');
     }
 
     public function getRegistroCompletoAttribute(): string

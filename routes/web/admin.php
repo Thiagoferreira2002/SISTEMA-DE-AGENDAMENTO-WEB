@@ -27,6 +27,9 @@ Route::get('admin/notificacoes/abrir', [AdminController::class, 'markNotificatio
 Route::get('admin/minha-conta', [AdminController::class, 'editAccount'])
 ->name('admin.account.edit');
 
+Route::get('admin/tutorial', [AdminController::class, 'tutorial'])
+->name('admin.tutorial');
+
 Route::put('admin/minha-conta', [AdminController::class, 'updateAccount'])
 ->name('admin.account.update');
 
@@ -115,18 +118,6 @@ Route::put('admin/settings/profissionais/{professional}', [ClinicManagementContr
 Route::delete('admin/settings/profissionais/{professional}', [ClinicManagementController::class, 'destroyProfessional'])
 ->name('admin.settings.professionals.destroy');
 
-Route::get('admin/settings/convenios', [ClinicManagementController::class, 'insurance'])
-->name('admin.settings.insurance');
-
-Route::post('admin/settings/convenios', [ClinicManagementController::class, 'storeInsurance'])
-->name('admin.settings.insurance.store');
-
-Route::post('admin/settings/convenios/planos', [ClinicManagementController::class, 'storeInsurancePlan'])
-->name('admin.settings.insurance.plans.store');
-
-Route::post('admin/settings/convenios/precos', [ClinicManagementController::class, 'storeProcedurePrice'])
-->name('admin.settings.insurance.prices.store');
-
 Route::get('admin/settings/procedimentos', [ClinicManagementController::class, 'procedures'])
 ->name('admin.settings.procedures');
 
@@ -141,15 +132,6 @@ Route::patch('admin/settings/procedimentos/{procedure}/status', [ClinicManagemen
 
 Route::delete('admin/settings/procedimentos/{procedure}', [ClinicManagementController::class, 'destroyProcedure'])
 ->name('admin.settings.procedures.destroy');
-
-Route::get('admin/settings/unidades', [ClinicManagementController::class, 'units'])
-->name('admin.settings.units');
-
-Route::post('admin/settings/unidades', [ClinicManagementController::class, 'storeUnit'])
-->name('admin.settings.units.store');
-
-Route::post('admin/settings/unidades/salas', [ClinicManagementController::class, 'storeRoom'])
-->name('admin.settings.rooms.store');
 
 Route::get('admin/settings/usuarios-permissoes', [ClinicManagementController::class, 'usersPermissions'])
 ->name('admin.settings.users');

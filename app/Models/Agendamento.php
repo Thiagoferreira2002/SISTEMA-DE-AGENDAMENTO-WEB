@@ -2,28 +2,26 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLegacyAttributeAliases;
 use Illuminate\Database\Eloquent\Model;
 
 class Agendamento extends Model
 {
+    use HasLegacyAttributeAliases;
+
     protected $fillable = [
         'user_id',
         'patient_id',
+        'paciente_id',
         'procedure_id',
+        'procedimento_id',
         'professional_id',
-        'unit_id',
-        'room_id',
-        'insurance_id',
-        'insurance_plan_id',
+        'profissional_id',
         'nome',
         'email',
         'telefone',
         'servico',
         'medico',
-        'unidade',
-        'convenio',
-        'numero_guia',
-        'numero_autorizacao',
         'duracao_minutos',
         'motivo_consulta',
         'observacao_alerta',
@@ -42,39 +40,28 @@ class Agendamento extends Model
         'notification_read_by' => 'array',
     ];
 
+    protected function legacyAttributeAliases(): array
+    {
+        return [
+            'patient_id' => 'paciente_id',
+            'procedure_id' => 'procedimento_id',
+            'professional_id' => 'profissional_id',
+        ];
+    }
+
     public function patient()
     {
-        return $this->belongsTo(Patient::class);
+        return $this->belongsTo(Patient::class, 'paciente_id');
     }
 
     public function procedure()
     {
-        return $this->belongsTo(Procedure::class);
+        return $this->belongsTo(Procedure::class, 'procedimento_id');
     }
 
     public function professional()
     {
-        return $this->belongsTo(Professional::class);
-    }
-
-    public function unit()
-    {
-        return $this->belongsTo(Unit::class);
-    }
-
-    public function room()
-    {
-        return $this->belongsTo(Room::class);
-    }
-
-    public function insurance()
-    {
-        return $this->belongsTo(Insurance::class);
-    }
-
-    public function insurancePlan()
-    {
-        return $this->belongsTo(InsurancePlan::class);
+        return $this->belongsTo(Professional::class, 'profissional_id');
     }
 
     public function user()

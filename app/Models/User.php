@@ -162,6 +162,41 @@ class User extends Authenticatable
         return $this->normalizedRole() === 'gestor_clinica';
     }
 
+    public function privilegeRank(): int
+    {
+        if ($this->nivel === 'admin' || $this->role === 'admin') {
+            return 100;
+        }
+
+        return match ($this->normalizedRole()) {
+            'gestor_clinica' => 80,
+            'profissional' => 60,
+            'recepcionista' => 40,
+            default => 0,
+        };
+    }
+
+    public function canManageUser(self $target, bool $allowSelf = false): bool
+    {
+        if ($target->isPrimaryAdmin()) {
+            return false;
+        }
+
+        if ((int) $this->id === (int) $target->id) {
+            return $allowSelf;
+        }
+
+        if ($this->nivel === 'admin' || $this->role === 'admin') {
+            return true;
+        }
+
+        if (! $this->isClinicManager()) {
+            return false;
+        }
+
+        return $target->privilegeRank() < $this->privilegeRank();
+    }
+
     public static function submenuPermissionLabels(): array
     {
         return [
@@ -193,7 +228,7 @@ class User extends Authenticatable
             'pacientes' => ['admin.patients.', 'admin.agendamentos.create'],
             'painel_doutor' => ['admin.doctor.'],
             'cadastros_base' => ['admin.settings.'],
-            'minha_conta' => ['admin.account.'],
+            'minha_conta' => ['admin.account.', 'admin.tutorial'],
         ];
     }
 
@@ -226,6 +261,10 @@ class User extends Authenticatable
         }
 
         if ($routeName === 'admin.notifications.read') {
+            return $this->submenuPermissions() !== [];
+        }
+
+        if ($routeName === 'admin.tutorial') {
             return $this->submenuPermissions() !== [];
         }
 

@@ -9,6 +9,8 @@ class Patient extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'pacientes';
+
     protected $fillable = [
         'nome',
         'cpf',
@@ -39,7 +41,7 @@ class Patient extends Model
 
     public function agendamentos()
     {
-        return $this->hasMany(Agendamento::class);
+        return $this->hasMany(Agendamento::class, 'paciente_id');
     }
 
     public function getCadastroStatusLabelAttribute(): string

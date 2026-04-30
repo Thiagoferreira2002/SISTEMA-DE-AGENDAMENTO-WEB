@@ -14,6 +14,16 @@
       linear-gradient(180deg, rgba(30, 144, 255, 0.08) 0%, rgba(244, 249, 255, 0.94) 42%, rgba(238, 245, 255, 0.98) 100%);
   }
 
+  html[data-theme="dark"] .dashboard-shell {
+    --dashboard-dark: #eef5fc;
+    --dashboard-soft: #16283b;
+    --dashboard-soft-border: rgba(143, 197, 255, 0.16);
+    background:
+      radial-gradient(circle at top right, rgba(118, 187, 255, 0.18), transparent 28%),
+      linear-gradient(180deg, rgba(18, 35, 54, 0.98) 0%, rgba(16, 29, 42, 0.98) 100%);
+    box-shadow: inset 0 0 0 1px rgba(143, 197, 255, 0.08);
+  }
+
   .dashboard-shell .section-header {
     align-items: stretch;
     margin-bottom: 0;
@@ -92,6 +102,11 @@
     height: 100%;
   }
 
+  html[data-theme="dark"] .dashboard-metric-card {
+    background: linear-gradient(180deg, rgba(23, 40, 59, 0.98) 0%, rgba(18, 33, 49, 0.98) 100%);
+    box-shadow: 0 18px 34px rgba(2, 8, 15, 0.34);
+  }
+
   .dashboard-metric-link {
     display: block;
     height: 100%;
@@ -129,6 +144,11 @@
     font-size: 22px;
   }
 
+  html[data-theme="dark"] .dashboard-metric-card .metric-icon {
+    background: rgba(118, 187, 255, 0.16);
+    color: #eef5fc;
+  }
+
   .dashboard-metric-card h4 {
     color: #4d6d8a;
     font-size: 13px;
@@ -136,6 +156,11 @@
     letter-spacing: .04em;
     text-transform: uppercase;
     margin-bottom: 8px;
+  }
+
+  html[data-theme="dark"] .dashboard-metric-card h4,
+  html[data-theme="dark"] .dashboard-table thead th {
+    color: #a9c5df;
   }
 
   .dashboard-metric-card .metric-value {
@@ -152,6 +177,10 @@
     font-size: 13px;
   }
 
+  html[data-theme="dark"] .dashboard-metric-card .metric-footnote {
+    color: #bfd0e0;
+  }
+
   .dashboard-list-card .card-header {
     padding: 20px 24px 0;
     background: linear-gradient(180deg, rgba(30, 144, 255, 0.12) 0%, rgba(30, 144, 255, 0) 100%);
@@ -162,6 +191,11 @@
     background: rgba(255, 255, 255, 0.98);
     border-top: 4px solid var(--dashboard-accent);
     border: 1px solid var(--dashboard-soft-border);
+  }
+
+  html[data-theme="dark"] .dashboard-list-card {
+    background: linear-gradient(180deg, rgba(22, 40, 59, 0.98) 0%, rgba(19, 33, 49, 0.98) 100%);
+    box-shadow: 0 18px 34px rgba(2, 8, 15, 0.34);
   }
 
   .dashboard-list-card .card-header h4 {
@@ -189,6 +223,10 @@
   .dashboard-table tbody tr:hover {
     transform: translateY(-1px);
     box-shadow: inset 0 0 0 9999px rgba(30, 144, 255, 0.1);
+  }
+
+  html[data-theme="dark"] .dashboard-table tbody tr:hover {
+    box-shadow: inset 0 0 0 9999px rgba(118, 187, 255, 0.08);
   }
 
   .dashboard-status {
@@ -230,10 +268,30 @@
     color: #ffffff;
   }
 
+  .dashboard-metrics-row {
+    margin-top: 0;
+  }
+
+  .dashboard-secondary-row {
+    margin-top: 28px;
+  }
+
+  .dashboard-schedule-row {
+    margin-top: 34px;
+  }
+
   @media (max-width: 767.98px) {
     .dashboard-shell {
       padding: 18px;
       border-radius: 20px;
+    }
+
+    .dashboard-secondary-row {
+      margin-top: 20px;
+    }
+
+    .dashboard-schedule-row {
+      margin-top: 24px;
     }
   }
 
@@ -264,7 +322,7 @@
       </div>
     </div>
 
-    <div class="row">
+    <div class="row dashboard-metrics-row">
       <div class="col-lg-3 col-md-6 col-sm-6 col-12">
         <a href="{{ $dashboardLinks['total'] ?? route('admin.agendamentos.index') }}" class="dashboard-metric-link">
           <div class="card dashboard-metric-card" style="animation-delay:.05s;">
@@ -303,7 +361,7 @@
       </div>
     </div>
 
-    <div class="row mt-4">
+    <div class="row dashboard-secondary-row">
       @unless($isProfessionalDashboard ?? false)
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
           <a href="{{ $dashboardLinks['complementar'] ?? route('admin.patients.index') }}" class="dashboard-metric-link">
@@ -334,7 +392,7 @@
       </div>
     </div>
 
-    <div class="row mt-2">
+    <div class="row dashboard-schedule-row">
       <div class="col-lg-12 col-md-12 col-12 col-sm-12">
         <div class="card dashboard-list-card" style="animation-delay:.34s;">
           <div class="card-header">

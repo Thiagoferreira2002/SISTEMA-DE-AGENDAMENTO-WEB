@@ -7,11 +7,31 @@
         box-shadow: 0 12px 28px rgba(18, 58, 99, 0.06);
     }
 
+    html[data-theme="dark"] .appointment-planner-shell {
+        border-color: rgba(143, 197, 255, 0.18);
+        background: linear-gradient(180deg, rgba(22,40,59,.98), rgba(19,33,49,.98));
+        box-shadow: 0 18px 36px rgba(2, 8, 15, 0.32);
+    }
+
     .appointment-planner-shell .planner-select,
     .appointment-planner-shell .planner-date {
         min-height: 48px;
         font-weight: 600;
         border-radius: 12px;
+    }
+
+    .appointment-planner-shell .planner-date {
+        border: 1px solid rgba(30, 144, 255, 0.18);
+        background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 100%);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+    }
+
+    html[data-theme="dark"] .appointment-planner-shell .planner-date,
+    html[data-theme="dark"] .appointment-planner-shell select[data-native-select="true"],
+    html[data-theme="dark"] .appointment-planner-shell #status {
+        border-color: rgba(143, 197, 255, 0.22);
+        background: linear-gradient(180deg, #16283b 0%, #132131 100%);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
     }
 
     .appointment-planner-shell .planner-select option:disabled {
@@ -26,6 +46,15 @@
         padding: 18px;
     }
 
+    html[data-theme="dark"] .appointment-day-overview,
+    html[data-theme="dark"] .appointment-planner-shell .border.rounded,
+    html[data-theme="dark"] .appointment-planner-shell .card,
+    html[data-theme="dark"] .appointment-planner-shell .card-body {
+        border-color: rgba(143, 197, 255, 0.16) !important;
+        background: rgba(19, 33, 49, 0.92) !important;
+        color: var(--text-primary) !important;
+    }
+
     .appointment-day-overview-title {
         font-size: 13px;
         font-weight: 700;
@@ -33,6 +62,10 @@
         letter-spacing: .04em;
         color: #4d6d8a;
         margin-bottom: 12px;
+    }
+
+    html[data-theme="dark"] .appointment-day-overview-title {
+        color: #a9c5df;
     }
 
     .appointment-chip-list {
@@ -54,6 +87,44 @@
     .appointment-chip.occupied { background: rgba(220, 53, 69, 0.12); color: #a12839; }
     .appointment-chip.interval { background: rgba(108, 117, 125, 0.16); color: #495057; }
     .appointment-chip.neutral { background: rgba(30, 144, 255, 0.12); color: #155a9d; }
+
+    html[data-theme="dark"] .appointment-chip.available { background: rgba(64, 201, 117, 0.16); color: #92e1ae; }
+    html[data-theme="dark"] .appointment-chip.occupied { background: rgba(255, 107, 129, 0.16); color: #ffb4c1; }
+    html[data-theme="dark"] .appointment-chip.interval { background: rgba(173, 181, 189, 0.12); color: #d3dde6; }
+    html[data-theme="dark"] .appointment-chip.neutral { background: rgba(118, 187, 255, 0.16); color: #bfe0ff; }
+
+    .appointment-planner-shell select[data-native-select="true"] {
+        appearance: auto;
+        -webkit-appearance: menulist;
+        -moz-appearance: menulist;
+        width: 100%;
+        min-height: 48px;
+        border: 1px solid rgba(30, 144, 255, 0.18);
+        border-radius: 12px;
+        background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 100%);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+    }
+
+    html[data-theme="dark"] .appointment-planner-shell .text-muted,
+    html[data-theme="dark"] .appointment-planner-shell small {
+        color: var(--text-secondary) !important;
+    }
+
+    @media (max-width: 767.98px) {
+        .appointment-planner-shell {
+            padding: 16px !important;
+        }
+
+        .appointment-day-overview {
+            padding: 14px;
+        }
+
+        .appointment-chip {
+            width: 100%;
+            justify-content: center;
+            text-align: center;
+        }
+    }
 </style>
 <section class="section">
     @php
@@ -103,14 +174,6 @@
                                 @method('PUT')
                                 <input type="hidden" name="return_to" value="{{ $returnUrl }}">
                                 <input type="hidden" name="patient_id" id="patient_id" value="{{ old('patient_id', $agendamento->patient_id) }}">
-                                <input type="hidden" name="unit_id" value="{{ old('unit_id', $agendamento->unit_id) }}">
-                                <input type="hidden" name="room_id" value="{{ old('room_id', $agendamento->room_id) }}">
-                                <input type="hidden" name="insurance_id" value="{{ old('insurance_id', $agendamento->insurance_id) }}">
-                                <input type="hidden" name="insurance_plan_id" value="{{ old('insurance_plan_id', $agendamento->insurance_plan_id) }}">
-                                <input type="hidden" name="unidade" value="{{ old('unidade', $agendamento->unidade) }}">
-                                <input type="hidden" name="convenio" value="{{ old('convenio', $agendamento->convenio) }}">
-                                <input type="hidden" name="numero_guia" value="{{ old('numero_guia', $agendamento->numero_guia) }}">
-                                <input type="hidden" name="numero_autorizacao" value="{{ old('numero_autorizacao', $agendamento->numero_autorizacao) }}">
                                 <input type="hidden" name="observacao_alerta" value="{{ old('observacao_alerta', $agendamento->observacao_alerta) }}">
                                 <input type="hidden" name="prioridade" value="{{ old('prioridade', $agendamento->prioridade ?? 0) }}">
                                 <input type="hidden" name="preferencia_turno" value="{{ old('preferencia_turno', $agendamento->preferencia_turno) }}">
@@ -147,7 +210,7 @@
                                                 <input type="hidden" id="professional_id" name="professional_id" value="{{ old('professional_id', $lockedProfessional->id) }}">
                                                 <input type="text" class="form-control" value="{{ $lockedProfessional->nome }}" readonly>
                                             @else
-                                                <select class="form-control @error('professional_id') is-invalid @enderror" id="professional_id" name="professional_id">
+                                                <select class="form-control planner-select @error('professional_id') is-invalid @enderror" id="professional_id" name="professional_id" data-native-select="true">
                                                     <option value="">Selecione</option>
                                                     @foreach($professionalOptions as $professional)
                                                         <option value="{{ $professional['id'] }}" data-name="{{ $professional['nome'] }}" data-color="{{ $professional['cor'] }}" {{ (string) $selectedProfessionalId === (string) $professional['id'] ? 'selected' : '' }}>{{ $professional['nome'] }} - {{ $professional['especialidade'] }}</option>
@@ -175,7 +238,7 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label for="procedure_id">Procedimento *</label>
-                                            <select class="form-control @error('procedure_id') is-invalid @enderror" id="procedure_id" name="procedure_id">
+                                            <select class="form-control planner-select @error('procedure_id') is-invalid @enderror" id="procedure_id" name="procedure_id" data-native-select="true">
                                                 <option value="">Selecione um profissional</option>
                                             </select>
                                             @error('procedure_id')
@@ -201,7 +264,7 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="horario">Horário inicial *</label>
-                                            <select class="form-control planner-select @error('horario') is-invalid @enderror" id="horario" name="horario" required>
+                                            <select class="form-control planner-select @error('horario') is-invalid @enderror" id="horario" name="horario" required data-native-select="true">
                                                 <option value="">Selecione</option>
                                             </select>
                                             @error('horario')
@@ -213,7 +276,7 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="horario_final">Horário final *</label>
-                                            <select class="form-control planner-select @error('horario_final') is-invalid @enderror" id="horario_final" name="horario_final" required>
+                                            <select class="form-control planner-select @error('horario_final') is-invalid @enderror" id="horario_final" name="horario_final" required data-native-select="true">
                                                 <option value="">Selecione</option>
                                             </select>
                                             <small id="end-time-guidance" class="text-muted d-block mt-2">Preenchido automaticamente com base na duração média do procedimento selecionado. Você pode encerrar exatamente no início do intervalo da clínica, mas não pode avançar para dentro dele.</small>

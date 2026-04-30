@@ -88,6 +88,15 @@
         .logo-container {
             text-align: center;
             margin-bottom: 24px;
+            display: flex;
+            justify-content: center;
+        }
+        .auth-logo-image {
+            width: min(100%, 220px);
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            filter: drop-shadow(0 10px 22px rgba(15, 77, 152, 0.14));
         }
         .logo-text {
             font-size: 18px;
@@ -380,6 +389,9 @@
                 padding: 24px;
                 border-radius: 16px;
             }
+            .auth-logo-image {
+                width: min(100%, 180px);
+            }
             .auth-header h1 {
                 font-size: 24px;
             }
@@ -477,7 +489,7 @@
         if (phoneInput) {
             phoneInput.addEventListener('input', function(e) {
                 let value = e.target.value.replace(/\D/g, '');
-                
+
                 if (value.length > 13) {
                     value = value.substring(0, 13);
                 }

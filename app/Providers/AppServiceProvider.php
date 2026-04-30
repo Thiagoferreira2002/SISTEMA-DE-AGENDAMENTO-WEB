@@ -153,7 +153,7 @@ class AppServiceProvider extends ServiceProvider
             ->all();
 
         $query->where(function ($scopedQuery) use ($professional, $nameCandidates) {
-            $scopedQuery->where('professional_id', $professional->id);
+            $scopedQuery->where('profissional_id', $professional->id);
 
             foreach ($nameCandidates as $name) {
                 $scopedQuery->orWhereRaw('LOWER(TRIM(medico)) = ?', [mb_strtolower($name)]);

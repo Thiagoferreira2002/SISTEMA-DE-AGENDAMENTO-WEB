@@ -6,7 +6,7 @@
     }
 
     .users-page-alert {
-        margin-top: 72px;
+        margin-bottom: 20px;
     }
 
     .users-actions {
@@ -235,6 +235,8 @@
                                 @php
                                     $isAuthenticatedClinicManagerOwnAccount = $authenticatedUser?->isClinicManager()
                                         && (int) $authenticatedUser->id === (int) $user->id;
+                                    $canManageListedUser = $authenticatedUser?->canManageUser($user) ?? false;
+                                    $canEditListedUser = $authenticatedUser?->canManageUser($user, true) ?? false;
                                 @endphp
                                 <tr>
                                     <td>
@@ -277,22 +279,25 @@
                                         @else
                                             <div class="users-actions">
                                                 <button type="button" class="btn btn-sm btn-secondary" data-toggle="modal" data-target="#view-user-modal-{{ $user->id }}">Ver</button>
-                                                @if(! $isAuthenticatedClinicManagerOwnAccount)
+                                                @if($canEditListedUser && ! $isAuthenticatedClinicManagerOwnAccount)
                                                     <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#edit-user-modal-{{ $user->id }}">Editar</button>
                                                 @endif
-                                                @if(! $isAuthenticatedClinicManagerOwnAccount)
+                                                @if($canManageListedUser)
                                                     <form action="{{ route('admin.settings.users.status', $user) }}" method="POST" class="d-inline">
                                                         @csrf
                                                         @method('PATCH')
                                                         <button type="submit" class="btn btn-sm btn-{{ $user->status === 'ativo' ? 'warning' : 'success' }}">{{ $user->status === 'ativo' ? 'Inativar' : 'Ativar' }}</button>
                                                     </form>
                                                 @endif
-                                                @if(! $isAuthenticatedClinicManagerOwnAccount)
+                                                @if($canManageListedUser)
                                                     <form action="{{ route('admin.settings.users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Deseja realmente excluir este usuário?');">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
                                                     </form>
+                                                @endif
+                                                @if(! $canEditListedUser && ! $canManageListedUser)
+                                                    <span class="text-muted">Protegido</span>
                                                 @endif
                                             </div>
                                         @endif
@@ -410,7 +415,7 @@
                 </div>
             </div>
 
-            @if(! $user->isPrimaryAdmin() || $authenticatedUser?->isPrimaryAdmin())
+            @if((! $user->isPrimaryAdmin() || $authenticatedUser?->isPrimaryAdmin()) && ($authenticatedUser?->canManageUser($user, true) ?? false))
                 <div class="modal fade user-edit-modal" id="edit-user-modal-{{ $user->id }}" tabindex="-1" role="dialog" aria-labelledby="editUserModalLabel{{ $user->id }}" aria-hidden="true">
                     <div class="modal-dialog modal-lg" role="document">
                         <div class="modal-content">

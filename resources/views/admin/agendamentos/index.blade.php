@@ -90,6 +90,88 @@
             color: #fff;
         }
 
+        html[data-theme="dark"] .agenda-group-card,
+        html[data-theme="dark"] .section-body .card {
+            background: linear-gradient(180deg, rgba(22, 40, 59, 0.98) 0%, rgba(19, 33, 49, 0.98) 100%);
+            border-color: rgba(143, 197, 255, 0.16);
+            box-shadow: 0 18px 34px rgba(2, 8, 15, 0.34);
+        }
+
+        html[data-theme="dark"] .section-body .card-header,
+        html[data-theme="dark"] .section-body .card-body,
+        html[data-theme="dark"] .agenda-group-header {
+            background: transparent !important;
+            color: #eef5fc;
+            border-color: rgba(143, 197, 255, 0.16);
+        }
+
+        html[data-theme="dark"] .agenda-group-header {
+            background: linear-gradient(135deg, rgba(24, 43, 64, 0.98) 0%, rgba(19, 33, 49, 0.98) 100%) !important;
+        }
+
+        html[data-theme="dark"] .agenda-group-title,
+        html[data-theme="dark"] .card-header h4,
+        html[data-theme="dark"] .form-group label,
+        html[data-theme="dark"] .section-header h1,
+        html[data-theme="dark"] .breadcrumb-item,
+        html[data-theme="dark"] .breadcrumb-item a {
+            color: #eef5fc !important;
+        }
+
+        html[data-theme="dark"] .agenda-enhanced-table,
+        html[data-theme="dark"] .agenda-enhanced-table tbody tr,
+        html[data-theme="dark"] .agenda-enhanced-table tbody td,
+        html[data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
+            background: transparent !important;
+            color: #eef5fc;
+        }
+
+        html[data-theme="dark"] .agenda-enhanced-table thead th {
+            background: rgba(24, 43, 64, 0.96);
+            color: #a9c5df;
+            border-color: rgba(143, 197, 255, 0.16);
+        }
+
+        html[data-theme="dark"] .agenda-enhanced-table tbody tr:hover {
+            background: rgba(118, 187, 255, 0.08) !important;
+        }
+
+        html[data-theme="dark"] .form-control,
+        html[data-theme="dark"] .custom-select,
+        html[data-theme="dark"] select.form-control {
+            background: #16283b !important;
+            border-color: rgba(143, 197, 255, 0.16) !important;
+            color: #eef5fc !important;
+        }
+
+        html[data-theme="dark"] .btn-light {
+            background: rgba(24, 43, 64, 0.96) !important;
+            border-color: rgba(143, 197, 255, 0.16) !important;
+            color: #eef5fc !important;
+        }
+
+        html[data-theme="dark"] .btn-outline-primary {
+            border-color: rgba(118, 187, 255, 0.36) !important;
+            color: #cfe6fb !important;
+        }
+
+        html[data-theme="dark"] .btn-outline-primary:hover {
+            background: rgba(58, 127, 198, 0.18) !important;
+            color: #ffffff !important;
+        }
+
+        html[data-theme="dark"] .card-statistic-1 {
+            background: rgba(24, 43, 64, 0.98) !important;
+            border: 1px solid rgba(143, 197, 255, 0.16);
+            box-shadow: none;
+        }
+
+        html[data-theme="dark"] .card-statistic-1 .card-header h4,
+        html[data-theme="dark"] .card-statistic-1 .card-body,
+        html[data-theme="dark"] .card-statistic-1 .card-wrap {
+            color: #eef5fc !important;
+        }
+
         @media (max-width: 991.98px) {
             .agenda-group-header {
                 flex-direction: column;
@@ -107,6 +189,10 @@
     </div>
 
     <div class="section-body">
+        @php
+            $showMultiProfessionalFilter = count($professionals) > 1;
+        @endphp
+
         <div class="row">
             <div class="col-12">
                 <div class="card">
@@ -127,31 +213,31 @@
                                 </div>
                                 <div class="col-lg-9 col-12">
                                     <div class="row">
-                                        <div class="{{ !empty($hideProfessionalFilter) ? 'col-lg-8' : 'col-lg-6' }} col-md-6 col-12">
+                                        <div class="{{ $showMultiProfessionalFilter ? 'col-lg-6' : 'col-lg-8' }} col-md-6 col-12">
                                             <div class="form-group">
                                                 <label for="q">Busca global</label>
                                                 <input type="text" class="form-control" id="q" name="q" value="{{ request('q') }}" placeholder="Digite o nome, CPF ou data do agendamento">
                                             </div>
                                         </div>
-                                        @if(empty($hideProfessionalFilter))
-                                            <div class="col-lg-4 col-md-6 col-12">
-                                                <div class="form-group">
-                                                    <label for="medico">Profissional</label>
-                                                    <select class="form-control" id="medico" name="medico">
-                                                        <option value="">Todos</option>
-                                                        @foreach($professionals as $professional)
-                                                            <option value="{{ $professional['nome'] }}" {{ request('medico') === $professional['nome'] ? 'selected' : '' }}>{{ $professional['nome'] }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
+                                        <div class="col-lg-4 col-md-6 col-12">
+                                            <div class="form-group">
+                                                <label for="medico">Profissional</label>
+                                                <select class="form-control" id="medico" name="medico" data-native-select="true">
+                                                    <option value="">{{ $showMultiProfessionalFilter ? 'Todos' : 'Selecione' }}</option>
+                                                    @foreach($professionals as $professional)
+                                                        <option value="{{ $professional['nome'] }}" {{ request('medico') === $professional['nome'] ? 'selected' : '' }}>{{ $professional['nome'] }}</option>
+                                                    @endforeach
+                                                </select>
                                             </div>
+                                        </div>
+                                        @if($showMultiProfessionalFilter)
                                             <div class="col-lg-12 col-12 mt-2">
                                                 <label class="d-block">Visualizar até 3 Profissionais</label>
                                                 <div class="row">
                                                     @for($doctorIndex = 0; $doctorIndex < 3; $doctorIndex++)
                                                         <div class="col-lg-4 col-md-6 col-12">
                                                             <div class="form-group">
-                                                                <select class="form-control" name="medicos[]">
+                                                                <select class="form-control" name="medicos[]" data-native-select="true">
                                                                     <option value="">Selecione o Profissional {{ $doctorIndex + 1 }}</option>
                                                                     @foreach($professionals as $professional)
                                                                         <option value="{{ $professional['nome'] }}" {{ (request('medicos.' . $doctorIndex) === $professional['nome']) ? 'selected' : '' }}>{{ $professional['nome'] }}</option>
@@ -222,6 +308,7 @@
                                         <tbody>
                                             @foreach($appointmentsGroup as $agendamento)
                                                 @php
+                                                    $canManageAppointment = ! auth()->user()?->isClinicManager();
                                                     $endTime = $agendamento->data_agendamento->copy()
                                                         ->setTimeFromTimeString(substr((string) $agendamento->horario, 0, 5))
                                                         ->addMinutes((int) ($agendamento->duracao_exibicao ?? $agendamento->duracao_minutos ?? 30))
@@ -240,12 +327,14 @@
                                                     </td>
                                                     <td class="text-center align-middle">
                                                         <a href="{{ route('admin.agendamentos.show', ['agendamento' => $agendamento, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-info">Ver</a>
-                                                        <a href="{{ route('admin.agendamentos.edit', ['agendamento' => $agendamento, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-warning">Editar</a>
-                                                        <form action="{{ route('admin.agendamentos.cancel', $agendamento) }}" method="POST" class="d-inline">
-                                                            @csrf
-                                                            <input type="hidden" name="return_to" value="{{ url()->full() }}">
-                                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Cancelar este agendamento?')">Cancelar</button>
-                                                        </form>
+                                                        @if($canManageAppointment)
+                                                            <a href="{{ route('admin.agendamentos.edit', ['agendamento' => $agendamento, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-warning">Editar</a>
+                                                            <form action="{{ route('admin.agendamentos.cancel', $agendamento) }}" method="POST" class="d-inline">
+                                                                @csrf
+                                                                <input type="hidden" name="return_to" value="{{ url()->full() }}">
+                                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Cancelar este agendamento?')">Cancelar</button>
+                                                            </form>
+                                                        @endif
                                                     </td>
                                                 </tr>
                                             @endforeach

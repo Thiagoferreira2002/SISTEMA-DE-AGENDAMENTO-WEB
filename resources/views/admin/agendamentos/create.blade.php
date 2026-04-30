@@ -7,6 +7,12 @@
         box-shadow: 0 12px 28px rgba(18, 58, 99, 0.06);
     }
 
+    html[data-theme="dark"] .appointment-planner-shell {
+        border-color: rgba(143, 197, 255, 0.18);
+        background: linear-gradient(180deg, rgba(22,40,59,.98), rgba(19,33,49,.98));
+        box-shadow: 0 18px 36px rgba(2, 8, 15, 0.32);
+    }
+
     .appointment-planner-shell .planner-select,
     .appointment-planner-shell .planner-date {
         min-height: 48px;
@@ -18,6 +24,13 @@
         border: 1px solid rgba(30, 144, 255, 0.18);
         background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 100%);
         box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+    }
+
+    html[data-theme="dark"] .appointment-planner-shell .planner-date,
+    html[data-theme="dark"] .appointment-planner-shell select[data-native-select="true"] {
+        border-color: rgba(143, 197, 255, 0.22);
+        background: linear-gradient(180deg, #16283b 0%, #132131 100%);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
     }
 
     .planner-field-feedback {
@@ -51,6 +64,14 @@
         padding: 18px;
     }
 
+    html[data-theme="dark"] .appointment-day-overview,
+    html[data-theme="dark"] .appointment-planner-shell .alert-light,
+    html[data-theme="dark"] .appointment-planner-shell .border.rounded {
+        border-color: rgba(143, 197, 255, 0.16) !important;
+        background: rgba(19, 33, 49, 0.92) !important;
+        color: var(--text-primary) !important;
+    }
+
     .appointment-day-overview-title {
         font-size: 13px;
         font-weight: 700;
@@ -58,6 +79,10 @@
         letter-spacing: .04em;
         color: #4d6d8a;
         margin-bottom: 12px;
+    }
+
+    html[data-theme="dark"] .appointment-day-overview-title {
+        color: #a9c5df;
     }
 
     .appointment-chip-list {
@@ -79,6 +104,45 @@
     .appointment-chip.occupied { background: rgba(220, 53, 69, 0.12); color: #a12839; }
     .appointment-chip.interval { background: rgba(108, 117, 125, 0.16); color: #495057; }
     .appointment-chip.neutral { background: rgba(30, 144, 255, 0.12); color: #155a9d; }
+
+    html[data-theme="dark"] .appointment-chip.available { background: rgba(64, 201, 117, 0.16); color: #92e1ae; }
+    html[data-theme="dark"] .appointment-chip.occupied { background: rgba(255, 107, 129, 0.16); color: #ffb4c1; }
+    html[data-theme="dark"] .appointment-chip.interval { background: rgba(173, 181, 189, 0.12); color: #d3dde6; }
+    html[data-theme="dark"] .appointment-chip.neutral { background: rgba(118, 187, 255, 0.16); color: #bfe0ff; }
+
+    .appointment-planner-shell select[data-native-select="true"] {
+        appearance: auto;
+        -webkit-appearance: menulist;
+        -moz-appearance: menulist;
+        width: 100%;
+        min-height: 48px;
+        border: 1px solid rgba(30, 144, 255, 0.18);
+        border-radius: 12px;
+        background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 100%);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+    }
+
+    html[data-theme="dark"] .appointment-planner-shell .text-muted,
+    html[data-theme="dark"] .appointment-planner-shell small,
+    html[data-theme="dark"] .appointment-planner-shell .alert-light small {
+        color: var(--text-secondary) !important;
+    }
+
+    @media (max-width: 767.98px) {
+        .appointment-planner-shell {
+            padding: 16px !important;
+        }
+
+        .appointment-day-overview {
+            padding: 14px;
+        }
+
+        .appointment-chip {
+            width: 100%;
+            justify-content: center;
+            text-align: center;
+        }
+    }
 </style>
 <section class="section">
     @php
@@ -133,9 +197,21 @@
 
                                     <div class="alert alert-light border mb-4">
                                         <strong>Busca de paciente por CPF</strong>
-                                        <div class="mt-2">
-                                            <input type="text" class="form-control" id="patient_search" placeholder="Digite o CPF do paciente" autocomplete="off" inputmode="numeric" value="{{ old('patient_search', $preselectedPatient?->cpf) }}">
-                                            <small class="text-muted">Informe o CPF para localizar um paciente existente e preencher Nome, E-mail e Telefone automaticamente.</small>
+                                        <div class="mt-2 row align-items-end">
+                                            <div class="col-lg-8 col-md-7 col-12 mb-2 mb-md-0">
+                                                <input type="text" class="form-control" id="patient_search" placeholder="Digite o CPF do paciente" autocomplete="off" inputmode="numeric" value="{{ old('patient_search', $preselectedPatient?->cpf) }}">
+                                            </div>
+                                            <div class="col-lg-4 col-md-5 col-12">
+                                                <button type="button" class="btn btn-primary btn-block" id="patient-search-button">Buscar CPF</button>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted d-block mt-2">Informe o CPF para localizar um paciente já cadastrado. Se o CPF não existir, o agendamento não poderá ser salvo até o paciente ser cadastrado.</small>
+                                        <div id="patient-search-feedback" class="small mt-2"></div>
+                                        @error('patient_id')
+                                            <div class="text-danger mt-2">{{ $message }}</div>
+                                        @enderror
+                                        <div class="mt-3">
+                                            <a href="{{ route('admin.agendamentos.create', ['tab' => 'paciente', 'return_to' => $returnUrl]) }}" class="btn btn-outline-secondary btn-sm">Cadastrar novo paciente</a>
                                         </div>
                                     </div>
 
@@ -167,7 +243,7 @@
                                                     <input type="hidden" id="professional_id" name="professional_id" value="{{ old('professional_id', $lockedProfessional->id) }}">
                                                     <input type="text" class="form-control" value="{{ $lockedProfessional->nome }}" readonly>
                                                 @else
-                                                    <select class="form-control @error('professional_id') is-invalid @enderror" id="professional_id" name="professional_id">
+                                                    <select class="form-control planner-select @error('professional_id') is-invalid @enderror" id="professional_id" name="professional_id" data-native-select="true">
                                                         <option value="">Selecione</option>
                                                         @foreach($professionalOptions as $professional)
                                                             <option value="{{ $professional['id'] }}" data-name="{{ $professional['nome'] }}" data-color="{{ $professional['cor'] }}" {{ (string) old('professional_id') === (string) $professional['id'] ? 'selected' : '' }}>{{ $professional['nome'] }} - {{ $professional['especialidade'] }}</option>
@@ -198,7 +274,7 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="procedure_id">Procedimento *</label>
-                                                <select class="form-control @error('procedure_id') is-invalid @enderror" id="procedure_id" name="procedure_id">
+                                                <select class="form-control planner-select @error('procedure_id') is-invalid @enderror" id="procedure_id" name="procedure_id" data-native-select="true">
                                                     <option value="">Selecione um profissional</option>
                                                 </select>
                                                 @error('procedure_id')
@@ -228,7 +304,7 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="horario">Horário inicial *</label>
-                                                <select class="form-control planner-select @error('horario') is-invalid @enderror" id="horario" name="horario" required>
+                                                <select class="form-control planner-select @error('horario') is-invalid @enderror" id="horario" name="horario" required data-native-select="true">
                                                     <option value="">Selecione</option>
                                                 </select>
                                                 <div id="time-validation-feedback" class="planner-field-feedback"></div>
@@ -241,7 +317,7 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="horario_final">Horário final *</label>
-                                                <select class="form-control planner-select @error('horario_final') is-invalid @enderror" id="horario_final" name="horario_final" required>
+                                                <select class="form-control planner-select @error('horario_final') is-invalid @enderror" id="horario_final" name="horario_final" required data-native-select="true">
                                                     <option value="">Selecione</option>
                                                 </select>
                                                 <small id="end-time-guidance" class="text-muted d-block mt-2">Preenchido automaticamente com base na duração média do procedimento selecionado. Você pode encerrar exatamente no início do intervalo da clínica, mas não pode avançar para dentro dele.</small>
@@ -335,6 +411,8 @@
         var procedures = @json($procedureOptions ?? []);
         var professionals = @json($professionalOptions ?? []);
         var patientSearch = document.getElementById('patient_search');
+        var patientSearchButton = document.getElementById('patient-search-button');
+        var patientSearchFeedback = document.getElementById('patient-search-feedback');
         var procedureSelect = document.getElementById('procedure_id');
         var professionalSelect = document.getElementById('professional_id');
         var durationInput = document.getElementById('duracao_minutos');
@@ -363,11 +441,77 @@
             return String(value || '').replace(/\D/g, '');
         }
 
+        function setPatientSearchFeedback(message, type) {
+            if (!patientSearchFeedback) {
+                return;
+            }
+
+            if (!message) {
+                patientSearchFeedback.className = 'small mt-2';
+                patientSearchFeedback.textContent = '';
+                return;
+            }
+
+            patientSearchFeedback.className = 'small mt-2 text-' + (type || 'muted');
+            patientSearchFeedback.textContent = message;
+        }
+
+        function refreshEnhancedSelect(selectElement) {
+            if (!selectElement || selectElement.dataset.nativeSelect === 'true' || !window.jQuery || !jQuery.fn || typeof jQuery.fn.selectric !== 'function') {
+                return;
+            }
+
+            var wrappedSelect = jQuery(selectElement);
+
+            if (wrappedSelect.data('selectric')) {
+                wrappedSelect.selectric('destroy');
+            }
+
+            wrappedSelect.selectric();
+        }
+
         function fillPatientFields(patient) {
             document.getElementById('patient_id').value = patient.id || '';
             document.getElementById('nome').value = patient.nome || '';
             document.getElementById('email').value = patient.email || '';
             document.getElementById('telefone').value = patient.telefone || '';
+        }
+
+        function clearPatientFields() {
+            fillPatientFields({ id: '', nome: '', email: '', telefone: '' });
+        }
+
+        function findPatientByCpf() {
+            var cpfDigits = onlyDigits(patientSearch ? patientSearch.value : '');
+
+            if (cpfDigits.length !== 11) {
+                clearPatientFields();
+                setPatientSearchFeedback('Informe um CPF com 11 dígitos para buscar um paciente cadastrado.', 'warning');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                }
+                updateSubmitState();
+                return null;
+            }
+
+            var patient = patients.find(function(item) {
+                return onlyDigits(item.cpf) === cpfDigits;
+            }) || null;
+
+            if (!patient) {
+                clearPatientFields();
+                setPatientSearchFeedback('Nenhum paciente foi encontrado para este CPF. É necessário cadastrar o paciente antes de fazer o agendamento.', 'danger');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                }
+                updateSubmitState();
+                return null;
+            }
+
+            fillPatientFields(patient);
+            setPatientSearchFeedback('Paciente localizado: ' + (patient.nome || 'Paciente sem nome') + '.', 'success');
+            updateSubmitState();
+            return patient;
         }
 
         function renderProcedureOptions(selectedProfessionalId) {
@@ -410,6 +554,8 @@
             if (!filteredProcedures.some(function(procedure) { return String(procedure.id) === String(previousValue); })) {
                 procedureSelect.value = '';
             }
+
+            refreshEnhancedSelect(procedureSelect);
 
             updateProcedureMeta();
             selectedProcedureId = '';
@@ -558,6 +704,7 @@
 
             if (startMinutes === null || endMinutes === null || endMinutes < startMinutes) {
                 selectElement.value = '';
+                refreshEnhancedSelect(selectElement);
                 return;
             }
 
@@ -590,6 +737,8 @@
             if (selectedValue && !Array.from(selectElement.options).some(function(option) { return option.value === selectedValue; })) {
                 selectElement.value = '';
             }
+
+            refreshEnhancedSelect(selectElement);
         }
 
         function clinicOpeningMinutes() {
@@ -714,7 +863,9 @@
             var professional = selectedProfessionalRecord();
             var selectedDate = appointmentDateInput ? appointmentDateInput.value : '';
             var hasAvailability = availabilityWindowsForSelectedDate().length > 0;
-            var shouldDisable = !professional || !selectedDate || !hasAvailability;
+            var patientIdField = document.getElementById('patient_id');
+            var hasPatient = !!(patientIdField && patientIdField.value);
+            var shouldDisable = !hasPatient || !professional || !selectedDate || !hasAvailability;
 
             submitButton.disabled = shouldDisable;
         }
@@ -1002,6 +1153,7 @@
             var endValue = String(endHours).padStart(2, '0') + ':' + String(endRemainderMinutes).padStart(2, '0');
 
             endTimeInput.value = endValue;
+            refreshEnhancedSelect(endTimeInput);
             if (durationInput) durationInput.value = String(duration);
             if (durationPreview) durationPreview.textContent = duration + ' min';
         }
@@ -1072,6 +1224,59 @@
             procedureSelect.addEventListener('change', updateProcedureMeta);
         }
 
+        if (patientSearchButton) {
+            patientSearchButton.addEventListener('click', function() {
+                findPatientByCpf();
+            });
+        }
+
+        if (patientSearch) {
+            patientSearch.addEventListener('blur', function() {
+                if (onlyDigits(patientSearch.value).length === 11) {
+                    findPatientByCpf();
+                    return;
+                }
+
+                var patientIdField = document.getElementById('patient_id');
+                if (patientIdField) {
+                    patientIdField.value = '';
+                }
+
+                if (submitButton) {
+                    submitButton.disabled = true;
+                }
+
+                updateSubmitState();
+            });
+
+            patientSearch.addEventListener('input', function() {
+                var patientIdField = document.getElementById('patient_id');
+                if (patientIdField) {
+                    patientIdField.value = '';
+                }
+
+                setPatientSearchFeedback('', 'muted');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                }
+                updateSubmitState();
+            });
+        }
+
+        if (appointmentForm) {
+            appointmentForm.addEventListener('submit', function(event) {
+                var patientIdField = document.getElementById('patient_id');
+
+                if (patientIdField && !patientIdField.value) {
+                    event.preventDefault();
+                    setPatientSearchFeedback('Busque um paciente cadastrado pelo CPF antes de salvar o agendamento.', 'danger');
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                    }
+                }
+            });
+        }
+
         if (professionalSelect) {
             professionalSelect.addEventListener('change', updateProfessionalMeta);
             updateProfessionalMeta();
@@ -1113,6 +1318,9 @@
         updateEndTimeFromProcedure();
         updateProfessionalAvailabilityFeedback();
         validateAppointmentTimeField();
+        if (document.getElementById('patient_id') && document.getElementById('patient_id').value) {
+            setPatientSearchFeedback('Paciente já selecionado para este agendamento.', 'success');
+        }
         updateSubmitState();
 
         if (patientSearch) {

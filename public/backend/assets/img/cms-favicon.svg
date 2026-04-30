@@ -1,0 +1,22 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="favBlue" x1="39" y1="32" x2="164" y2="224" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F78B1"/>
+      <stop offset="1" stop-color="#135489"/>
+    </linearGradient>
+    <linearGradient id="favGreen" x1="136" y1="76" x2="232" y2="188" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#79CF76"/>
+      <stop offset="1" stop-color="#4FA76C"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(128 128) scale(1.14) translate(-128 -128)">
+    <path d="M90 56C90 42.7 100.7 32 114 32H142C155.3 32 166 42.7 166 56V78H142V58H114V78H90V56Z" fill="url(#favBlue)"/>
+    <path d="M56 90C56 76.7 66.7 66 80 66H112V90H82V118H56V90Z" fill="url(#favBlue)"/>
+    <path d="M144 66H176C189.3 66 200 76.7 200 90V118H174V90H144V66Z" fill="url(#favGreen)"/>
+    <path d="M82 138H108V174H142V138H168V176C168 189.3 157.3 200 144 200H106C92.7 200 82 189.3 82 176V138Z" fill="url(#favBlue)"/>
+    <circle cx="128" cy="128" r="42" fill="none" stroke="url(#favBlue)" stroke-width="14"/>
+    <path d="M128 104V128" stroke="url(#favBlue)" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="128" cy="142" r="10" fill="url(#favBlue)"/>
+    <path d="M102 146L128 170L204 92" stroke="url(#favGreen)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

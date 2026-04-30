@@ -5,6 +5,16 @@
   <meta content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no" name="viewport">
   <meta name="csrf-token" content="{{ csrf_token()}}">
   <title>Painel Admisnistrativo </title>
+  <script>
+    (function () {
+      try {
+        var savedTheme = window.localStorage.getItem('admin.ui.theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme === 'dark' ? 'dark' : 'light');
+      } catch (error) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
 
   <!-- General CSS Files -->
   <link rel="stylesheet" href="{{ asset('backend/assets/modules/bootstrap/css/bootstrap.min.css') }}">
@@ -18,12 +28,12 @@
   <link rel="stylesheet" href="{{ asset('backend/assets/modules/jquery-selectric/selectric.css') }}">
 
   <!-- CSS DATATABLE -->
-  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.6/css/dataTables.dataTables.min.css'>
-  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.6/css/dataTables.bootstrap5.css'>
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.6/css/dataTables.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.6/css/dataTables.bootstrap5.css">
 
 
   <!-- CSS Toastr -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css">
 
   <!-- Template CSS -->
   <link rel="stylesheet" href="{{ asset('backend/assets/css/style.css') }}">
@@ -31,11 +41,9 @@
   <link rel="stylesheet" href="{{ asset('backend/assets/modules/bootstrap-tagsinput/dist/bootstrap-tagsinput.css') }}">
 
   <!-- Favicons -->
-	<link rel="icon" type="{{ asset('backend/assets/image/.png') }}" href="{{ asset('backend/assets/icon/favicon-32x32.png') }}" sizes="32x32">
-	<link rel="apple-touch-icon" href="{{ asset('backend/assets/icon/favicon-32x32.png') }}">
-	<link rel="apple-touch-icon" sizes="72x72" href="{{ asset('backend/assets/icon/apple-touch-icon-72x72.png') }}">
-	<link rel="apple-touch-icon" sizes="114x114" href="{{ asset('backend/assets/icon/apple-touch-icon-114x114.png') }}">
-	<link rel="apple-touch-icon" sizes="144x144" href="{{ asset('backend/assets/icon/apple-touch-icon-144x144.png') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ asset('backend/assets/img/cms-favicon.svg') }}">
+  <link rel="shortcut icon" type="image/svg+xml" href="{{ asset('backend/assets/img/cms-favicon.svg') }}">
+  <link rel="apple-touch-icon" href="{{ asset('backend/assets/img/cms-favicon.svg') }}">
 
   <!-- ICONES -->
   <link rel="stylesheet" href="{{ asset('backend/assets/css/bootstrap-iconpicker.min.css') }}">
@@ -59,6 +67,50 @@
 
 <body class="{{ $isClinicManager ? 'clinic-manager-user' : '' }} {{ $isClinicManager && ! $isCadastrosBaseRoute ? 'clinic-manager-readonly' : '' }}">
   <style>
+    :root {
+      --app-bg: linear-gradient(180deg, #f3f8fd 0%, #eef5fb 52%, #e7f0f9 100%);
+      --main-content-offset: 96px;
+      --surface-primary: #ffffff;
+      --surface-secondary: #f7fbff;
+      --surface-tertiary: #edf5fd;
+      --border-soft: rgba(23, 111, 190, 0.14);
+      --border-strong: rgba(23, 111, 190, 0.24);
+      --text-primary: #16344d;
+      --text-secondary: #567086;
+      --text-muted: #7f96aa;
+      --accent-primary: #176fbe;
+      --accent-strong: #0f4f86;
+      --shadow-soft: 0 16px 34px rgba(15, 23, 42, 0.08);
+      --shadow-strong: 0 20px 44px rgba(15, 23, 42, 0.12);
+      --input-bg: #ffffff;
+      --input-border: rgba(23, 111, 190, 0.18);
+      --row-alt: rgba(23, 111, 190, 0.025);
+    }
+
+    html[data-theme="dark"] {
+      --app-bg: linear-gradient(180deg, #09111a 0%, #0e1722 52%, #101d2a 100%);
+      --surface-primary: #132131;
+      --surface-secondary: #16283b;
+      --surface-tertiary: #1a3046;
+      --border-soft: rgba(143, 197, 255, 0.14);
+      --border-strong: rgba(143, 197, 255, 0.24);
+      --text-primary: #eef5fc;
+      --text-secondary: #bfd0e0;
+      --text-muted: #92a9bf;
+      --accent-primary: #76bbff;
+      --accent-strong: #9ed0ff;
+      --shadow-soft: 0 18px 40px rgba(2, 8, 15, 0.34);
+      --shadow-strong: 0 24px 54px rgba(2, 8, 15, 0.42);
+      --input-bg: #16283b;
+      --input-border: rgba(143, 197, 255, 0.22);
+      --row-alt: rgba(255, 255, 255, 0.02);
+    }
+
+    body {
+      background: var(--app-bg);
+      color: var(--text-primary);
+    }
+
     .sidebar-toggle-fixed {
       position: fixed;
       top: 18px;
@@ -115,6 +167,229 @@
       margin-top: 34px;
     }
 
+    .layout-floating-alert {
+      position: relative;
+      z-index: 1105;
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+    }
+
+    .layout-alert-section {
+      position: relative;
+      z-index: 1105;
+      margin-top: 0;
+    }
+
+    .main-content {
+      min-width: 0;
+      padding-top: var(--main-content-offset);
+    }
+
+    html[data-theme="dark"] body {
+      background: var(--app-bg);
+      color: var(--text-primary);
+    }
+
+    .main-content,
+    .section,
+    .section-body {
+      background: transparent;
+      color: var(--text-primary);
+    }
+
+    .card,
+    .modal-content,
+    .table,
+    .dropdown-menu,
+    .bg-white,
+    .profile-dropdown,
+    .dropdown-list,
+    .list-group-item {
+      background: var(--surface-primary) !important;
+      color: var(--text-primary) !important;
+      border-color: var(--border-soft) !important;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .card-header,
+    .card-footer,
+    .dropdown-header,
+    .dropdown-footer,
+    .profile-dropdown-header,
+    .logout-form,
+    .border-bottom,
+    .modal-header,
+    .modal-footer {
+      background: var(--surface-secondary) !important;
+      color: var(--text-primary) !important;
+      border-color: var(--border-soft) !important;
+    }
+
+    .table td,
+    .table th,
+    .text-dark,
+    .section-header h1,
+    .card-header h4,
+    .profile-name,
+    .dropdown-item-desc strong,
+    .modal-title,
+    .section-header-breadcrumb,
+    label,
+    .form-check-label,
+    .nav-tabs .nav-link {
+      color: var(--text-primary) !important;
+      border-color: var(--border-soft);
+    }
+
+    .text-muted,
+    .profile-role,
+    .dropdown-item-desc,
+    .breadcrumb-item,
+    .small,
+    .section-header-breadcrumb .breadcrumb-item a,
+    .table td .text-muted {
+      color: var(--text-secondary) !important;
+    }
+
+    .table-striped tbody tr:nth-of-type(odd),
+    .dropdown-item,
+    .list-group-item {
+      background-color: var(--row-alt) !important;
+    }
+
+    .table td,
+    .table th,
+    .table thead th,
+    .table-bordered td,
+    .table-bordered th,
+    .dropdown-item,
+    .list-group-item,
+    .nav-tabs,
+    .page-item .page-link {
+      border-color: var(--border-soft) !important;
+    }
+
+    .form-control,
+    .custom-select,
+    textarea,
+    select,
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    input[type="password"],
+    input[type="date"],
+    input[type="time"] {
+      background: var(--input-bg) !important;
+      color: var(--text-primary) !important;
+      border-color: var(--input-border) !important;
+    }
+
+    .form-control:focus,
+    .custom-select:focus,
+    textarea:focus,
+    select:focus,
+    input:focus {
+      border-color: var(--accent-primary) !important;
+      box-shadow: 0 0 0 0.16rem color-mix(in srgb, var(--accent-primary) 22%, transparent) !important;
+    }
+
+    .page-item .page-link,
+    .btn-light,
+    .btn-outline-secondary,
+    .btn-outline-primary {
+      background: var(--surface-primary);
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary,
+    .btn-outline-secondary,
+    .btn-light {
+      background: linear-gradient(180deg, var(--surface-secondary) 0%, var(--surface-tertiary) 100%);
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .btn-secondary:hover,
+    .btn-secondary:focus,
+    .btn-outline-secondary:hover,
+    .btn-outline-secondary:focus,
+    .btn-light:hover,
+    .btn-light:focus {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface-secondary) 80%, var(--accent-primary) 20%) 0%, color-mix(in srgb, var(--surface-tertiary) 80%, var(--accent-primary) 20%) 100%);
+      border-color: var(--accent-primary);
+      color: var(--text-primary);
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+    }
+
+    html[data-theme="dark"] .btn-secondary,
+    html[data-theme="dark"] .btn-outline-secondary,
+    html[data-theme="dark"] .btn-light {
+      background: linear-gradient(180deg, rgba(23, 40, 59, 0.98) 0%, rgba(19, 33, 49, 0.98) 100%);
+      border-color: rgba(143, 197, 255, 0.24);
+      color: #eef5fc;
+      box-shadow: none;
+    }
+
+    html[data-theme="dark"] .btn-secondary:hover,
+    html[data-theme="dark"] .btn-secondary:focus,
+    html[data-theme="dark"] .btn-outline-secondary:hover,
+    html[data-theme="dark"] .btn-outline-secondary:focus,
+    html[data-theme="dark"] .btn-light:hover,
+    html[data-theme="dark"] .btn-light:focus {
+      background: linear-gradient(180deg, rgba(35, 62, 88, 0.98) 0%, rgba(26, 47, 69, 0.98) 100%);
+      border-color: rgba(158, 208, 255, 0.34);
+      color: #ffffff;
+    }
+
+    .section-header {
+      background: var(--surface-primary) !important;
+      border: 1px solid var(--border-soft) !important;
+      border-radius: 20px;
+      box-shadow: var(--shadow-soft);
+      padding: 18px 24px;
+    }
+
+    .card,
+    .modal-content,
+    .section-header {
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .main-footer {
+      background: var(--surface-primary);
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border-soft);
+    }
+
+    .badge-light,
+    .bg-light {
+      background: var(--surface-tertiary) !important;
+      color: var(--text-primary) !important;
+      border-color: var(--border-soft) !important;
+    }
+
+    html[data-theme="dark"] .alert-warning.layout-floating-alert {
+      background: #3d3113;
+      border-color: #8f6d19;
+      color: #ffe7a0;
+    }
+
+    html[data-theme="dark"] .alert-danger.layout-floating-alert {
+      background: #3b1920;
+      border-color: #8f3143;
+      color: #ffc0ca;
+    }
+
+    html[data-theme="dark"] .btn-primary,
+    html[data-theme="dark"] .btn-info,
+    html[data-theme="dark"] .btn-success,
+    html[data-theme="dark"] .btn-warning,
+    html[data-theme="dark"] .btn-danger {
+      box-shadow: none;
+    }
+
     body.sidebar-gone .navbar {
       left: 0;
     }
@@ -125,6 +400,99 @@
 
     body.sidebar-gone .main-footer {
       padding-left: 30px;
+    }
+
+    .section-header,
+    .card-header,
+    .card-header-action,
+    .section-header-breadcrumb {
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .table-responsive .btn,
+    .table-responsive form {
+      white-space: nowrap;
+    }
+
+    @media (max-width: 767.98px) {
+      :root {
+        --main-content-offset: 92px;
+      }
+
+      .main-content {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .section-header {
+        align-items: flex-start;
+      }
+
+      .section-header h1,
+      .card-header h4 {
+        width: 100%;
+      }
+
+      .section-header-breadcrumb {
+        width: 100%;
+      }
+
+      .card-header-action,
+      .card-header-action .btn,
+      .section-header .btn,
+      .section-body .btn-block-mobile {
+        width: 100%;
+      }
+
+      .card,
+      .section-header,
+      .modal-content {
+        border-radius: 16px;
+      }
+
+      .card-body,
+      .card-header,
+      .card-footer,
+      .modal-body,
+      .modal-header,
+      .modal-footer {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+      }
+
+      .row {
+        margin-left: -8px;
+        margin-right: -8px;
+      }
+
+      .row > [class*="col-"] {
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+
+      .form-control,
+      .custom-select,
+      select,
+      input,
+      textarea,
+      .btn {
+        min-height: 44px;
+      }
+
+      .table td,
+      .table th {
+        white-space: nowrap;
+      }
+
+      .modal-dialog {
+        margin: 10px;
+      }
     }
 
     body:not(.sidebar-gone) .sidebar-toggle-fixed {
@@ -141,6 +509,30 @@
       body.sidebar-mini .sidebar-toggle-fixed {
         left: 14px;
         top: 14px;
+      }
+
+      .layout-alert-section {
+        margin-top: 0;
+      }
+
+      .main-content {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .card-header-action {
+        width: 100%;
+      }
+
+      .card-header-action > * {
+        flex: 1 1 100%;
+      }
+
+      .card-header-action .btn,
+      .card-header-action .form-control,
+      .card-header-action .form-control-sm,
+      .card-header-action select {
+        width: 100%;
       }
     }
   </style>
@@ -161,6 +553,27 @@
 
       <!-- START MAIN CONTENT - MAYKONSILVEIRA.COM.BR -->
       <div class="main-content">
+
+        @if(session('layout_warning') || session('layout_error'))
+          <div class="section layout-alert-section">
+            <div class="section-body pt-3">
+              @if(session('layout_warning'))
+                <div class="alert alert-warning mb-4 layout-floating-alert">{{ session('layout_warning') }}</div>
+              @endif
+              @if(session('layout_error'))
+                <div class="alert alert-danger mb-4 layout-floating-alert">{{ session('layout_error') }}</div>
+              @endif
+            </div>
+          </div>
+        @endif
+
+        @if($successMessage && str_contains($successMessage, 'O registro já está em Agendamentos Finalizados.'))
+          <div class="section">
+            <div class="section-body">
+              <div class="alert alert-success mt-3 mb-4">{{ $successMessage }}</div>
+            </div>
+          </div>
+        @endif
 
         @yield('content')
 
@@ -196,9 +609,8 @@
   <script src="{{ asset('backend/assets/modules/jqvmap/dist/maps/jquery.vmap.world.js') }}"></script>
   <script src="{{ asset('backend/assets/modules/summernote/summernote-bs4.js') }}"></script>
   <script src="{{ asset('backend/assets/modules/chocolat/dist/js/jquery.chocolat.min.js') }}"></script>
-  <script src="{{ asset('backend/assets/modules/upload-preview/{{assets/js/jquery.uploadPreview.min.js') }}"></script>
+  <script src="{{ asset('backend/assets/modules/upload-preview/assets/js/jquery.uploadPreview.min.js') }}"></script>
   <script src="{{ asset('backend/assets/modules/bootstrap-tagsinput/dist/bootstrap-tagsinput.min.js') }}"></script>
-  <script src="{{ asset('backend/assets/js/page/features-post-create.js') }}"></script>
   <script src="{{ asset('backend/assets/modules/jquery-selectric/jquery.selectric.min.js') }}"></script>
 
   <!-- JS DATATABLE -->
@@ -215,13 +627,104 @@
   <script src="{{ asset('backend/assets/js/bootstrap-iconpicker.bundle.min.js') }}"></script>
 
 
-  <!-- Page Specific JS File -->
-  <script src="{{ asset('backend/assets/js/page/index-0.js') }}"></script>
+  @if(request()->routeIs('admin.dashboard'))
+    <!-- Page Specific JS File -->
+    <script src="{{ asset('backend/assets/js/page/index-0.js') }}"></script>
+  @endif
 
   <!-- Template JS File -->
   <script src="{{ asset('backend/assets/js/scripts.js') }}"></script>
   <script src="{{ asset('backend/assets/js/custom.js') }}"></script>
   <script src="{{ asset('backend/assets/js/jmask.js') }}"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var htmlElement = document.documentElement;
+      var themeToggleButtons = Array.from(document.querySelectorAll('[data-theme-toggle]'));
+
+      function applyTheme(theme) {
+        var normalizedTheme = theme === 'dark' ? 'dark' : 'light';
+
+        htmlElement.setAttribute('data-theme', normalizedTheme);
+
+        themeToggleButtons.forEach(function (button) {
+          var icon = button.querySelector('[data-theme-icon]');
+          var label = button.querySelector('[data-theme-label]');
+          var thumb = button.querySelector('[data-theme-thumb]');
+          var isDark = normalizedTheme === 'dark';
+          var nextThemeIsDark = !isDark;
+
+          button.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+          button.classList.toggle('is-dark', isDark);
+          button.setAttribute('title', nextThemeIsDark ? 'Ativar modo escuro' : 'Ativar modo claro');
+
+          if (icon) {
+            icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
+          }
+
+          if (thumb) {
+            thumb.setAttribute('aria-hidden', 'true');
+          }
+
+          if (label) {
+            label.textContent = isDark ? 'Modo Escuro' : 'Modo Claro';
+          }
+        });
+      }
+
+      if (themeToggleButtons.length) {
+        applyTheme(htmlElement.getAttribute('data-theme') || 'light');
+
+        themeToggleButtons.forEach(function (button) {
+          button.addEventListener('click', function (event) {
+            event.preventDefault();
+
+            var nextTheme = (htmlElement.getAttribute('data-theme') || 'light') === 'dark' ? 'light' : 'dark';
+
+            applyTheme(nextTheme);
+
+            try {
+              window.localStorage.setItem('admin.ui.theme', nextTheme);
+            } catch (error) {
+              // Ignora falhas de persistencia sem interromper a interface.
+            }
+          });
+        });
+      }
+
+      if (window.jQuery && jQuery.fn && typeof jQuery.fn.selectric === 'function') {
+        jQuery('select[data-enhanced-select="true"]').each(function () {
+          var selectField = jQuery(this);
+
+          if (!selectField.data('selectric')) {
+            selectField.selectric();
+          }
+        });
+      }
+
+      if (
+        window.jQuery
+        && typeof jQuery.uploadPreview === 'function'
+        && document.getElementById('image-upload')
+        && document.getElementById('image-preview')
+        && document.getElementById('image-label')
+      ) {
+        jQuery.uploadPreview({
+          input_field: '#image-upload',
+          preview_box: '#image-preview',
+          label_field: '#image-label',
+          label_default: 'Escolher arquivo',
+          label_selected: 'Alterar arquivo',
+          no_label: false,
+          success_callback: null,
+        });
+      }
+
+      if (window.jQuery && jQuery.fn && typeof jQuery.fn.tagsinput === 'function' && document.querySelector('.inputtags')) {
+        jQuery('.inputtags').tagsinput('items');
+      }
+    });
+  </script>
 
   <script>
     @if($errors->any())
@@ -596,9 +1099,6 @@
   </script>
 
   <script>
-
-
-<script>
 $(document).ready(function(){
 
 $.ajaxSetup({

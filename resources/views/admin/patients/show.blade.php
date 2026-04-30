@@ -17,7 +17,9 @@
                     <div class="card-header">
                         <h4>Informações do Paciente</h4>
                         <div class="card-header-action">
-                            <a href="{{ route('admin.patients.edit', $patient) }}" class="btn btn-warning">Editar</a>
+                            @if(! auth()->user()?->isClinicManager())
+                                <a href="{{ route('admin.patients.edit', $patient) }}" class="btn btn-warning">Editar</a>
+                            @endif
                             <a href="{{ route('admin.patients.index') }}" class="btn btn-secondary">Voltar</a>
                         </div>
                     </div>

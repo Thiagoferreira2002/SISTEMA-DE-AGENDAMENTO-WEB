@@ -5,14 +5,9 @@ namespace App\Traits;
 use App\Models\Agendamento;
 use App\Models\ActivityLog;
 use App\Models\ClinicHour;
-use App\Models\Insurance;
-use App\Models\InsurancePlan;
 use App\Models\Patient;
 use App\Models\Procedure;
-use App\Models\ProcedurePrice;
 use App\Models\Professional;
-use App\Models\Room;
-use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +17,7 @@ trait RecordsActivity
 {
     protected function recordActivity(string $action, Model $subject, string $description, array $properties = []): void
     {
-        if (! Schema::hasTable('activity_logs')) {
+        if (! Schema::hasTable('logs_atividades')) {
             return;
         }
 
@@ -72,26 +67,6 @@ trait RecordsActivity
                 'email' => $subject->email,
             ],
             $subject instanceof Procedure => [
-                'id' => $subject->getKey(),
-                'nome' => $subject->nome,
-            ],
-            $subject instanceof Insurance => [
-                'id' => $subject->getKey(),
-                'nome' => $subject->nome,
-            ],
-            $subject instanceof InsurancePlan => [
-                'id' => $subject->getKey(),
-                'nome' => $subject->nome,
-            ],
-            $subject instanceof ProcedurePrice => [
-                'id' => $subject->getKey(),
-                'nome' => 'Tabela de preço',
-            ],
-            $subject instanceof Unit => [
-                'id' => $subject->getKey(),
-                'nome' => $subject->nome,
-            ],
-            $subject instanceof Room => [
                 'id' => $subject->getKey(),
                 'nome' => $subject->nome,
             ],

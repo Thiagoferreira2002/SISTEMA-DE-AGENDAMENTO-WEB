@@ -8,6 +8,11 @@
         box-shadow: 0 16px 34px rgba(18, 58, 99, 0.08);
     }
 
+    html[data-theme="dark"] .account-shell {
+        background: linear-gradient(180deg, rgba(19,33,49,.98), rgba(16,29,42,.98));
+        box-shadow: 0 18px 40px rgba(2, 8, 15, 0.34);
+    }
+
     .account-hero {
         border: 0;
         border-radius: 22px;
@@ -35,6 +40,12 @@
         box-shadow: 0 14px 30px rgba(18, 58, 99, 0.06);
     }
 
+    html[data-theme="dark"] .account-form-card {
+        background: linear-gradient(180deg, rgba(22,40,59,.98), rgba(19,33,49,.98));
+        border-color: rgba(143, 197, 255, 0.18);
+        box-shadow: 0 18px 34px rgba(2, 8, 15, 0.28);
+    }
+
     .account-form-card .card-body {
         padding: 26px;
     }
@@ -53,11 +64,21 @@
         background: #eef6ff;
     }
 
+    html[data-theme="dark"] .account-photo-preview {
+        background: #16283b;
+        border-color: rgba(143, 197, 255, 0.18);
+    }
+
     .account-access-card {
         border: 1px solid rgba(13, 51, 88, 0.08);
         border-radius: 16px;
         background: #f8fbff;
         padding: 18px 18px 8px;
+    }
+
+    html[data-theme="dark"] .account-access-card {
+        background: rgba(22, 40, 59, 0.92);
+        border-color: rgba(143, 197, 255, 0.16);
     }
 
     .account-access-card ul {

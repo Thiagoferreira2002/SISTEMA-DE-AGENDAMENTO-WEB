@@ -1,5 +1,20 @@
 @extends('admin.layouts.master')
 @section('content')
+<style>
+    .calendar-shell {
+        border: 1px solid rgba(30, 144, 255, 0.14);
+        border-radius: 22px;
+        background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(244,249,255,.96));
+        box-shadow: 0 16px 34px rgba(18, 58, 99, 0.08);
+        overflow: hidden;
+    }
+
+    html[data-theme="dark"] .calendar-shell {
+        border-color: rgba(143, 197, 255, 0.16);
+        background: linear-gradient(180deg, rgba(22,40,59,.98), rgba(19,33,49,.98));
+        box-shadow: 0 22px 44px rgba(2, 8, 15, 0.34);
+    }
+</style>
 <section class="section">
     <div class="section-header">
         <h1>Calendário</h1>
@@ -13,7 +28,7 @@
     <div class="section-body">
         <div class="row">
             <div class="col-12">
-                <div class="card">
+                <div class="card calendar-shell">
                     <div class="card-header d-flex align-items-center justify-content-between">
                         <h4 class="mb-0"><i class="fas fa-calendar-alt mr-2"></i>Calendário</h4>
                         <div class="card-header-action d-flex align-items-center flex-wrap" style="gap: 10px;">
@@ -59,6 +74,7 @@
 <script>
     var calendarEventsUrl = '{{ route('admin.agendamentos.calendar.events') }}';
     var fullCalendarScriptUrl = '{{ asset('backend/assets/modules/fullcalendar/fullcalendar.min.js') }}';
+    var fullCalendarLocaleScriptUrl = '{{ asset('backend/assets/modules/fullcalendar/locale/pt-br.js') }}';
     var clinicOpeningTime = @json(($clinicHours['opening_time'] ?? '07:00') . ':00');
     var clinicClosingTime = @json(($clinicHours['closing_time'] ?? '19:00') . ':00');
     var clinicClosingDisplayTime = @json(optional(\Carbon\Carbon::createFromFormat('H:i', $clinicHours['closing_time'] ?? '19:00')->addHour())->format('H:i:s'));
@@ -72,10 +88,22 @@
     var calendarCanEditAppointments = @json(optional(auth()->user())->canMutateOutsideCadastrosBase());
 
     document.addEventListener('DOMContentLoaded', function() {
+        function loadScript(src, onLoad, onError) {
+            var script = document.createElement('script');
+            script.src = src;
+            script.onload = onLoad;
+            script.onerror = onError;
+            document.body.appendChild(script);
+        }
+
         function initializeCalendar() {
             if (!window.jQuery || !window.jQuery.fn || typeof window.jQuery.fn.fullCalendar !== 'function') {
                 document.getElementById('calendar').innerHTML = '<div class="alert alert-danger mb-0">Não foi possível inicializar o calendário.</div>';
                 return;
+            }
+
+            if (window.moment && typeof window.moment.locale === 'function') {
+                window.moment.locale('pt-br');
             }
 
             var calendarEl = window.jQuery('#calendar');
@@ -168,12 +196,14 @@
             calendarEl.fullCalendar({
                 defaultView: 'agendaWeek',
                 defaultDate: calendarFocusDate || undefined,
+                locale: 'pt-br',
+                lang: 'pt-br',
                 header: {
                     left: 'prev,next today',
                     center: 'title',
                     right: 'month,agendaWeek,agendaDay'
                 },
-                firstDay: 0,
+                firstDay: 1,
                 height: 'auto',
                 allDaySlot: false,
                 slotDuration: '00:30:00',
@@ -186,11 +216,31 @@
                 timeFormat: 'H:mm',
                 slotLabelFormat: 'H:mm',
                 eventLimit: true,
+                eventLimitText: 'mais',
+                displayEventEnd: true,
+                fixedWeekCount: false,
+                monthNames: ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'],
+                monthNamesShort: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'],
+                dayNames: ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'],
+                dayNamesShort: ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'],
                 buttonText: {
                     today: 'Hoje',
-                    month: 'Mes',
+                    month: 'Mês',
                     agendaWeek: 'Semana',
                     agendaDay: 'Dia'
+                },
+                views: {
+                    month: {
+                        titleFormat: 'MMMM [de] YYYY',
+                        columnHeaderFormat: 'ddd'
+                    },
+                    agendaWeek: {
+                        columnHeaderFormat: 'ddd D/M'
+                    },
+                    agendaDay: {
+                        titleFormat: 'dddd, D [de] MMMM [de] YYYY',
+                        columnHeaderFormat: 'dddd D/M'
+                    }
                 },
                 events: {
                     url: calendarEventsUrl,
@@ -212,6 +262,12 @@
                 eventRender: function(event, element) {
                     element.attr('data-agendamento-id', event.agendamento_id);
                     element.attr('title', (event.telefone || '') + ' • ' + (event.motivo || ''));
+
+                    if (calendarEl.fullCalendar('getView').name === 'month') {
+                        element.addClass('calendar-month-event-card');
+                        element.find('.fc-time').text((event.horario || '').trim());
+                        element.find('.fc-title').text((event.nome || 'Agendamento') + ' • ' + (event.servico || 'Consulta'));
+                    }
 
                     if (event.is_finalized) {
                         element.addClass('calendar-event-finalized');
@@ -264,17 +320,20 @@
         }
 
         if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.fullCalendar === 'function') {
-            initializeCalendar();
+            if (window.jQuery.fullCalendar && window.jQuery.fullCalendar.locales && window.jQuery.fullCalendar.locales['pt-br']) {
+                initializeCalendar();
+                return;
+            }
+
+            loadScript(fullCalendarLocaleScriptUrl, initializeCalendar, initializeCalendar);
             return;
         }
 
-        var script = document.createElement('script');
-        script.src = fullCalendarScriptUrl;
-        script.onload = initializeCalendar;
-        script.onerror = function() {
+        loadScript(fullCalendarScriptUrl, function() {
+            loadScript(fullCalendarLocaleScriptUrl, initializeCalendar, initializeCalendar);
+        }, function() {
             document.getElementById('calendar').innerHTML = '<div class="alert alert-danger mb-0">Não foi possível carregar a biblioteca do calendário.</div>';
-        };
-        document.body.appendChild(script);
+        });
     });
 </script>
 
@@ -287,6 +346,116 @@
     .fc .fc-event { cursor: pointer; border-radius: 4px; }
     .fc .fc-event:hover { opacity: 0.85; }
     #calendar { min-height: 650px; }
+    .fc-agendaWeek-view .fc-day-header,
+    .fc-agendaWeek-view .fc-widget-header,
+    .fc-agendaDay-view .fc-day-header,
+    .fc-agendaDay-view .fc-widget-header,
+    .fc-month-view .fc-day-header,
+    .fc-month-view .fc-widget-header {
+        background: linear-gradient(180deg, rgba(244, 249, 255, 0.98) 0%, rgba(233, 242, 252, 0.98) 100%);
+        border-bottom: 1px solid rgba(23, 111, 190, 0.16) !important;
+    }
+
+    .fc-agendaWeek-view .fc-day-header,
+    .fc-agendaDay-view .fc-day-header,
+    .fc-month-view .fc-day-header {
+        padding: 12px 8px;
+        font-weight: 700;
+        color: #35536e;
+    }
+
+    .fc-agendaWeek-view .fc-day-header:not(:last-child),
+    .fc-agendaDay-view .fc-day-header:not(:last-child),
+    .fc-month-view .fc-day-header:not(:last-child),
+    .fc-agendaWeek-view .fc-widget-content:not(:last-child),
+    .fc-agendaDay-view .fc-widget-content:not(:last-child),
+    .fc-month-view .fc-day:not(:last-child),
+    .fc-agendaWeek-view .fc-time-grid .fc-slats td:not(:last-child),
+    .fc-agendaWeek-view .fc-bg td:not(:last-child),
+    .fc-month-view .fc-bg td:not(:last-child),
+    .fc-month-view .fc-content-skeleton td:not(:last-child) {
+        border-right: 1px solid rgba(23, 111, 190, 0.22) !important;
+    }
+
+    .fc-agendaWeek-view .fc-day-header:not(:last-child),
+    .fc-agendaWeek-view .fc-bg td:not(:last-child),
+    .fc-agendaWeek-view .fc-content-skeleton td:not(:last-child),
+    .fc-agendaWeek-view .fc-time-grid .fc-slats td:not(:last-child),
+    .fc-agendaWeek-view .fc-widget-content:not(:last-child) {
+        box-shadow: inset -2px 0 0 rgba(23, 111, 190, 0.22);
+    }
+
+    .fc-agendaWeek-view .fc-axis,
+    .fc-agendaDay-view .fc-axis {
+        background: rgba(247, 251, 255, 0.98);
+        color: #5a7186;
+        font-weight: 700;
+    }
+
+    .fc-month-view .fc-day,
+    .fc-month-view .fc-widget-content,
+    .fc-month-view .fc-bg td {
+        background: rgba(255, 255, 255, 0.98);
+        border-color: rgba(23, 111, 190, 0.18) !important;
+    }
+
+    .fc-month-view .fc-day-top {
+        padding: 8px 10px 4px;
+        border-bottom: 1px solid rgba(23, 111, 190, 0.1);
+        text-align: right;
+    }
+
+    .fc-month-view .fc-day-number {
+        font-weight: 700;
+        color: #35536e;
+    }
+
+    .fc-month-view .fc-content-skeleton td {
+        padding: 4px 6px 8px;
+        vertical-align: top;
+    }
+
+    .fc-month-view .fc-day-grid-event,
+    .fc-month-view .calendar-month-event-card {
+        margin: 3px 4px 0;
+        border-radius: 8px;
+        border: 0 !important;
+        box-shadow: 0 6px 14px rgba(15, 61, 107, 0.12);
+    }
+
+    .fc-month-view .calendar-month-event-card .fc-content {
+        display: block;
+        padding: 4px 6px;
+        line-height: 1.2;
+    }
+
+    .fc-month-view .calendar-month-event-card .fc-time {
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+
+    .fc-month-view .calendar-month-event-card .fc-title {
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    .fc-month-view .fc-more {
+        display: inline-block;
+        margin: 4px 6px 2px;
+        color: #176fbe;
+        font-weight: 700;
+        font-size: 11px;
+    }
+
+    .fc-month-view .fc-today {
+        background: linear-gradient(180deg, rgba(23, 111, 190, 0.12) 0%, rgba(23, 111, 190, 0.06) 100%) !important;
+    }
+
     .agendamento-details { padding: 15px; }
     .agendamento-details p { margin-bottom: 10px; line-height: 1.6; }
     .calendar-event-highlight {
@@ -332,6 +501,200 @@
     }
     .fc-time-grid .fc-event-container {
         margin-right: 2px;
+    }
+
+    html[data-theme="dark"] .calendar-shell .card-header,
+    html[data-theme="dark"] .calendar-shell .card-body {
+        background: transparent !important;
+    }
+
+    html[data-theme="dark"] .calendar-shell .form-control-sm {
+        border-radius: 999px;
+        min-height: 40px;
+        background: rgba(19, 33, 49, 0.92) !important;
+        border-color: rgba(143, 197, 255, 0.22) !important;
+        color: #eef5fc !important;
+    }
+
+    html[data-theme="dark"] .fc {
+        color: #eef5fc;
+    }
+
+    html[data-theme="dark"] .fc-toolbar h2 {
+        color: #eef5fc;
+        font-weight: 700;
+        letter-spacing: .01em;
+    }
+
+    html[data-theme="dark"] .fc .fc-button,
+    html[data-theme="dark"] .fc button {
+        background: linear-gradient(180deg, #20354b 0%, #172838 100%);
+        border-color: rgba(143, 197, 255, 0.24);
+        color: #eef5fc;
+        box-shadow: none;
+    }
+
+    html[data-theme="dark"] .fc .fc-button:hover,
+    html[data-theme="dark"] .fc .fc-button:focus,
+    html[data-theme="dark"] .fc button:hover,
+    html[data-theme="dark"] .fc button:focus {
+        background: linear-gradient(180deg, #294664 0%, #1d344b 100%);
+        border-color: rgba(158, 208, 255, 0.34);
+        color: #ffffff;
+    }
+
+    html[data-theme="dark"] .fc-state-active,
+    html[data-theme="dark"] .fc-button.fc-state-active,
+    html[data-theme="dark"] .fc button.fc-state-active {
+        background: linear-gradient(180deg, #6f7ef6 0%, #5568ee 100%) !important;
+        border-color: rgba(141, 153, 255, 0.54) !important;
+        color: #ffffff !important;
+    }
+
+    html[data-theme="dark"] .fc-unthemed td,
+    html[data-theme="dark"] .fc-unthemed th,
+    html[data-theme="dark"] .fc-divider,
+    html[data-theme="dark"] .fc-popover,
+    html[data-theme="dark"] .fc-row,
+    html[data-theme="dark"] .fc-content,
+    html[data-theme="dark"] .fc-helper-skeleton,
+    html[data-theme="dark"] .fc-widget-content,
+    html[data-theme="dark"] .fc-widget-header {
+        border-color: rgba(143, 197, 255, 0.2) !important;
+    }
+
+    html[data-theme="dark"] .fc-widget-header,
+    html[data-theme="dark"] .fc-head-container {
+        background: rgba(20, 34, 50, 0.96);
+        color: #9bb4ca;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-day-header,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-widget-header,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-day-header,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-widget-header,
+    html[data-theme="dark"] .fc-month-view .fc-day-header,
+    html[data-theme="dark"] .fc-month-view .fc-widget-header {
+        background: linear-gradient(180deg, rgba(23, 40, 59, 0.98) 0%, rgba(19, 33, 49, 0.98) 100%) !important;
+        color: #c4d9ed !important;
+        border-bottom: 1px solid rgba(143, 197, 255, 0.26) !important;
+        text-shadow: none;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-day-header,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-day-header,
+    html[data-theme="dark"] .fc-month-view .fc-day-header {
+        padding: 14px 8px;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-day-header:not(:last-child),
+    html[data-theme="dark"] .fc-agendaDay-view .fc-day-header:not(:last-child),
+    html[data-theme="dark"] .fc-month-view .fc-day-header:not(:last-child),
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-widget-content:not(:last-child),
+    html[data-theme="dark"] .fc-agendaDay-view .fc-widget-content:not(:last-child),
+    html[data-theme="dark"] .fc-month-view .fc-day:not(:last-child),
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-slats td:not(:last-child),
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-bg td:not(:last-child),
+    html[data-theme="dark"] .fc-month-view .fc-bg td:not(:last-child),
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-content-skeleton td:not(:last-child) {
+        border-right: 1px solid rgba(143, 197, 255, 0.3) !important;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-day-header:not(:last-child),
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-bg td:not(:last-child),
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-content-skeleton td:not(:last-child),
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-slats td:not(:last-child),
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-widget-content:not(:last-child) {
+        box-shadow: inset -2px 0 0 rgba(143, 197, 255, 0.34);
+    }
+
+    html[data-theme="dark"] .fc-time-grid,
+    html[data-theme="dark"] .fc-time-grid-container,
+    html[data-theme="dark"] .fc-view,
+    html[data-theme="dark"] .fc-agenda-view,
+    html[data-theme="dark"] .fc-body,
+    html[data-theme="dark"] .fc-bg,
+    html[data-theme="dark"] .fc-slats,
+    html[data-theme="dark"] .fc-content-skeleton,
+    html[data-theme="dark"] .fc-time-grid-container,
+    html[data-theme="dark"] .fc-day-grid-container {
+        background: #16283b;
+    }
+
+    html[data-theme="dark"] .fc-day,
+    html[data-theme="dark"] .fc-time-area,
+    html[data-theme="dark"] .fc-axis,
+    html[data-theme="dark"] .fc-slats td,
+    html[data-theme="dark"] .fc-time-grid .fc-slats .fc-minor td {
+        background: #16283b;
+        color: #9bb4ca;
+    }
+
+    html[data-theme="dark"] .fc-month-view .fc-day,
+    html[data-theme="dark"] .fc-month-view .fc-widget-content,
+    html[data-theme="dark"] .fc-month-view .fc-bg td,
+    html[data-theme="dark"] .fc-month-view .fc-content-skeleton td {
+        background: #16283b !important;
+        border-color: rgba(143, 197, 255, 0.24) !important;
+    }
+
+    html[data-theme="dark"] .fc-month-view .fc-day-top {
+        border-bottom-color: rgba(143, 197, 255, 0.18);
+    }
+
+    html[data-theme="dark"] .fc-month-view .fc-day-number {
+        color: #d7e9f8;
+    }
+
+    html[data-theme="dark"] .fc-month-view .fc-day-grid-event,
+    html[data-theme="dark"] .fc-month-view .calendar-month-event-card {
+        box-shadow: 0 10px 18px rgba(2, 8, 15, 0.24);
+    }
+
+    html[data-theme="dark"] .fc-month-view .fc-more {
+        color: #9ed0ff;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-axis {
+        background: #132131;
+        color: #a9c5df;
+        border-right: 1px solid rgba(143, 197, 255, 0.22) !important;
+    }
+
+    html[data-theme="dark"] .fc-agendaDay-view .fc-axis {
+        background: #132131;
+        color: #a9c5df;
+        border-right: 1px solid rgba(143, 197, 255, 0.22) !important;
+    }
+
+    html[data-theme="dark"] .fc-month-view .fc-today,
+    html[data-theme="dark"] .fc-month-view .fc-state-highlight {
+        background: linear-gradient(180deg, rgba(255, 230, 154, 0.18) 0%, rgba(255, 230, 154, 0.1) 100%) !important;
+    }
+
+    html[data-theme="dark"] .fc-today,
+    html[data-theme="dark"] .fc-state-highlight {
+        background: linear-gradient(180deg, rgba(255, 230, 154, 0.18) 0%, rgba(255, 230, 154, 0.1) 100%) !important;
+    }
+
+    html[data-theme="dark"] .fc-time-grid-event,
+    html[data-theme="dark"] .fc-event {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 12px 24px rgba(2, 8, 15, 0.2);
+    }
+
+    html[data-theme="dark"] .fc-time-grid-event .fc-content,
+    html[data-theme="dark"] .fc-event .fc-content,
+    html[data-theme="dark"] .fc-time-grid-event .fc-time,
+    html[data-theme="dark"] .fc-time-grid-event .fc-title {
+        color: #f8fbff;
+        text-shadow: none;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-axis,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-axis {
+        font-weight: 700;
+        color: #9bb4ca;
     }
 </style>
 @endsection

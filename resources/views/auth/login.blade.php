@@ -1,14 +1,7 @@
 <x-guest-layout>
     <div class="auth-header">
         <div class="logo-container">
-            <div class="logo-circle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="logo-icon">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                    <path d="M2 17l10 5 10-5"/>
-                    <path d="M2 12l10 5 10-5"/>
-                </svg>
-            </div>
-            <div class="logo-text">painelCms</div>
+            <img src="{{ asset('backend/assets/img/cms-logo.svg') }}" alt="CMS Consulta" class="auth-logo-image">
         </div>
         <h1>Bem-vindo de volta</h1>
         <p>Entre na sua conta para acessar o painel administrativo</p>

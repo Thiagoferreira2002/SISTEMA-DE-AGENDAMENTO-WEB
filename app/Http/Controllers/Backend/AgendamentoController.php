@@ -5,13 +5,9 @@ namespace App\Http\Controllers\Backend;
 use App\Http\Controllers\Controller;
 use App\Models\Agendamento;
 use App\Models\ClinicHour;
-use App\Models\Insurance;
-use App\Models\InsurancePlan;
 use App\Models\Patient;
 use App\Models\Procedure;
 use App\Models\Professional;
-use App\Models\Room;
-use App\Models\Unit;
 use App\Traits\RecordsActivity;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -33,15 +29,14 @@ class AgendamentoController extends Controller
 
     public function index(Request $request)
     {
-        [$agendamentos, $professionals] = $this->filteredAppointments($request);
+        [$agendamentos] = $this->filteredAppointments($request);
+        $professionals = $this->professionalOptions();
         $totalAgendamentos = $agendamentos->count();
-        $hideProfessionalFilter = $this->isProfessionalUser();
 
         return view('admin.agendamentos.index', compact(
             'agendamentos',
             'professionals',
-            'totalAgendamentos',
-            'hideProfessionalFilter'
+            'totalAgendamentos'
         ));
     }
 
@@ -75,24 +70,22 @@ class AgendamentoController extends Controller
     {
         $focusedAppointmentId = $request->integer('open_agendamento');
         $professionals = $this->professionals();
-        $units = $this->units();
-        $insurances = $this->insurances();
         $globalSearch = trim($request->string('q')->toString());
         $selectedCalendarDate = $request->string('calendar_date')->toString();
         $period = in_array($request->input('period'), ['dia', 'semana', 'mes'], true)
             ? $request->input('period')
             : '';
-        $professionalRecords = $this->hasTables(['professionals'])
+        $professionalRecords = $this->hasTables(['profissionais'])
             ? Professional::select('id', 'nome', 'agenda_color')->get()
             : collect();
         $professionalById = $professionalRecords->keyBy('id');
         $professionalByName = $professionalRecords->keyBy('nome');
 
-        $agendamentos = Agendamento::with(['patient', 'professional', 'unit', 'insurance', 'procedure'])
+        $agendamentos = Agendamento::with(['patient', 'professional', 'procedure'])
             ->orderBy('data_agendamento')
             ->orderBy('horario')
             ->get()
-            ->map(fn (Agendamento $agendamento) => $this->decorateAppointment($agendamento, $professionals, $units, $insurances, $professionalById, $professionalByName))
+            ->map(fn (Agendamento $agendamento) => $this->decorateAppointment($agendamento, $professionals, $professionalById, $professionalByName))
             ->reject(function (Agendamento $agendamento) use ($focusedAppointmentId, $includeCalendarHistory) {
                 if ($focusedAppointmentId && (int) $agendamento->id === $focusedAppointmentId) {
                     return false;
@@ -278,15 +271,13 @@ class AgendamentoController extends Controller
         $procedureOptions = $this->procedureOptions();
         $professionalOptions = $this->professionalOptions();
         $lockedProfessional = $this->authenticatedProfessional();
-        $unitOptions = $this->unitOptions();
-        $insuranceOptions = $this->insuranceOptions();
         $clinicHours = $this->clinicHoursConfig();
         $occupiedAppointments = $this->occupiedAppointmentsData();
         $setupWarning = null;
         $returnUrl = $this->resolveReturnUrl($request);
 
-        if (! $this->hasTables(['professionals', 'procedures', 'insurances', 'units'])) {
-            $setupWarning = 'Os cadastros base completos ainda não foram migrados. O agendamento seguirá usando opções de contingência até as migrations serem executadas.';
+        if (! $this->hasTables(['profissionais', 'procedimentos'])) {
+            $setupWarning = 'Os cadastros base de profissionais e procedimentos ainda não foram migrados. O agendamento seguirá usando opções de contingência até as migrations serem executadas.';
         }
 
         if ($this->isProfessionalUser() && ! $lockedProfessional) {
@@ -295,12 +286,13 @@ class AgendamentoController extends Controller
                 : 'Seu usuário profissional ainda não está vinculado a um cadastro de profissional de saúde.';
         }
 
-        return view('admin.agendamentos.create', compact('patients', 'preselectedPatient', 'procedureOptions', 'professionalOptions', 'lockedProfessional', 'unitOptions', 'insuranceOptions', 'clinicHours', 'occupiedAppointments', 'setupWarning', 'returnUrl'));
+        return view('admin.agendamentos.create', compact('patients', 'preselectedPatient', 'procedureOptions', 'professionalOptions', 'lockedProfessional', 'clinicHours', 'occupiedAppointments', 'setupWarning', 'returnUrl'));
     }
 
     public function store(Request $request)
     {
         $request->validate(array_merge($this->rules(), [
+            'patient_id' => 'required|exists:pacientes,id',
             'horario_final' => 'required|date_format:H:i|after:horario',
         ]), $this->validationMessages(), $this->validationAttributes());
 
@@ -311,8 +303,6 @@ class AgendamentoController extends Controller
         $this->recordActivity('created', $appointment, 'Agendamento criado com validação de procedimento e agenda.', [
             'procedure_id' => $appointment->procedure_id,
             'professional_id' => $appointment->professional_id,
-            'unit_id' => $appointment->unit_id,
-            'room_id' => $appointment->room_id,
         ]);
 
         return redirect($this->resolveReturnUrl($request))->with('success', 'Agendamento criado com sucesso!');
@@ -321,22 +311,23 @@ class AgendamentoController extends Controller
     public function show(Request $request, Agendamento $agendamento)
     {
         $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
-        $returnUrl = $this->resolveReturnUrl($request);
-        $hideEditButton = Auth::user()?->isClinicManager() ?? false;
+        $returnUrl = $this->resolveDetailReturnUrl($request);
+        $canEditAppointment = $this->canEditAppointment($agendamento);
 
-        return view('admin.agendamentos.show', compact('agendamento', 'returnUrl', 'hideEditButton'));
+        return view('admin.agendamentos.show', compact('agendamento', 'returnUrl', 'canEditAppointment'));
     }
 
     public function edit(Request $request, Agendamento $agendamento)
     {
         $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
+        abort_unless($this->canEditAppointment($agendamento), 403);
 
         $procedureOptions = $this->procedureOptions();
         $professionalOptions = $this->professionalOptions();
         $lockedProfessional = $this->authenticatedProfessional();
         $clinicHours = $this->clinicHoursConfig();
         $occupiedAppointments = $this->occupiedAppointmentsData($agendamento);
-        $returnUrl = $this->resolveReturnUrl($request);
+        $returnUrl = $this->resolveDetailReturnUrl($request);
 
         return view('admin.agendamentos.edit', compact('agendamento', 'procedureOptions', 'professionalOptions', 'lockedProfessional', 'clinicHours', 'occupiedAppointments', 'returnUrl'));
     }
@@ -344,6 +335,7 @@ class AgendamentoController extends Controller
     public function update(Request $request, Agendamento $agendamento)
     {
         $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
+        abort_unless($this->canEditAppointment($agendamento), 403);
 
         $request->validate(array_merge($this->rules(), [
             'status' => 'required|in:pendente,confirmado,cancelado,concluido',
@@ -398,36 +390,65 @@ class AgendamentoController extends Controller
         return $fallback;
     }
 
+    private function resolveDetailReturnUrl(Request $request): string
+    {
+        $candidate = $request->query('return_to', $request->input('return_to'));
+
+        if (is_string($candidate) && trim($candidate) !== '') {
+            $decodedCandidate = urldecode($candidate);
+
+            if ($this->isSafeReturnUrl($decodedCandidate)) {
+                return $decodedCandidate;
+            }
+        }
+
+        return $this->resolveReturnUrl($request);
+    }
+
+    private function canEditAppointment(Agendamento $agendamento): bool
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isClinicManager()) {
+            return false;
+        }
+
+        if ((string) $agendamento->status === 'concluido') {
+            return $user->canManageCadastrosBase();
+        }
+
+        return true;
+    }
+
     private function isSafeReturnUrl(string $url): bool
     {
-        $applicationUrl = rtrim((string) config('app.url'), '/');
+        $applicationUrls = collect([
+            rtrim((string) config('app.url'), '/'),
+            rtrim(url('/'), '/'),
+        ])->filter()->unique()->values();
 
         if (Str::startsWith($url, ['/'])) {
             return true;
         }
 
-        return $applicationUrl !== '' && Str::startsWith($url, $applicationUrl);
+        return $applicationUrls->contains(fn ($applicationUrl) => Str::startsWith($url, $applicationUrl));
     }
 
     private function rules(): array
     {
         return [
-            'patient_id' => 'nullable|exists:patients,id',
-            'procedure_id' => $this->hasTables(['procedures']) ? 'required|exists:procedures,id' : 'nullable',
-            'professional_id' => $this->hasTables(['professionals']) ? 'required|exists:professionals,id' : 'nullable',
-            'unit_id' => $this->hasTables(['units']) ? 'nullable|exists:units,id' : 'nullable',
-            'room_id' => $this->hasTables(['rooms']) ? 'nullable|exists:rooms,id' : 'nullable',
-            'insurance_id' => $this->hasTables(['insurances']) ? 'nullable|exists:insurances,id' : 'nullable',
-            'insurance_plan_id' => $this->hasTables(['insurance_plans']) ? 'nullable|exists:insurance_plans,id' : 'nullable',
+            'patient_id' => 'nullable|exists:pacientes,id',
+            'procedure_id' => $this->hasTables(['procedimentos']) ? 'required|exists:procedimentos,id' : 'nullable',
+            'professional_id' => $this->hasTables(['profissionais']) ? 'required|exists:profissionais,id' : 'nullable',
             'nome' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'telefone' => 'required|string|max:20',
             'servico' => 'nullable|string|max:255',
             'medico' => 'nullable|string|max:255',
-            'unidade' => 'nullable|string|max:255',
-            'convenio' => 'nullable|string|max:255',
-            'numero_guia' => 'nullable|string|max:255',
-            'numero_autorizacao' => 'nullable|string|max:255',
             'duracao_minutos' => 'required|integer|min:5|max:480',
             'motivo_consulta' => 'nullable|string',
             'observacao_alerta' => 'nullable|string',
@@ -443,6 +464,8 @@ class AgendamentoController extends Controller
     {
         return [
             'nome.required' => 'O campo nome é obrigatório.',
+            'patient_id.required' => 'Busque um paciente cadastrado pelo CPF antes de salvar o agendamento.',
+            'patient_id.exists' => 'O paciente selecionado não foi encontrado. Cadastre o paciente antes de continuar.',
             'email.required' => 'O campo e-mail é obrigatório.',
             'telefone.required' => 'O campo telefone é obrigatório.',
             'professional_id.required' => 'O campo profissional é obrigatório.',
@@ -462,6 +485,7 @@ class AgendamentoController extends Controller
     private function validationAttributes(): array
     {
         return [
+            'patient_id' => 'paciente',
             'nome' => 'nome',
             'email' => 'e-mail',
             'telefone' => 'telefone',
@@ -477,10 +501,10 @@ class AgendamentoController extends Controller
     private function buildAppointmentPayload(Request $request, ?Agendamento $agendamento = null): array
     {
         $patient = $request->filled('patient_id') ? Patient::find($request->integer('patient_id')) : null;
-        $procedure = $this->hasTables(['procedures']) && $request->filled('procedure_id') ? Procedure::find($request->integer('procedure_id')) : null;
+        $procedure = $this->hasTables(['procedimentos']) && $request->filled('procedure_id') ? Procedure::find($request->integer('procedure_id')) : null;
         $professional = $this->authenticatedProfessional();
 
-        if (! $professional && $this->hasTables(['professionals', 'professional_schedules']) && $request->filled('professional_id')) {
+        if (! $professional && $this->hasTables(['profissionais', 'agendas_profissionais']) && $request->filled('professional_id')) {
             $professional = Professional::with('schedules')->find($request->integer('professional_id'));
         }
 
@@ -496,35 +520,6 @@ class AgendamentoController extends Controller
             ]);
         }
 
-        $unit = $this->hasTables(['units']) && $request->filled('unit_id') ? Unit::find($request->integer('unit_id')) : null;
-        $room = $this->hasTables(['rooms']) && $request->filled('room_id') ? Room::find($request->integer('room_id')) : null;
-        $insurance = $this->hasTables(['insurances']) && $request->filled('insurance_id') ? Insurance::find($request->integer('insurance_id')) : null;
-        $plan = $this->hasTables(['insurance_plans']) && $request->filled('insurance_plan_id') ? InsurancePlan::find($request->integer('insurance_plan_id')) : null;
-
-        if ($plan && $insurance && $plan->insurance_id !== $insurance->id) {
-            throw ValidationException::withMessages([
-                'insurance_plan_id' => 'O plano selecionado não pertence ao convênio informado.',
-            ]);
-        }
-
-        if ($room && $unit && $room->unit_id !== $unit->id) {
-            throw ValidationException::withMessages([
-                'room_id' => 'A sala selecionada não pertence à unidade informada.',
-            ]);
-        }
-
-        if ($insurance?->requires_guide && ! $request->filled('numero_guia')) {
-            throw ValidationException::withMessages([
-                'numero_guia' => 'Este convênio exige número da guia.',
-            ]);
-        }
-
-        if ($insurance?->requires_authorization && ! $request->filled('numero_autorizacao')) {
-            throw ValidationException::withMessages([
-                'numero_autorizacao' => 'Este convênio exige autorização prévia.',
-            ]);
-        }
-
         $duration = $this->resolveDurationMinutes($request, $procedure);
         $date = Carbon::parse($request->data_agendamento);
         $ignoreId = $agendamento?->id;
@@ -535,35 +530,19 @@ class AgendamentoController extends Controller
             ]);
         }
 
-        if ($room && $this->roomHasConflict($room, $date, $request->horario, $duration, $ignoreId)) {
-            throw ValidationException::withMessages([
-                'room_id' => 'A sala selecionada já está ocupada neste horário.',
-            ]);
-        }
-
         $existingPatient = $agendamento?->patient;
         $existingProcedure = $agendamento?->procedure;
         $existingProfessional = $agendamento?->professional;
-        $existingUnit = $agendamento?->unit;
-        $existingInsurance = $agendamento?->insurance;
 
         return [
             'patient_id' => $patient?->id ?? $agendamento?->patient_id,
             'procedure_id' => $procedure?->id ?? $agendamento?->procedure_id,
             'professional_id' => $professional?->id ?? $agendamento?->professional_id,
-            'unit_id' => $unit?->id ?? $agendamento?->unit_id,
-            'room_id' => $room?->id ?? $agendamento?->room_id,
-            'insurance_id' => $insurance?->id ?? $agendamento?->insurance_id,
-            'insurance_plan_id' => $plan?->id ?? $agendamento?->insurance_plan_id,
             'nome' => $patient?->nome ?? $existingPatient?->nome ?? $request->nome,
             'email' => $patient?->email ?? $existingPatient?->email ?? $request->email,
             'telefone' => $patient?->telefone ?? $existingPatient?->telefone ?? $request->telefone,
             'servico' => $procedure?->nome ?? $existingProcedure?->nome ?? $request->servico,
             'medico' => $professional?->nome ?? $existingProfessional?->nome ?? $request->medico,
-            'unidade' => $unit?->nome ?? $existingUnit?->nome ?? $request->unidade ?? $agendamento?->unidade,
-            'convenio' => $insurance?->nome ?? $existingInsurance?->nome ?? $request->convenio ?? $agendamento?->convenio,
-            'numero_guia' => $request->filled('numero_guia') ? $request->numero_guia : $agendamento?->numero_guia,
-            'numero_autorizacao' => $request->filled('numero_autorizacao') ? $request->numero_autorizacao : $agendamento?->numero_autorizacao,
             'duracao_minutos' => $duration,
             'motivo_consulta' => $request->filled('motivo_consulta') ? $request->motivo_consulta : $agendamento?->motivo_consulta,
             'observacao_alerta' => $request->filled('observacao_alerta') ? $request->observacao_alerta : $agendamento?->observacao_alerta,
@@ -688,23 +667,12 @@ class AgendamentoController extends Controller
             ->whereDate('data_agendamento', $date->format('Y-m-d'))
             ->whereIn('status', ['pendente', 'confirmado'])
             ->where(function ($query) use ($professional) {
-                $query->where('professional_id', $professional->id)
+                $query->where('profissional_id', $professional->id)
                     ->orWhere('medico', $professional->nome);
             })
             ->get();
 
         return ! $conflicts->contains(fn ($item) => $this->hasTimeOverlap($startTime, $duration, $item->horario, $item->duracao_minutos ?: 30));
-    }
-
-    private function roomHasConflict(Room $room, Carbon $date, string $startTime, int $duration, ?int $ignoreId = null): bool
-    {
-        return Agendamento::query()
-            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
-            ->whereDate('data_agendamento', $date->format('Y-m-d'))
-            ->whereIn('status', ['pendente', 'confirmado'])
-            ->where('room_id', $room->id)
-            ->get()
-            ->contains(fn ($item) => $this->hasTimeOverlap($startTime, $duration, $item->horario, $item->duracao_minutos ?: 30));
     }
 
     private function hasTimeOverlap(string $startA, int $durationA, string $startB, int $durationB): bool
@@ -717,17 +685,13 @@ class AgendamentoController extends Controller
         return ! $rangeAEnd->lt($rangeBStart) && ! $rangeBEnd->lt($rangeAStart);
     }
 
-    private function decorateAppointment(Agendamento $agendamento, array $professionals, array $units, array $insurances, $professionalById, $professionalByName): Agendamento
+    private function decorateAppointment(Agendamento $agendamento, array $professionals, $professionalById, $professionalByName): Agendamento
     {
         $professionalNames = collect($professionals)->pluck('nome')->values();
-        $unitNames = collect($units);
-        $insuranceNames = collect($insurances);
         $professional = $agendamento->professional_id ? $professionalById->get($agendamento->professional_id) : $professionalByName->get($agendamento->medico);
 
         $agendamento->medico_exibicao = $agendamento->professional?->nome ?: $agendamento->medico ?: $professionalNames[$agendamento->id % max($professionalNames->count(), 1)];
         $agendamento->cpf_exibicao = $agendamento->patient?->cpf ?: null;
-        $agendamento->unidade_exibicao = $agendamento->unit?->nome ?: $agendamento->unidade ?: $unitNames[$agendamento->id % max($unitNames->count(), 1)];
-        $agendamento->convenio_exibicao = $agendamento->insurance?->nome ?: $agendamento->convenio ?: $insuranceNames[$agendamento->id % max($insuranceNames->count(), 1)];
         $procedure = $agendamento->procedure ?: collect($this->procedures())->firstWhere('nome', $agendamento->servico);
         $agendamento->duracao_exibicao = $agendamento->duracao_minutos ?: ($procedure['duracao'] ?? $procedure?->duracao_minutos ?? 30);
         $agendamento->motivo_exibicao = $agendamento->motivo_consulta ?: ($agendamento->descricao ?: 'Consulta clínica');
@@ -756,7 +720,7 @@ class AgendamentoController extends Controller
 
     private function professionals(): array
     {
-        if (! $this->hasTables(['professionals', 'professional_schedules'])) {
+        if (! $this->hasTables(['profissionais', 'agendas_profissionais'])) {
             return [
                 ['id' => null, 'nome' => 'Dra. Helena Souza', 'especialidade' => 'Clínica Geral', 'registro' => 'CRM 12345', 'cor' => '#0d6efd', 'disponibilidade' => 'Seg a Sex, 08h às 17h'],
                 ['id' => null, 'nome' => 'Dr. Marcos Lima', 'especialidade' => 'Cardiologia', 'registro' => 'CRM 67890', 'cor' => '#28a745', 'disponibilidade' => 'Ter e Qui, 09h às 18h'],
@@ -802,31 +766,9 @@ class AgendamentoController extends Controller
         ];
     }
 
-    private function units(): array
-    {
-        if (! $this->hasTables(['units'])) {
-            return ['Unidade Centro', 'Unidade Zona Sul', 'Teleatendimento'];
-        }
-
-        $records = Unit::where('ativo', true)->orderBy('nome')->pluck('nome')->all();
-
-        return $records ?: ['Unidade Centro', 'Unidade Zona Sul', 'Teleatendimento'];
-    }
-
-    private function insurances(): array
-    {
-        if (! $this->hasTables(['insurances'])) {
-            return ['Particular', 'Unimed', 'Bradesco Saúde', 'Amil'];
-        }
-
-        $records = Insurance::where('ativo', true)->orderBy('nome')->pluck('nome')->all();
-
-        return $records ?: ['Particular', 'Unimed', 'Bradesco Saúde', 'Amil'];
-    }
-
     private function procedures(): array
     {
-        if (! $this->hasTables(['procedures'])) {
+        if (! $this->hasTables(['procedimentos'])) {
             return [
                 ['id' => null, 'professional_id' => null, 'nome' => 'Consulta', 'duracao' => 30, 'valor' => '150,00', 'codigo_tuss' => null],
                 ['id' => null, 'professional_id' => null, 'nome' => 'Exame', 'duracao' => 60, 'valor' => '220,00', 'codigo_tuss' => null],
@@ -868,7 +810,7 @@ class AgendamentoController extends Controller
             return (string) $professional['id'] === (string) $lockedProfessional->id;
         })->map(function ($professional) {
             $clinicHours = $this->clinicHoursConfig();
-            $record = $this->hasTables(['professionals', 'professional_schedules']) && $professional['id']
+            $record = $this->hasTables(['profissionais', 'agendas_profissionais']) && $professional['id']
                 ? Professional::with('schedules')->find($professional['id'])
                 : null;
 
@@ -944,7 +886,7 @@ class AgendamentoController extends Controller
 
     private function authenticatedProfessional(): ?Professional
     {
-        if (! $this->isProfessionalUser() || ! $this->hasTables(['professionals'])) {
+        if (! $this->isProfessionalUser() || ! $this->hasTables(['profissionais'])) {
             return null;
         }
 
@@ -1029,71 +971,13 @@ class AgendamentoController extends Controller
         abort_unless($matchesProfessional, 403);
     }
 
-    private function insuranceOptions(): array
-    {
-        if (! $this->hasTables(['insurances', 'insurance_plans'])) {
-            return [
-                ['id' => null, 'nome' => 'Particular', 'requires_guide' => false, 'requires_authorization' => false, 'plans' => []],
-            ];
-        }
-
-        $records = Insurance::with('plans')->where('ativo', true)->orderBy('nome')->get();
-
-        if ($records->isNotEmpty()) {
-            return $records->map(fn ($insurance) => [
-                'id' => $insurance->id,
-                'nome' => $insurance->nome,
-                'requires_guide' => $insurance->requires_guide,
-                'requires_authorization' => $insurance->requires_authorization,
-                'plans' => $insurance->plans->map(fn ($plan) => [
-                    'id' => $plan->id,
-                    'nome' => $plan->nome,
-                ])->all(),
-            ])->all();
-        }
-
-        return [
-            ['id' => null, 'nome' => 'Particular', 'requires_guide' => false, 'requires_authorization' => false, 'plans' => []],
-        ];
-    }
-
-    private function unitOptions(): array
-    {
-        if (! $this->hasTables(['units', 'rooms'])) {
-            return [
-                ['id' => null, 'nome' => 'Unidade Centro', 'rooms' => []],
-                ['id' => null, 'nome' => 'Unidade Zona Sul', 'rooms' => []],
-                ['id' => null, 'nome' => 'Teleatendimento', 'rooms' => []],
-            ];
-        }
-
-        $records = Unit::with('rooms')->where('ativo', true)->orderBy('nome')->get();
-
-        if ($records->isNotEmpty()) {
-            return $records->map(fn ($unit) => [
-                'id' => $unit->id,
-                'nome' => $unit->nome,
-                'rooms' => $unit->rooms->where('ativo', true)->map(fn ($room) => [
-                    'id' => $room->id,
-                    'nome' => $room->nome,
-                ])->values()->all(),
-            ])->all();
-        }
-
-        return [
-            ['id' => null, 'nome' => 'Unidade Centro', 'rooms' => []],
-            ['id' => null, 'nome' => 'Unidade Zona Sul', 'rooms' => []],
-            ['id' => null, 'nome' => 'Teleatendimento', 'rooms' => []],
-        ];
-    }
-
     private function procedureOptions(): array
     {
-        if (! $this->hasTables(['procedures', 'procedure_prices'])) {
+        if (! $this->hasTables(['procedimentos'])) {
             return $this->procedures();
         }
 
-        $records = Procedure::with('prices')->where('ativo', true)->orderBy('nome')->get();
+        $records = Procedure::where('ativo', true)->orderBy('nome')->get();
 
         if ($records->isNotEmpty()) {
             return $records->map(fn ($procedure) => [
@@ -1103,11 +987,6 @@ class AgendamentoController extends Controller
                 'duracao' => $procedure->duracao_minutos,
                 'valor' => number_format((float) $procedure->valor_particular, 2, ',', '.'),
                 'codigo_tuss' => $procedure->codigo_tuss,
-                'prices' => $procedure->prices->map(fn ($price) => [
-                    'insurance_id' => $price->insurance_id,
-                    'insurance_plan_id' => $price->insurance_plan_id,
-                    'valor' => number_format((float) $price->valor, 2, ',', '.'),
-                ])->all(),
             ])->all();
         }
 
@@ -1116,7 +995,7 @@ class AgendamentoController extends Controller
 
     private function clinicHoursConfig(): ?array
     {
-        if (! $this->hasTables(['clinic_hours'])) {
+        if (! $this->hasTables(['horarios_clinica'])) {
             return null;
         }
 
@@ -1144,7 +1023,7 @@ class AgendamentoController extends Controller
             ->with('professional:id,nome')
             ->when($ignoredAppointment, fn ($query) => $query->where('id', '!=', $ignoredAppointment->id))
             ->whereIn('status', ['pendente', 'confirmado'])
-            ->get(['id', 'professional_id', 'medico', 'data_agendamento', 'horario', 'duracao_minutos', 'status'])
+            ->get(['id', 'profissional_id', 'medico', 'data_agendamento', 'horario', 'duracao_minutos', 'status'])
             ->map(function (Agendamento $agendamento) {
                 $startTime = substr((string) $agendamento->horario, 0, 5);
                 $duration = (int) ($agendamento->duracao_minutos ?: 30);

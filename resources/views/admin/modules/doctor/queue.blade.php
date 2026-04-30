@@ -6,6 +6,14 @@
     </div>
 
     <div class="section-body">
+        @if(session('success') && !str_contains(session('success'), 'O registro já está em Agendamentos Finalizados.'))
+            <div class="alert alert-success mt-3 mb-4">{{ session('success') }}</div>
+        @endif
+
+        @if(session('warning'))
+            <div class="alert alert-warning mt-3 mb-4">{{ session('warning') }}</div>
+        @endif
+
         @if(($baseRoute ?? '') === 'admin.doctor.pending-finalization')
             <div class="row mb-4">
                 <div class="col-lg-4 col-md-6 col-12">
@@ -58,7 +66,20 @@
                                 <input type="date" class="form-control" id="queue-date" name="date" value="{{ $selectedDate }}">
                             </div>
                         </div>
-                        <div class="col-md-5 d-flex flex-wrap align-items-center" style="gap: 8px;">
+                        @if(($professionalOptions ?? collect())->isNotEmpty())
+                            <div class="col-md-3">
+                                <div class="form-group mb-md-0">
+                                    <label for="queue-professional">Profissional</label>
+                                    <select class="form-control" id="queue-professional" name="professional_id">
+                                        <option value="">Todos os profissionais</option>
+                                        @foreach($professionalOptions as $professionalOption)
+                                            <option value="{{ $professionalOption->id }}" {{ (string) ($selectedProfessionalId ?? '') === (string) $professionalOption->id ? 'selected' : '' }}>{{ $professionalOption->nome }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        @endif
+                        <div class="col-md-{{ ($professionalOptions ?? collect())->isNotEmpty() ? '2' : '5' }} d-flex flex-wrap align-items-center" style="gap: 8px;">
                             <button type="submit" class="btn btn-primary">Pesquisar</button>
                             <a href="{{ route($baseRoute ?? 'admin.doctor.queue') }}" class="btn btn-light">Limpar</a>
                         </div>
@@ -100,14 +121,15 @@
                                             {{ ucfirst($item->status ?? 'pendente') }}
                                         </span>
                                     </td>
-                                    <td>
-                                        <div class="d-flex flex-wrap" style="gap: 8px;">
+                                    <td style="white-space: nowrap; min-width: 250px;">
+                                        <div class="d-inline-flex flex-nowrap align-items-center" style="gap: 8px;">
                                             <a href="{{ route('admin.agendamentos.show', ['agendamento' => $item, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-info">Ver</a>
-                                            <form method="POST" action="{{ route('admin.doctor.queue.finish', $item) }}">
+                                            <form method="POST" action="{{ route('admin.doctor.queue.finish', $item) }}" class="mb-0">
                                                 @csrf
                                                 <input type="hidden" name="q" value="{{ $search }}">
                                                 <input type="hidden" name="date" value="{{ $selectedDate }}">
                                                 <input type="hidden" name="period" value="{{ $period }}">
+                                                <input type="hidden" name="return_to" value="{{ url()->full() }}">
                                                 <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Deseja finalizar este atendimento?');">Finalizar atendimento</button>
                                             </form>
                                         </div>

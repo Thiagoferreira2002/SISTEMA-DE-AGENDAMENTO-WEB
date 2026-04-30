@@ -113,11 +113,11 @@ class PatientController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $hasCepColumn = Schema::hasColumn('patients', 'cep');
-        $hasBairroColumn = Schema::hasColumn('patients', 'bairro');
-        $hasComplementoColumn = Schema::hasColumn('patients', 'complemento');
-        $hasNumeroEnderecoColumn = Schema::hasColumn('patients', 'numero_endereco');
-        $hasTipoMoradiaColumn = Schema::hasColumn('patients', 'tipo_moradia');
+        $hasCepColumn = Schema::hasColumn('pacientes', 'cep');
+        $hasBairroColumn = Schema::hasColumn('pacientes', 'bairro');
+        $hasComplementoColumn = Schema::hasColumn('pacientes', 'complemento');
+        $hasNumeroEnderecoColumn = Schema::hasColumn('pacientes', 'numero_endereco');
+        $hasTipoMoradiaColumn = Schema::hasColumn('pacientes', 'tipo_moradia');
         $duplicateRules = $this->patientDuplicateRules();
 
         $request->validate([
@@ -213,7 +213,7 @@ class PatientController extends Controller
             ? $request->input('action_type')
             : '';
 
-        if (Schema::hasTable('activity_logs')) {
+        if (Schema::hasTable('logs_atividades')) {
             $patientLogsQuery = ActivityLog::with('user')
                 ->where('subject_type', Patient::class)
                 ->latest();
@@ -254,11 +254,11 @@ class PatientController extends Controller
     public function update(Request $request, Patient $patient)
     {
         $previousValues = $this->patientLogPayload($patient);
-        $hasCepColumn = Schema::hasColumn('patients', 'cep');
-        $hasBairroColumn = Schema::hasColumn('patients', 'bairro');
-        $hasComplementoColumn = Schema::hasColumn('patients', 'complemento');
-        $hasNumeroEnderecoColumn = Schema::hasColumn('patients', 'numero_endereco');
-        $hasTipoMoradiaColumn = Schema::hasColumn('patients', 'tipo_moradia');
+        $hasCepColumn = Schema::hasColumn('pacientes', 'cep');
+        $hasBairroColumn = Schema::hasColumn('pacientes', 'bairro');
+        $hasComplementoColumn = Schema::hasColumn('pacientes', 'complemento');
+        $hasNumeroEnderecoColumn = Schema::hasColumn('pacientes', 'numero_endereco');
+        $hasTipoMoradiaColumn = Schema::hasColumn('pacientes', 'tipo_moradia');
         $duplicateRules = $this->patientDuplicateRules($patient->id);
 
         $request->validate([
@@ -444,7 +444,7 @@ class PatientController extends Controller
 
     private function patientFieldExists(string $field, string $normalizedValue, ?int $ignorePatientId = null): bool
     {
-        if (! Schema::hasTable('patients') || ! Schema::hasColumn('patients', $field)) {
+        if (! Schema::hasTable('pacientes') || ! Schema::hasColumn('pacientes', $field)) {
             return false;
         }
 

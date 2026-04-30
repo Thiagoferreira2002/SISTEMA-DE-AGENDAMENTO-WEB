@@ -65,6 +65,9 @@
                                 </thead>
                                 <tbody>
                                     @forelse($patients as $patient)
+                                    @php
+                                        $canManagePatient = ! auth()->user()?->isClinicManager();
+                                    @endphp
                                     <tr>
                                         <td>{{ $patient->nome }}</td>
                                         <td>{{ $patient->cpf ?: '-' }}</td>
@@ -74,15 +77,19 @@
                                         <td class="text-center align-middle">
                                             <span class="badge badge-{{ $patient->cadastro_status_class }}">{{ $patient->cadastro_status_label }}</span>
                                         </td>
-                                        <td class="text-center align-middle">
-                                            <a href="{{ route('admin.agendamentos.create', ['patient_id' => $patient->id, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-success">Agendar</a>
-                                            <a href="{{ route('admin.patients.show', $patient) }}" class="btn btn-sm btn-info">Detalhes</a>
-                                            <a href="{{ route('admin.patients.edit', $patient) }}" class="btn btn-sm btn-warning">Editar</a>
-                                            <form action="{{ route('admin.patients.destroy', $patient) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Excluir paciente?')">Excluir</button>
-                                            </form>
+                                        <td class="text-center align-middle" style="white-space: nowrap; min-width: 320px;">
+                                            <div class="d-inline-flex flex-nowrap align-items-center" style="gap: 8px;">
+                                                <a href="{{ route('admin.patients.show', $patient) }}" class="btn btn-sm btn-info">Detalhes</a>
+                                                @if($canManagePatient)
+                                                    <a href="{{ route('admin.agendamentos.create', ['patient_id' => $patient->id, 'return_to' => url()->full()]) }}" class="btn btn-sm btn-success">Agendar</a>
+                                                    <a href="{{ route('admin.patients.edit', $patient) }}" class="btn btn-sm btn-warning">Editar</a>
+                                                    <form action="{{ route('admin.patients.destroy', $patient) }}" method="POST" class="mb-0">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Excluir paciente?')">Excluir</button>
+                                                    </form>
+                                                @endif
+                                            </div>
                                         </td>
                                     </tr>
                                     @empty

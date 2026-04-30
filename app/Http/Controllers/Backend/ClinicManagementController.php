@@ -6,18 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Agendamento;
 use App\Models\ClinicHour;
-use App\Models\Insurance;
-use App\Models\InsurancePlan;
 use App\Models\Patient;
 use App\Models\Procedure;
-use App\Models\ProcedurePrice;
 use App\Models\Professional;
-use App\Models\Room;
-use App\Models\Unit;
 use App\Models\User;
 use App\Traits\RecordsActivity;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -108,7 +104,7 @@ class ClinicManagementController extends Controller
         $setupWarning = null;
         $clinicHours = null;
 
-        if ($this->hasTables(['clinic_hours'])) {
+        if ($this->hasTables(['horarios_clinica'])) {
             $clinicHours = ClinicHour::query()->firstOrCreate([], [
                 'opening_time' => '07:00:00',
                 'closing_time' => '19:00:00',
@@ -124,7 +120,7 @@ class ClinicManagementController extends Controller
 
     public function updateClinicHours(Request $request): RedirectResponse
     {
-        if (! $this->hasTables(['clinic_hours'])) {
+        if (! $this->hasTables(['horarios_clinica'])) {
             return redirect()->route('admin.settings.clinic-hours')->with('warning', 'Execute as migrations dos cadastros base para alterar o horário da clínica.');
         }
 
@@ -240,7 +236,7 @@ class ClinicManagementController extends Controller
 
     private function clinicHoursWindow(): ?array
     {
-        if (! $this->hasTables(['clinic_hours'])) {
+        if (! $this->hasTables(['horarios_clinica'])) {
             return null;
         }
 
@@ -317,7 +313,7 @@ class ClinicManagementController extends Controller
 
         if ($authenticatedProfessional) {
             $applyProfessionalScope = function ($query) use ($authenticatedProfessional) {
-                $query->where('professional_id', $authenticatedProfessional->id)
+                $query->where('profissional_id', $authenticatedProfessional->id)
                     ->orWhere('medico', $authenticatedProfessional->nome);
             };
 
@@ -390,7 +386,7 @@ class ClinicManagementController extends Controller
 
     private function authenticatedProfessional(): ?Professional
     {
-        if (! $this->isProfessionalUser() || ! Schema::hasTable('professionals')) {
+        if (! $this->isProfessionalUser() || ! Schema::hasTable('profissionais')) {
             return null;
         }
 
@@ -465,6 +461,11 @@ class ClinicManagementController extends Controller
     {
         $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
 
+        if (Auth::user()?->isClinicManager()) {
+            return redirect($request->input('return_to', route('admin.agendamentos.confirmations')))
+                ->with('layout_warning', 'O Gestor da Clínica possui acesso somente para visualização em Agendamentos.');
+        }
+
         $this->recordActivity('deleted', $agendamento, 'Agendamento excluído a partir da tela de confirmações.', [
             'nome' => $agendamento->nome,
             'status' => $agendamento->status,
@@ -484,9 +485,9 @@ class ClinicManagementController extends Controller
         }
 
         $appointmentProfessionalName = mb_strtolower(trim((string) ($agendamento->professional?->nome ?: $agendamento->medico)));
-        $authenticatedProfessionalName = mb_strtolower(trim((string) $professional->nome));
         $matchesProfessional = (string) $agendamento->professional_id === (string) $professional->id
-            || ($appointmentProfessionalName !== '' && $appointmentProfessionalName === $authenticatedProfessionalName);
+            || collect($this->professionalNameCandidates($professional, Auth::user()))
+                ->contains(fn ($candidate) => $appointmentProfessionalName !== '' && $appointmentProfessionalName === mb_strtolower(trim((string) $candidate)));
 
         abort_unless($matchesProfessional, 403);
     }
@@ -507,7 +508,7 @@ class ClinicManagementController extends Controller
 
         if ($authenticatedProfessional) {
             $historyQuery->where(function ($query) use ($authenticatedProfessional) {
-                $query->where('professional_id', $authenticatedProfessional->id)
+                $query->where('profissional_id', $authenticatedProfessional->id)
                     ->orWhere('medico', $authenticatedProfessional->nome);
             });
         } elseif ($this->isProfessionalUser()) {
@@ -527,7 +528,7 @@ class ClinicManagementController extends Controller
         }
 
         if (! $authenticatedProfessional && $professionalFilter !== '') {
-            $historyQuery->where('professional_id', (int) $professionalFilter);
+            $historyQuery->where('profissional_id', (int) $professionalFilter);
         }
 
         if ($period === 'dia') {
@@ -564,7 +565,7 @@ class ClinicManagementController extends Controller
             return $item;
         });
 
-        $professionalOptions = ! $authenticatedProfessional && $this->hasTables(['professionals'])
+        $professionalOptions = ! $authenticatedProfessional && $this->hasTables(['profissionais'])
             ? Professional::query()->where('ativo', true)->orderBy('nome')->get(['id', 'nome'])
             : collect();
 
@@ -596,11 +597,12 @@ class ClinicManagementController extends Controller
         $queueQuery = $this->baseDoctorQueueQuery();
         $search = trim($request->string('q')->toString());
         $selectedDate = $request->filled('date') ? (string) $request->input('date') : '';
+        $selectedProfessionalId = $request->filled('professional_id') ? (string) $request->input('professional_id') : '';
         $period = in_array($request->input('period'), ['dia', 'semana', 'mes'], true)
             ? $request->input('period')
-            : 'dia';
+            : '';
 
-        $this->applyDoctorQueueFilters($queueQuery, $search, $selectedDate, $period);
+        $this->applyDoctorQueueFilters($queueQuery, $search, $selectedDate, $period, $selectedProfessionalId);
 
         $queue = $queueQuery
             ->orderBy('data_agendamento')
@@ -623,8 +625,11 @@ class ClinicManagementController extends Controller
         $cardTitle = 'Pacientes na fila';
         $emptyMessage = 'Nenhum paciente encontrado na fila para os filtros informados.';
         $baseRoute = 'admin.doctor.queue';
+        $professionalOptions = ! $this->authenticatedProfessional() && Schema::hasTable('profissionais')
+            ? Professional::query()->where('ativo', true)->orderBy('nome')->get(['id', 'nome'])
+            : collect();
 
-        return view('admin.modules.doctor.queue', compact('queue', 'period', 'search', 'selectedDate', 'totalPatientsInQueue', 'pageTitle', 'cardTitle', 'emptyMessage', 'baseRoute', 'hasDelayedAppointments'));
+        return view('admin.modules.doctor.queue', compact('queue', 'period', 'search', 'selectedDate', 'selectedProfessionalId', 'professionalOptions', 'totalPatientsInQueue', 'pageTitle', 'cardTitle', 'emptyMessage', 'baseRoute', 'hasDelayedAppointments'));
     }
 
     public function doctorPendingFinalization(Request $request): View
@@ -632,11 +637,12 @@ class ClinicManagementController extends Controller
         $queueQuery = $this->baseDoctorQueueQuery();
         $search = trim($request->string('q')->toString());
         $selectedDate = $request->filled('date') ? (string) $request->input('date') : '';
+        $selectedProfessionalId = $request->filled('professional_id') ? (string) $request->input('professional_id') : '';
         $period = in_array($request->input('period'), ['dia', 'semana', 'mes'], true)
             ? $request->input('period')
             : '';
 
-        $this->applyDoctorQueueFilters($queueQuery, $search, $selectedDate, $period);
+        $this->applyDoctorQueueFilters($queueQuery, $search, $selectedDate, $period, $selectedProfessionalId);
 
         $queue = $queueQuery
             ->orderBy('data_agendamento')
@@ -659,8 +665,11 @@ class ClinicManagementController extends Controller
         $cardTitle = 'Agendamentos não finalizados';
         $emptyMessage = 'Nenhum atendimento atrasado encontrado para os filtros informados.';
         $baseRoute = 'admin.doctor.pending-finalization';
+        $professionalOptions = ! $this->authenticatedProfessional() && Schema::hasTable('profissionais')
+            ? Professional::query()->where('ativo', true)->orderBy('nome')->get(['id', 'nome'])
+            : collect();
 
-        return view('admin.modules.doctor.queue', compact('queue', 'period', 'search', 'selectedDate', 'totalPatientsInQueue', 'pageTitle', 'cardTitle', 'emptyMessage', 'baseRoute', 'hasDelayedAppointments'));
+        return view('admin.modules.doctor.queue', compact('queue', 'period', 'search', 'selectedDate', 'selectedProfessionalId', 'professionalOptions', 'totalPatientsInQueue', 'pageTitle', 'cardTitle', 'emptyMessage', 'baseRoute', 'hasDelayedAppointments'));
     }
 
     private function baseDoctorQueueQuery()
@@ -674,9 +683,14 @@ class ClinicManagementController extends Controller
         $authenticatedProfessional = $this->authenticatedProfessional();
 
         if ($authenticatedProfessional) {
-            $queueQuery->where(function ($query) use ($authenticatedProfessional) {
-                $query->where('professional_id', $authenticatedProfessional->id)
-                    ->orWhere('medico', $authenticatedProfessional->nome);
+            $nameCandidates = $this->professionalNameCandidates($authenticatedProfessional, Auth::user());
+
+            $queueQuery->where(function ($query) use ($authenticatedProfessional, $nameCandidates) {
+                $query->where('profissional_id', $authenticatedProfessional->id);
+
+                foreach ($nameCandidates as $nameCandidate) {
+                    $query->orWhereRaw('LOWER(TRIM(medico)) = ?', [mb_strtolower(trim((string) $nameCandidate))]);
+                }
             });
         } elseif ($this->isProfessionalUser()) {
             $queueQuery->whereRaw('1 = 0');
@@ -685,10 +699,43 @@ class ClinicManagementController extends Controller
         return $queueQuery;
     }
 
-    private function applyDoctorQueueFilters($queueQuery, string $search, string $selectedDate, string $period): void
+    private function professionalNameCandidates(Professional $professional, $user): array
+    {
+        return collect([
+            $professional->nome,
+            $user?->full_name,
+            trim((string) (($user?->nome ?? '') . ' ' . ($user?->sobrenome ?? ''))),
+            $user?->nome,
+        ])
+            ->filter(fn ($value) => trim((string) $value) !== '')
+            ->map(fn ($value) => trim((string) $value))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function applyDoctorQueueFilters($queueQuery, string $search, string $selectedDate, string $period, string $selectedProfessionalId = ''): void
     {
         if ($search !== '') {
             $queueQuery->where('nome', 'like', '%' . $search . '%');
+        }
+
+        if ($selectedProfessionalId !== '' && ! $this->authenticatedProfessional()) {
+            $selectedProfessional = Schema::hasTable('profissionais')
+                ? Professional::query()->where('ativo', true)->find((int) $selectedProfessionalId)
+                : null;
+
+            if ($selectedProfessional) {
+                $nameCandidates = $this->professionalNameCandidates($selectedProfessional, null);
+
+                $queueQuery->where(function ($query) use ($selectedProfessional, $nameCandidates) {
+                    $query->where('profissional_id', $selectedProfessional->id);
+
+                    foreach ($nameCandidates as $nameCandidate) {
+                        $query->orWhereRaw('LOWER(TRIM(medico)) = ?', [mb_strtolower(trim((string) $nameCandidate))]);
+                    }
+                });
+            }
         }
 
         if ($selectedDate !== '') {
@@ -731,24 +778,22 @@ class ClinicManagementController extends Controller
     public function finishAppointment(Request $request, Agendamento $agendamento): RedirectResponse
     {
         $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
+        $redirectTo = $request->input('return_to', route('admin.doctor.queue', $request->only(['q', 'date', 'period'])));
 
         if ($agendamento->status === 'concluido') {
-            return redirect()
-                ->route('admin.doctor.queue', $request->only(['q', 'date', 'period']))
+            return redirect($redirectTo)
                 ->with('warning', 'Este atendimento já foi finalizado.');
         }
 
         if ($agendamento->status === 'cancelado') {
-            return redirect()
-                ->route('admin.doctor.queue', $request->only(['q', 'date', 'period']))
+            return redirect($redirectTo)
                 ->with('warning', 'Não é possível finalizar um atendimento cancelado.');
         }
 
         $agendamento->update(['status' => 'concluido']);
         $this->recordActivity('updated', $agendamento, 'Atendimento finalizado e enviado para Agendamentos Finalizados.', ['status' => 'concluido']);
 
-        return redirect()
-            ->route('admin.doctor.queue', $request->only(['q', 'date', 'period']))
+        return redirect($redirectTo)
             ->with('success', 'Atendimento finalizado com sucesso. O registro já está em Agendamentos Finalizados.');
     }
 
@@ -855,7 +900,7 @@ class ClinicManagementController extends Controller
         $professionals = collect();
         $professionalUserSearch = trim((string) $request->input('professional_user_search'));
 
-        if ($this->hasTables(['professionals', 'professional_schedules'])) {
+        if ($this->hasTables(['profissionais', 'agendas_profissionais'])) {
             $professionalsQuery = Professional::with(['schedules', 'user'])->orderBy('nome');
 
             if ($professionalUserSearch !== '') {
@@ -921,7 +966,7 @@ class ClinicManagementController extends Controller
 
     public function storeProfessional(Request $request): RedirectResponse
     {
-        if (! $this->hasTables(['professionals', 'professional_schedules'])) {
+        if (! $this->hasTables(['profissionais', 'agendas_profissionais'])) {
             return redirect()->route('admin.settings.professionals')->with('warning', 'Execute as migrations dos cadastros base para cadastrar profissionais.');
         }
 
@@ -942,7 +987,7 @@ class ClinicManagementController extends Controller
             'user_id' => [
                 'required',
                 'exists:users,id',
-                Rule::unique('professionals', 'user_id'),
+                Rule::unique('profissionais', 'user_id'),
                 function ($attribute, $value, $fail) {
                     $linkedUser = User::find($value);
 
@@ -952,7 +997,7 @@ class ClinicManagementController extends Controller
                 },
             ],
             'especialidade_principal' => 'required|string|max:255',
-            'cpf' => 'nullable|string|max:20|unique:professionals,cpf',
+            'cpf' => 'nullable|string|max:20|unique:profissionais,cpf',
             'registro_tipo' => ['required', 'string', 'max:20', Rule::in(array_keys($professionalCouncils))],
             'registro_numero' => 'required|string|max:50',
             'agenda_color' => 'required|string|max:20',
@@ -994,7 +1039,8 @@ class ClinicManagementController extends Controller
             $professional,
             $request->input('schedule_day_of_week', []),
             $request->input('schedule_start_time', []),
-            $request->input('schedule_end_time', [])
+            $request->input('schedule_end_time', []),
+            $this->clinicHoursWindow()
         );
 
         $this->recordActivity('created', $professional, 'Profissional de saúde cadastrado.', [
@@ -1017,7 +1063,7 @@ class ClinicManagementController extends Controller
 
     public function updateProfessional(Request $request, Professional $professional): RedirectResponse
     {
-        if (! $this->hasTables(['professionals', 'professional_schedules'])) {
+        if (! $this->hasTables(['profissionais', 'agendas_profissionais'])) {
             return redirect()->route('admin.settings.professionals')->with('warning', 'Execute as migrations dos cadastros base para editar profissionais.');
         }
 
@@ -1038,7 +1084,7 @@ class ClinicManagementController extends Controller
             'user_id' => [
                 'required',
                 'exists:users,id',
-                Rule::unique('professionals', 'user_id')->ignore($professional->id),
+                Rule::unique('profissionais', 'user_id')->ignore($professional->id),
                 function ($attribute, $value, $fail) {
                     $linkedUser = User::find($value);
 
@@ -1048,7 +1094,7 @@ class ClinicManagementController extends Controller
                 },
             ],
             'especialidade_principal' => 'required|string|max:255',
-            'cpf' => ['nullable', 'string', 'max:20', Rule::unique('professionals', 'cpf')->ignore($professional->id)],
+            'cpf' => ['nullable', 'string', 'max:20', Rule::unique('profissionais', 'cpf')->ignore($professional->id)],
             'registro_tipo' => ['required', 'string', 'max:20', Rule::in(array_keys($professionalCouncils))],
             'registro_numero' => 'required|string|max:50',
             'agenda_color' => 'required|string|max:20',
@@ -1107,7 +1153,8 @@ class ClinicManagementController extends Controller
             $professional,
             $request->input('schedule_day_of_week', []),
             $request->input('schedule_start_time', []),
-            $request->input('schedule_end_time', [])
+            $request->input('schedule_end_time', []),
+            $this->clinicHoursWindow()
         );
 
         $professional->load('schedules');
@@ -1144,7 +1191,7 @@ class ClinicManagementController extends Controller
 
     public function destroyProfessional(Professional $professional): RedirectResponse
     {
-        if (! $this->hasTables(['professionals'])) {
+        if (! $this->hasTables(['profissionais'])) {
             return redirect()->route('admin.settings.professionals')->with('warning', 'Execute as migrations dos cadastros base para excluir profissionais.');
         }
 
@@ -1177,106 +1224,6 @@ class ClinicManagementController extends Controller
         return redirect()->route('admin.settings.professionals')->with('success', 'Profissional excluído com sucesso.');
     }
 
-    public function insurance(): View
-    {
-        $setupWarning = null;
-        $insurances = collect();
-        $procedures = collect();
-
-        if ($this->hasTables(['insurances', 'insurance_plans', 'procedure_prices', 'procedures'])) {
-            $insurances = Insurance::with(['plans', 'procedurePrices.procedure'])->orderBy('nome')->get();
-            $procedures = Procedure::orderBy('nome')->get();
-        } else {
-            $setupWarning = 'Os cadastros de convênios e planos ainda dependem das novas migrations. Execute as migrations para habilitar o módulo completo.';
-        }
-
-        return view('admin.modules.settings.insurance', compact('insurances', 'procedures', 'setupWarning'));
-    }
-
-    public function storeInsurance(Request $request): RedirectResponse
-    {
-        if (! $this->hasTables(['insurances'])) {
-            return redirect()->route('admin.settings.insurance')->with('warning', 'Execute as migrations dos cadastros base para cadastrar convênios.');
-        }
-
-        $request->validate([
-            'nome' => 'required|string|max:255|unique:insurances,nome',
-            'ans' => 'nullable|string|max:20',
-            'cnpj' => 'nullable|string|max:20',
-            'requires_guide' => 'nullable|boolean',
-            'requires_authorization' => 'nullable|boolean',
-        ]);
-
-        $insurance = Insurance::create([
-            'nome' => $request->nome,
-            'ans' => $request->ans,
-            'cnpj' => $request->cnpj,
-            'requires_guide' => $request->boolean('requires_guide'),
-            'requires_authorization' => $request->boolean('requires_authorization'),
-            'ativo' => true,
-        ]);
-
-        $this->recordActivity('created', $insurance, 'Convênio cadastrado.', ['nome' => $insurance->nome]);
-
-        return redirect()->route('admin.settings.insurance')->with('success', 'Convênio cadastrado com sucesso.');
-    }
-
-    public function storeInsurancePlan(Request $request): RedirectResponse
-    {
-        if (! $this->hasTables(['insurances', 'insurance_plans'])) {
-            return redirect()->route('admin.settings.insurance')->with('warning', 'Execute as migrations dos cadastros base para cadastrar planos.');
-        }
-
-        $request->validate([
-            'insurance_id' => 'required|exists:insurances,id',
-            'nome' => 'required|string|max:255',
-            'codigo' => 'nullable|string|max:50',
-        ]);
-
-        $plan = InsurancePlan::create([
-            'insurance_id' => $request->insurance_id,
-            'nome' => $request->nome,
-            'codigo' => $request->codigo,
-            'ativo' => true,
-        ]);
-
-        $this->recordActivity('created', $plan, 'Plano de convênio cadastrado.', ['insurance_id' => $plan->insurance_id]);
-
-        return redirect()->route('admin.settings.insurance')->with('success', 'Plano cadastrado com sucesso.');
-    }
-
-    public function storeProcedurePrice(Request $request): RedirectResponse
-    {
-        if (! $this->hasTables(['insurances', 'insurance_plans', 'procedures', 'procedure_prices'])) {
-            return redirect()->route('admin.settings.insurance')->with('warning', 'Execute as migrations dos cadastros base para configurar tabelas de preços.');
-        }
-
-        $request->validate([
-            'procedure_id' => 'required|exists:procedures,id',
-            'insurance_id' => 'required|exists:insurances,id',
-            'insurance_plan_id' => 'nullable|exists:insurance_plans,id',
-            'valor' => 'required|numeric|min:0',
-        ]);
-
-        $price = ProcedurePrice::updateOrCreate(
-            [
-                'procedure_id' => $request->procedure_id,
-                'insurance_id' => $request->insurance_id,
-                'insurance_plan_id' => $request->input('insurance_plan_id'),
-            ],
-            ['valor' => $request->valor]
-        );
-
-        $this->recordActivity('updated', $price, 'Tabela de preço configurada para convênio.', [
-            'procedure_id' => $price->procedure_id,
-            'insurance_id' => $price->insurance_id,
-            'insurance_plan_id' => $price->insurance_plan_id,
-            'valor' => $price->valor,
-        ]);
-
-        return redirect()->route('admin.settings.insurance')->with('success', 'Preço do procedimento vinculado ao convênio com sucesso.');
-    }
-
     public function procedures(): View
     {
         $setupWarning = null;
@@ -1284,25 +1231,25 @@ class ClinicManagementController extends Controller
         $professionalOptions = collect();
         $selectedProfessionalId = request()->integer('professional_filter');
 
-        if ($this->hasTables(['procedures', 'procedure_prices'])) {
-            if ($this->hasTables(['professionals'])) {
+        if ($this->hasTables(['procedimentos'])) {
+            if ($this->hasTables(['profissionais'])) {
                 $professionalOptions = Professional::where('ativo', true)
                     ->orderBy('nome')
                     ->get(['id', 'nome', 'especialidade_principal']);
             }
 
-            $procedureQuery = Procedure::with(['professional', 'prices.insurance', 'prices.plan'])
+            $procedureQuery = Procedure::with('professional')
                 ->orderBy('nome');
 
-            if ($selectedProfessionalId && $this->hasTables(['professionals'])) {
-                $procedureQuery->where('professional_id', $selectedProfessionalId);
+            if ($selectedProfessionalId && $this->hasTables(['profissionais'])) {
+                $procedureQuery->where('profissional_id', $selectedProfessionalId);
             }
 
             $procedures = $procedureQuery
                 ->paginate(6)
                 ->withQueryString();
         } else {
-            $setupWarning = 'Os cadastros de procedimentos ainda dependem das novas migrations. Execute as migrations para habilitar o módulo completo.';
+            $setupWarning = 'Os cadastros de procedimentos ainda dependem das migrations. Execute as migrations para habilitar o módulo completo.';
         }
 
         return view('admin.modules.settings.procedures', compact('procedures', 'setupWarning', 'professionalOptions', 'selectedProfessionalId'));
@@ -1310,16 +1257,16 @@ class ClinicManagementController extends Controller
 
     public function storeProcedure(Request $request): RedirectResponse
     {
-        if (! $this->hasTables(['procedures'])) {
+        if (! $this->hasTables(['procedimentos'])) {
             return redirect()->route('admin.settings.procedures')->with('warning', 'Execute as migrations dos cadastros base para cadastrar procedimentos.');
         }
 
         $durationOptions = range(15, 180, 15);
 
         $request->validate([
-            'nome' => 'required|string|max:255|unique:procedures,nome',
+            'nome' => 'required|string|max:255|unique:procedimentos,nome',
             'duracao_minutos' => ['required', 'integer', Rule::in($durationOptions)],
-            'professional_id' => $this->hasTables(['professionals']) ? 'required|exists:professionals,id' : 'nullable',
+            'professional_id' => $this->hasTables(['profissionais']) ? 'required|exists:profissionais,id' : 'nullable',
         ], [
             'nome.unique' => 'Já existe um procedimento cadastrado com esse nome.',
         ]);
@@ -1349,16 +1296,16 @@ class ClinicManagementController extends Controller
 
     public function updateProcedure(Request $request, Procedure $procedure): RedirectResponse
     {
-        if (! $this->hasTables(['procedures'])) {
+        if (! $this->hasTables(['procedimentos'])) {
             return redirect()->route('admin.settings.procedures')->with('warning', 'Execute as migrations dos cadastros base para editar procedimentos.');
         }
 
         $durationOptions = range(15, 180, 15);
 
         $request->validate([
-            'nome' => ['required', 'string', 'max:255', Rule::unique('procedures', 'nome')->ignore($procedure->id)],
+            'nome' => ['required', 'string', 'max:255', Rule::unique('procedimentos', 'nome')->ignore($procedure->id)],
             'duracao_minutos' => ['required', 'integer', Rule::in($durationOptions)],
-            'professional_id' => $this->hasTables(['professionals']) ? 'required|exists:professionals,id' : 'nullable',
+            'professional_id' => $this->hasTables(['profissionais']) ? 'required|exists:profissionais,id' : 'nullable',
         ], [
             'nome.unique' => 'Já existe um procedimento cadastrado com esse nome.',
         ]);
@@ -1392,7 +1339,7 @@ class ClinicManagementController extends Controller
 
     public function toggleProcedureStatus(Procedure $procedure): RedirectResponse
     {
-        if (! $this->hasTables(['procedures'])) {
+        if (! $this->hasTables(['procedimentos'])) {
             return redirect()->route('admin.settings.procedures')->with('warning', 'Execute as migrations dos cadastros base para alterar o status dos procedimentos.');
         }
 
@@ -1411,7 +1358,7 @@ class ClinicManagementController extends Controller
 
     public function destroyProcedure(Procedure $procedure): RedirectResponse
     {
-        if (! $this->hasTables(['procedures'])) {
+        if (! $this->hasTables(['procedimentos'])) {
             return redirect()->route('admin.settings.procedures')->with('warning', 'Execute as migrations dos cadastros base para excluir procedimentos.');
         }
 
@@ -1428,68 +1375,6 @@ class ClinicManagementController extends Controller
         $procedure->delete();
 
         return redirect()->route('admin.settings.procedures')->with('success', 'Procedimento excluído com sucesso.');
-    }
-
-    public function units(): View
-    {
-        $setupWarning = null;
-        $units = collect();
-
-        if ($this->hasTables(['units', 'rooms'])) {
-            $units = Unit::with('rooms')->orderBy('nome')->get();
-        } else {
-            $setupWarning = 'Os cadastros de unidades e salas ainda dependem das novas migrations. Execute as migrations para habilitar o módulo completo.';
-        }
-
-        return view('admin.modules.settings.units', compact('units', 'setupWarning'));
-    }
-
-    public function storeUnit(Request $request): RedirectResponse
-    {
-        if (! $this->hasTables(['units'])) {
-            return redirect()->route('admin.settings.units')->with('warning', 'Execute as migrations dos cadastros base para cadastrar unidades.');
-        }
-
-        $request->validate([
-            'nome' => 'required|string|max:255|unique:units,nome',
-            'endereco' => 'nullable|string|max:255',
-            'telefone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
-        ]);
-
-        $unit = Unit::create([
-            'nome' => $request->nome,
-            'endereco' => $request->endereco,
-            'telefone' => $request->telefone,
-            'email' => $request->email,
-            'ativo' => true,
-        ]);
-
-        $this->recordActivity('created', $unit, 'Unidade de atendimento cadastrada.', ['nome' => $unit->nome]);
-
-        return redirect()->route('admin.settings.units')->with('success', 'Unidade cadastrada com sucesso.');
-    }
-
-    public function storeRoom(Request $request): RedirectResponse
-    {
-        if (! $this->hasTables(['units', 'rooms'])) {
-            return redirect()->route('admin.settings.units')->with('warning', 'Execute as migrations dos cadastros base para cadastrar salas.');
-        }
-
-        $request->validate([
-            'unit_id' => 'required|exists:units,id',
-            'nome' => 'required|string|max:255',
-        ]);
-
-        $room = Room::create([
-            'unit_id' => $request->unit_id,
-            'nome' => $request->nome,
-            'ativo' => true,
-        ]);
-
-        $this->recordActivity('created', $room, 'Sala cadastrada para unidade.', ['unit_id' => $room->unit_id]);
-
-        return redirect()->route('admin.settings.units')->with('success', 'Sala cadastrada com sucesso.');
     }
 
     public function usersPermissions(Request $request): View
@@ -1554,7 +1439,7 @@ class ClinicManagementController extends Controller
             ? $request->input('action_type')
             : '';
 
-        if (Schema::hasTable('activity_logs')) {
+        if (Schema::hasTable('logs_atividades')) {
             $activityLogsQuery = ActivityLog::with('user')->latest();
 
             if ($actionTypeSearch !== '') {
@@ -1877,7 +1762,7 @@ class ClinicManagementController extends Controller
         return redirect()->route('admin.settings.users')->with('success', 'Usuário excluído com sucesso.');
     }
 
-    private function syncSchedules(Professional $professional, array $days, array $starts, array $ends): void
+    private function syncSchedules(Professional $professional, array $days, array $starts, array $ends, ?array $clinicHoursWindow = null): void
     {
         $usedDays = [];
 
@@ -1896,13 +1781,20 @@ class ClinicManagementController extends Controller
                     continue;
                 }
 
-                $professional->schedules()->create([
-                    'day_of_week' => $targetDay,
-                    'start_time' => $start,
-                    'break_start_time' => null,
-                    'break_end_time' => null,
-                    'end_time' => $end,
-                ]);
+                $scheduleData = $this->adjustScheduleToClinicHours(
+                    $targetDay,
+                    $start,
+                    $end,
+                    null,
+                    null,
+                    $clinicHoursWindow,
+                );
+
+                if (! $scheduleData) {
+                    continue;
+                }
+
+                $professional->schedules()->create($scheduleData);
 
                 $usedDays[] = $targetDay;
             }
@@ -1951,9 +1843,18 @@ class ClinicManagementController extends Controller
                     ]);
                 }
 
-                if ($lunchStartTime && $lunchEndTime && ! ($end <= $lunchStartTime || $start >= $lunchEndTime)) {
+                $crossesClinicInterval = $lunchStartTime
+                    && $lunchEndTime
+                    && $start < $lunchEndTime
+                    && $end > $lunchStartTime;
+
+                $coversEntireClinicInterval = $crossesClinicInterval
+                    && $start < $lunchStartTime
+                    && $end > $lunchEndTime;
+
+                if ($crossesClinicInterval && ! $coversEntireClinicInterval) {
                     throw \Illuminate\Validation\ValidationException::withMessages([
-                        'schedule_day_of_week' => 'Os horários do vínculo de agenda não podem avançar sobre o intervalo da clínica.',
+                        'schedule_day_of_week' => 'Quando o vínculo atravessar o intervalo da clínica, escolha um início antes e um fim depois do intervalo. O sistema aplicará a pausa automaticamente.',
                     ]);
                 }
             }
@@ -2067,12 +1968,28 @@ class ClinicManagementController extends Controller
 
     private function ensureManagedUser(User $user, bool $allowUpdate = false): void
     {
-        if ($allowUpdate && Auth::user()?->isPrimaryAdmin() && ($user->isPrimaryAdmin() || $user->id === Auth::id())) {
+        $authenticatedUser = Auth::user();
+
+        if ($allowUpdate && $authenticatedUser?->isPrimaryAdmin() && ($user->isPrimaryAdmin() || $user->id === Auth::id())) {
             return;
         }
 
-        if ($user->isPrimaryAdmin() || $user->id === Auth::id()) {
-            abort(403, 'O administrador principal não pode ser alterado por esta tela.');
+        if ($authenticatedUser?->canManageUser($user)) {
+            return;
         }
+
+        $message = 'Você não possui permissão para alterar este usuário nesta tela.';
+
+        if ($user->isPrimaryAdmin()) {
+            $message = 'O administrador principal não pode ser alterado por esta tela.';
+        } elseif ($authenticatedUser && (int) $user->id === (int) $authenticatedUser->id) {
+            $message = 'Use Minha Conta para editar os seus próprios dados.';
+        } elseif ($authenticatedUser?->isClinicManager()) {
+            $message = 'O Gestor da Clínica não pode editar, inativar ou excluir usuários com papel igual ou superior ao seu.';
+        }
+
+        throw new HttpResponseException(
+            redirect()->route('admin.settings.users')->with('layout_warning', $message)
+        );
     }
 }

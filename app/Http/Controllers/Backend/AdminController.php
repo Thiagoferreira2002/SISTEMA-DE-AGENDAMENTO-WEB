@@ -149,6 +149,11 @@ class AdminController extends Controller
        ]);
    }
 
+   public function tutorial()
+   {
+       return view('admin.tutorial');
+   }
+
    public function updateAccount(Request $request)
    {
        $user = $request->user();
@@ -248,7 +253,7 @@ class AdminController extends Controller
        $nameCandidates = $this->professionalNameCandidates($professional, $user);
 
        $query->where(function ($scopedQuery) use ($professional, $nameCandidates) {
-           $scopedQuery->where('professional_id', $professional->id);
+           $scopedQuery->where('profissional_id', $professional->id);
 
            foreach ($nameCandidates as $name) {
                $scopedQuery->orWhereRaw('LOWER(TRIM(medico)) = ?', [mb_strtolower(trim($name))]);

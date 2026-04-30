@@ -43,6 +43,72 @@
             align-self: center;
             min-width: 170px;
         }
+
+        html[data-theme="dark"] .section-body .card,
+        html[data-theme="dark"] .card-statistic-1 {
+            background: linear-gradient(180deg, rgba(22, 40, 59, 0.98) 0%, rgba(19, 33, 49, 0.98) 100%);
+            border-color: rgba(143, 197, 255, 0.16);
+            box-shadow: 0 18px 34px rgba(2, 8, 15, 0.34);
+        }
+
+        html[data-theme="dark"] .section-body .card-header,
+        html[data-theme="dark"] .section-body .card-body,
+        html[data-theme="dark"] .card-statistic-1 .card-wrap {
+            background: transparent !important;
+            color: #eef5fc;
+            border-color: rgba(143, 197, 255, 0.16);
+        }
+
+        html[data-theme="dark"] .section-header h1,
+        html[data-theme="dark"] .card-header h4,
+        html[data-theme="dark"] .card-statistic-1 .card-header h4,
+        html[data-theme="dark"] .card-statistic-1 .card-body,
+        html[data-theme="dark"] label,
+        html[data-theme="dark"] .table,
+        html[data-theme="dark"] .table td,
+        html[data-theme="dark"] .table th {
+            color: #eef5fc !important;
+        }
+
+        html[data-theme="dark"] .table-striped tbody tr:nth-of-type(odd),
+        html[data-theme="dark"] .table-striped tbody tr:nth-of-type(even) {
+            background: transparent !important;
+        }
+
+        html[data-theme="dark"] .table thead th {
+            background: rgba(24, 43, 64, 0.96);
+            color: #a9c5df !important;
+            border-color: rgba(143, 197, 255, 0.16);
+        }
+
+        html[data-theme="dark"] .confirmation-contact-block {
+            background: rgba(24, 43, 64, 0.96) !important;
+            border-color: rgba(143, 197, 255, 0.16) !important;
+            color: #eef5fc !important;
+        }
+
+        html[data-theme="dark"] .confirmation-contact-label {
+            color: #a9c5df;
+        }
+
+        html[data-theme="dark"] .form-control,
+        html[data-theme="dark"] .form-control-sm,
+        html[data-theme="dark"] select.form-control {
+            background: #16283b !important;
+            border-color: rgba(143, 197, 255, 0.16) !important;
+            color: #eef5fc !important;
+        }
+
+        html[data-theme="dark"] .btn-light {
+            background: rgba(24, 43, 64, 0.96) !important;
+            border-color: rgba(143, 197, 255, 0.16) !important;
+            color: #eef5fc !important;
+        }
+
+        html[data-theme="dark"] .btn-outline-primary {
+            border-color: rgba(118, 187, 255, 0.36) !important;
+            color: #cfe6fb !important;
+        }
     </style>
     <div class="section-header">
         <h1>Confirmações</h1>

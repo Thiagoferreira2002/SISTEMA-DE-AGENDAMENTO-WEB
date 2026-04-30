@@ -17,9 +17,9 @@
                     <div class="card-header">
                         <h4>Informações do Agendamento</h4>
                         <div class="card-header-action">
-                            @unless($hideEditButton ?? false)
+                            @if($canEditAppointment ?? true)
                                 <a href="{{ route('admin.agendamentos.edit', ['agendamento' => $agendamento, 'return_to' => $returnUrl]) }}" class="btn btn-warning">Editar</a>
-                            @endunless
+                            @endif
                             <a href="{{ $returnUrl }}" class="btn btn-secondary">Voltar</a>
                         </div>
                     </div>
