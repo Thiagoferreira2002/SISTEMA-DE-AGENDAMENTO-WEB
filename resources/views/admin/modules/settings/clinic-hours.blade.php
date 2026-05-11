@@ -58,9 +58,9 @@
                             <div class="form-group">
                                 <label for="lunch_start_time">Início do intervalo</label>
                                 <div class="input-group">
-                                    <input type="time" step="900" class="form-control bg-light border-secondary text-dark @error('lunch_start_time') is-invalid @enderror" id="lunch_start_time" name="lunch_start_time" value="{{ old('lunch_start_time', $clinicHours && $clinicHours->lunch_start_time ? substr((string) $clinicHours->lunch_start_time, 0, 5) : '') }}">
+                                    <input type="time" step="900" class="form-control @error('lunch_start_time') is-invalid @enderror" id="lunch_start_time" name="lunch_start_time" value="{{ old('lunch_start_time', $clinicHours && $clinicHours->lunch_start_time ? substr((string) $clinicHours->lunch_start_time, 0, 5) : '') }}">
                                     <div class="input-group-append">
-                                        <span class="input-group-text bg-secondary border-secondary text-white">Intervalo da clínica</span>
+                                        <span class="input-group-text">Intervalo da clínica</span>
                                     </div>
                                 </div>
                                 @error('lunch_start_time')
@@ -73,9 +73,9 @@
                             <div class="form-group">
                                 <label for="lunch_end_time">Término do intervalo</label>
                                 <div class="input-group">
-                                    <input type="time" step="900" class="form-control bg-light border-secondary text-dark @error('lunch_end_time') is-invalid @enderror" id="lunch_end_time" name="lunch_end_time" value="{{ old('lunch_end_time', $clinicHours && $clinicHours->lunch_end_time ? substr((string) $clinicHours->lunch_end_time, 0, 5) : '') }}">
+                                    <input type="time" step="900" class="form-control @error('lunch_end_time') is-invalid @enderror" id="lunch_end_time" name="lunch_end_time" value="{{ old('lunch_end_time', $clinicHours && $clinicHours->lunch_end_time ? substr((string) $clinicHours->lunch_end_time, 0, 5) : '') }}">
                                     <div class="input-group-append">
-                                        <span class="input-group-text bg-secondary border-secondary text-white">Intervalo da clínica</span>
+                                        <span class="input-group-text">Intervalo da clínica</span>
                                     </div>
                                 </div>
                                 @error('lunch_end_time')

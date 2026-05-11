@@ -26,6 +26,110 @@
         white-space: nowrap;
     }
 
+    .users-permissions-table th,
+    .users-permissions-table td {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .users-permissions-table .cpf-nowrap,
+    .users-permissions-table .permission-nowrap {
+        white-space: nowrap;
+    }
+
+    .users-permissions-table .permission-nowrap {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    .users-permissions-table .permission-nowrap .badge {
+        white-space: nowrap;
+    }
+
+    .users-role-filter {
+        min-width: 150px !important;
+        height: 38px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+
+    .users-permission-trigger {
+        min-width: 150px;
+    }
+
+    .user-create-avatar-panel {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 18px 20px;
+        margin-bottom: 24px;
+        border-radius: 18px;
+        border: 1px solid rgba(23, 111, 190, 0.1);
+        background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%);
+    }
+
+    .user-create-avatar-preview {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid rgba(255, 255, 255, 0.96);
+        box-shadow: 0 14px 28px rgba(23, 111, 190, 0.14);
+    }
+
+    .user-identity-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-align: left;
+        min-width: 220px;
+    }
+
+    .user-identity-cell img {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid rgba(23, 111, 190, 0.12);
+        flex: 0 0 auto;
+    }
+
+    .user-view-avatar-card {
+        text-align: center;
+    }
+
+    .user-view-avatar {
+        width: 112px;
+        height: 112px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid rgba(255, 255, 255, 0.96);
+        box-shadow: 0 18px 28px rgba(15, 23, 42, 0.12);
+    }
+
+    .user-edit-avatar-panel {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 18px;
+        margin-bottom: 20px;
+        border-radius: 16px;
+        border: 1px solid rgba(23, 111, 190, 0.1);
+        background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%);
+    }
+
+    .user-edit-avatar-preview {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid rgba(255, 255, 255, 0.96);
+        box-shadow: 0 14px 26px rgba(23, 111, 190, 0.12);
+    }
+
     .user-edit-modal + .modal-backdrop,
     .modal-backdrop.show {
         z-index: 10050;
@@ -55,6 +159,71 @@
         padding: 0;
         line-height: 1;
         cursor: pointer;
+    }
+
+    .phone-mask,
+    .user-edit-phone-mask,
+    td[data-phone-value="true"] {
+        letter-spacing: 0.04em;
+        font-variant-numeric: tabular-nums;
+    }
+
+    html[data-theme="dark"] .user-edit-modal .modal-content,
+    html[data-theme="dark"] .user-edit-modal .modal-header,
+    html[data-theme="dark"] .user-edit-modal .modal-footer {
+        background: #16283b;
+        color: #edf2f7;
+        border-color: rgba(143, 197, 255, 0.14);
+    }
+
+    html[data-theme="dark"] .user-edit-modal .close,
+    html[data-theme="dark"] .user-edit-modal .text-muted {
+        color: #b9c4cf !important;
+    }
+
+    html[data-theme="dark"] .user-edit-modal .border.rounded,
+    html[data-theme="dark"] .user-edit-modal .bg-white,
+    html[data-theme="dark"] .user-edit-modal .bg-light {
+        background: #1a3046 !important;
+        color: #edf2f7 !important;
+        border-color: rgba(143, 197, 255, 0.14) !important;
+    }
+
+    html[data-theme="dark"] .user-create-avatar-panel {
+        background: linear-gradient(135deg, rgba(20, 37, 55, 0.98) 0%, rgba(24, 45, 66, 0.98) 100%);
+        border-color: rgba(143, 197, 255, 0.14);
+    }
+
+    html[data-theme="dark"] .user-edit-avatar-panel {
+        background: linear-gradient(135deg, rgba(20, 37, 55, 0.98) 0%, rgba(24, 45, 66, 0.98) 100%);
+        border-color: rgba(143, 197, 255, 0.14);
+    }
+
+    @media (max-width: 767.98px) {
+        .users-actions {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .users-actions > *,
+        .users-actions form,
+        .users-actions .btn {
+            width: 100%;
+        }
+
+        .users-permissions-table .permission-nowrap {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .users-permissions-table td:last-child {
+            min-width: 220px;
+        }
+
+        .user-edit-modal .modal-dialog {
+            margin: 10px;
+            max-width: calc(100vw - 20px);
+        }
     }
 
 </style>
@@ -139,12 +308,6 @@
         @if(session('error'))
             <div class="alert alert-danger users-page-alert">{{ session('error') }}</div>
         @endif
-        @if(session('warning'))
-            <div class="alert alert-warning users-page-alert">{{ session('warning') }}</div>
-        @endif
-        @if(session('success'))
-            <div class="alert alert-success users-page-alert">{{ session('success') }}</div>
-        @endif
         @if(!empty($setupWarning))
             <div class="alert alert-warning users-page-alert">{{ $setupWarning }}</div>
         @endif
@@ -152,8 +315,19 @@
         <div class="card mb-4">
             <div class="card-header"><h4>Novo usuário</h4></div>
             <div class="card-body">
-                <form action="{{ route('admin.settings.users.store') }}" method="POST" data-draft-form="true" data-draft-key="admin.settings.users.create">
+                <form action="{{ route('admin.settings.users.store') }}" method="POST" enctype="multipart/form-data" data-draft-form="true" data-draft-key="admin.settings.users.create">
                     @csrf
+                    <div class="user-create-avatar-panel">
+                        <img src="{{ asset('backend/assets/img/avatar/avatar-1.png') }}" alt="Prévia da foto do usuário" class="user-create-avatar-preview" data-user-photo-preview data-default-src="{{ asset('backend/assets/img/avatar/avatar-1.png') }}">
+                        <div class="flex-fill">
+                            <div class="form-group mb-0">
+                                <label for="new-user-photo">Foto do usuário</label>
+                                <input type="file" class="form-control-file @error('capa') is-invalid @enderror" id="new-user-photo" name="capa" accept=".jpg,.jpeg,.png,.webp,image/*" data-user-photo-input data-image-preview-target="[data-user-photo-preview]">
+                                <small class="text-muted d-block mt-2">Opcional. Envie JPG, PNG ou WEBP com até 2 MB.</small>
+                                @error('capa')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-md-3"><div class="form-group"><label>Nome *</label><input type="text" class="form-control @error('nome') is-invalid @enderror" name="nome" value="{{ old('nome') }}" required>@error('nome')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div></div>
                         <div class="col-md-3"><div class="form-group"><label>Sobrenome</label><input type="text" class="form-control @error('sobrenome') is-invalid @enderror" name="sobrenome" value="{{ old('sobrenome') }}">@error('sobrenome')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div></div>
@@ -202,7 +376,7 @@
                     </div>
                     <div class="form-group mb-0">
                         <label for="role-filter" class="mb-1">Filtrar papel</label>
-                        <select class="form-control" id="role-filter" name="role_filter" style="min-width: 220px;">
+                        <select class="form-control users-role-filter" id="role-filter" name="role_filter">
                             <option value="">Todos os perfis</option>
                             <option value="recepcionista" {{ ($roleFilter ?? '') === 'recepcionista' ? 'selected' : '' }}>Recepcionista</option>
                             <option value="profissional" {{ ($roleFilter ?? '') === 'profissional' ? 'selected' : '' }}>Profissional</option>
@@ -217,9 +391,19 @@
                     </div>
                 </form>
             </div>
+            @if(session('warning') || session('success'))
+                <div class="px-4 pt-3">
+                    @if(session('warning'))
+                        <div class="alert alert-warning users-page-alert mb-0">{{ session('warning') }}</div>
+                    @endif
+                    @if(session('success'))
+                        <div class="alert alert-success users-page-alert mb-0">{{ session('success') }}</div>
+                    @endif
+                </div>
+            @endif
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped users-permissions-table">
                         <thead>
                             <tr>
                                 <th>Nome</th>
@@ -237,12 +421,16 @@
                                         && (int) $authenticatedUser->id === (int) $user->id;
                                     $canManageListedUser = $authenticatedUser?->canManageUser($user) ?? false;
                                     $canEditListedUser = $authenticatedUser?->canManageUser($user, true) ?? false;
+                                    $canViewPasswordSection = $authenticatedUser?->canViewUserPasswordSection($user) ?? false;
                                 @endphp
                                 <tr>
                                     <td>
-                                        {{ trim(($user->nome ?? '') . ' ' . ($user->sobrenome ?? '')) }}
+                                        <div class="user-identity-cell">
+                                            <img src="{{ $user->profile_photo_url }}" alt="Foto de {{ trim(($user->nome ?? '') . ' ' . ($user->sobrenome ?? '')) }}">
+                                            <span>{{ trim(($user->nome ?? '') . ' ' . ($user->sobrenome ?? '')) }}</span>
+                                        </div>
                                     </td>
-                                    <td>{{ $authenticatedUser?->isClinicManager() && $user->isPrimaryAdmin() ? 'Protegido' : $formatCpf($user->cpf) }}</td>
+                                    <td><span class="cpf-nowrap">{{ $authenticatedUser?->isClinicManager() && $user->isPrimaryAdmin() ? 'Protegido' : $formatCpf($user->cpf) }}</span></td>
                                     <td>
                                         @if($user->isPrimaryAdmin())
                                             <div class="d-flex justify-content-center">
@@ -254,12 +442,12 @@
                                     </td>
                                     <td>
                                         @if($user->isPrimaryAdmin())
-                                            <div class="text-center">
+                                            <div class="text-center permission-nowrap">
                                                 <span class="text-muted">Acesso total fixo</span>
                                             </div>
                                         @else
-                                            <div class="d-flex flex-wrap">
-                                                {!! $renderPermissionBadges($user->submenuPermissions()) !!}
+                                            <div class="permission-nowrap">
+                                                <button type="button" class="btn btn-sm btn-outline-primary users-permission-trigger" data-toggle="modal" data-target="#permissions-user-modal-{{ $user->id }}">Exibir permissões</button>
                                             </div>
                                         @endif
                                     </td>
@@ -331,10 +519,17 @@
                         </div>
                         <div class="modal-body">
                             <div class="row">
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-4 mb-3">
+                                    <div class="border rounded p-3 h-100 bg-white user-view-avatar-card">
+                                        <div class="text-muted small text-uppercase mb-3">Foto do usuário</div>
+                                        <img src="{{ $user->profile_photo_url }}" alt="Foto de {{ trim(($user->nome ?? '') . ' ' . ($user->sobrenome ?? '')) }}" class="user-view-avatar">
+                                    </div>
+                                </div>
+                                <div class="col-md-8 mb-3">
                                     <div class="border rounded p-3 h-100 bg-white">
                                         <div class="text-muted small text-uppercase">Nome completo</div>
                                         <div class="font-weight-bold mt-1">{{ trim(($user->nome ?? '') . ' ' . ($user->sobrenome ?? '')) ?: 'Não informado' }}</div>
+                                        <div class="small text-muted mt-2">Perfil exibido na listagem de permissões e em telas administrativas.</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-3">
@@ -399,13 +594,15 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-12 mb-3">
-                                    <div class="border rounded p-3 h-100 bg-light">
-                                        <div class="text-muted small text-uppercase">Senha</div>
-                                        <div class="mt-2 font-weight-bold">Protegida por segurança</div>
-                                        <div class="small text-muted mt-1">A senha original não pode ser exibida porque o sistema a armazena de forma criptografada. Se necessário, use a opção de editar para definir uma nova senha.</div>
+                                @if($canViewPasswordSection)
+                                    <div class="col-md-12 mb-3">
+                                        <div class="border rounded p-3 h-100 bg-light">
+                                            <div class="text-muted small text-uppercase">Senha</div>
+                                            <div class="mt-2 font-weight-bold">Protegida por segurança</div>
+                                            <div class="small text-muted mt-1">A senha original não pode ser exibida porque o sistema a armazena de forma criptografada. Se necessário, use a opção de editar para definir uma nova senha.</div>
+                                        </div>
                                     </div>
-                                </div>
+                                @endif
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -415,7 +612,30 @@
                 </div>
             </div>
 
-            @if((! $user->isPrimaryAdmin() || $authenticatedUser?->isPrimaryAdmin()) && ($authenticatedUser?->canManageUser($user, true) ?? false))
+            @if(! $user->isPrimaryAdmin())
+                <div class="modal fade user-edit-modal" id="permissions-user-modal-{{ $user->id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Permissões de {{ trim(($user->nome ?? '') . ' ' . ($user->sobrenome ?? '')) }}</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="border rounded p-3 bg-white">
+                                    {!! $renderPermissionBadges($user->submenuPermissions()) !!}
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            @if((! $user->isPrimaryAdmin() || $authenticatedUser?->isPrimaryAdmin()) && (($authenticatedUser?->canManageUser($user, true) ?? false) || ($authenticatedUser?->isPrimaryAdmin() && (int) $authenticatedUser->id === (int) $user->id)))
                 <div class="modal fade user-edit-modal" id="edit-user-modal-{{ $user->id }}" tabindex="-1" role="dialog" aria-labelledby="editUserModalLabel{{ $user->id }}" aria-hidden="true">
                     <div class="modal-dialog modal-lg" role="document">
                         <div class="modal-content">
@@ -425,10 +645,20 @@
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
-                            <form action="{{ route('admin.settings.users.update', $user) }}" method="POST">
+                            <form action="{{ route('admin.settings.users.update', $user) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
                                 <div class="modal-body">
+                                    <div class="user-edit-avatar-panel">
+                                        <img src="{{ $user->profile_photo_url }}" alt="Foto de {{ trim(($user->nome ?? '') . ' ' . ($user->sobrenome ?? '')) }}" class="user-edit-avatar-preview" id="user-edit-photo-preview-{{ $user->id }}" data-default-src="{{ $user->profile_photo_url }}">
+                                        <div class="flex-fill">
+                                            <div class="form-group mb-0">
+                                                <label>Foto do usuário</label>
+                                                <input type="file" class="form-control-file" name="capa" accept=".jpg,.jpeg,.png,.webp,image/*" data-image-preview-target="#user-edit-photo-preview-{{ $user->id }}">
+                                                <small class="text-muted d-block mt-2">Opcional. Envie JPG, PNG ou WEBP com até 2 MB.</small>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div class="row">
                                         <div class="col-md-6"><div class="form-group"><label>Nome *</label><input type="text" class="form-control" name="nome" value="{{ old('nome', $user->nome) }}" required></div></div>
                                         <div class="col-md-6"><div class="form-group"><label>Sobrenome</label><input type="text" class="form-control" name="sobrenome" value="{{ old('sobrenome', $user->sobrenome) }}"></div></div>
@@ -536,6 +766,37 @@
             });
         }
 
+        function bindImagePreview(selector) {
+            var fileInputs = document.querySelectorAll(selector);
+
+            fileInputs.forEach(function (fileInput) {
+                var previewSelector = fileInput.getAttribute('data-image-preview-target');
+                var preview = previewSelector ? document.querySelector(previewSelector) : null;
+                var objectUrl = null;
+
+                if (!preview) {
+                    return;
+                }
+
+                fileInput.addEventListener('change', function () {
+                    var file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
+                    if (objectUrl) {
+                        URL.revokeObjectURL(objectUrl);
+                        objectUrl = null;
+                    }
+
+                    if (!file) {
+                        preview.setAttribute('src', preview.dataset.defaultSrc || '');
+                        return;
+                    }
+
+                    objectUrl = URL.createObjectURL(file);
+                    preview.setAttribute('src', objectUrl);
+                });
+            });
+        }
+
         $('.user-edit-modal').each(function () {
             var modal = $(this);
 
@@ -549,6 +810,7 @@
         bindCpfFormatter('#new-user-cpf');
         bindCpfFormatter('.user-edit-cpf-mask');
         bindCpfFormatter('#cpf-search');
+        bindImagePreview('[data-user-photo-input], input[data-image-preview-target]');
 
         function syncPasswordToggle(button) {
             var input = $(button.data('target'));

@@ -42,13 +42,154 @@
     }
 
     .logs-filter-control {
-        min-width: 210px;
-        max-width: 210px;
+        min-width: 198px;
+        max-width: 198px;
     }
 
     .logs-filter-select {
-        min-width: 225px;
-        max-width: 225px;
+        min-width: 244px;
+        max-width: 244px;
+    }
+
+    .logs-filter-date {
+        min-width: 142px;
+        max-width: 142px;
+    }
+
+    .logs-filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        width: auto;
+    }
+
+    .logs-filter-item {
+        flex: 0 0 auto;
+    }
+
+    .logs-filter-note {
+        width: 100%;
+    }
+
+    .activity-log-modal-meta {
+        display: grid;
+        gap: 12px;
+    }
+
+    .activity-log-modal-card {
+        border: 1px solid rgba(23, 111, 190, 0.1);
+        border-radius: 14px;
+        background: #ffffff;
+        padding: 14px 16px;
+    }
+
+    .activity-log-modal-label {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: #6b88a3;
+        margin-bottom: 6px;
+    }
+
+    .activity-log-modal-value {
+        color: #18354d;
+        font-weight: 600;
+        word-break: break-word;
+    }
+
+    .activity-log-modal-summary-grid {
+        display: grid;
+        gap: 12px;
+    }
+
+    .activity-log-modal-inline-diff {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .activity-log-modal-inline-diff .text-danger,
+    .activity-log-modal-inline-diff .text-success {
+        font-weight: 700;
+        word-break: break-word;
+    }
+
+    .activity-log-modal-columns {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .activity-log-modal-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .activity-log-details-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(9, 17, 26, 0.52);
+    }
+
+    .activity-log-details-modal.is-open {
+        display: flex;
+    }
+
+    .activity-log-details-dialog {
+        width: min(880px, 100%);
+        max-height: calc(100vh - 64px);
+        overflow: auto;
+        border-radius: 18px;
+        background: #ffffff;
+        box-shadow: 0 24px 54px rgba(15, 23, 42, 0.24);
+    }
+
+    html[data-theme="dark"] .activity-log-modal-card {
+        background: rgba(22, 40, 59, 0.96);
+        border-color: rgba(143, 197, 255, 0.12);
+    }
+
+    html[data-theme="dark"] .activity-log-details-dialog {
+        background: linear-gradient(180deg, rgba(22, 40, 59, 0.99) 0%, rgba(19, 33, 49, 0.99) 100%);
+        border: 1px solid rgba(143, 197, 255, 0.16);
+    }
+
+    html[data-theme="dark"] .activity-log-modal-label {
+        color: #a7c1d9;
+    }
+
+    html[data-theme="dark"] .activity-log-modal-value {
+        color: #eef5fc;
+    }
+
+    @media (max-width: 767.98px) {
+        .logs-filter-form {
+            width: 100%;
+        }
+
+        .logs-filter-item {
+            width: 100%;
+        }
+
+        .logs-filter-item .form-control,
+        .logs-filter-item .btn {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .activity-log-modal-columns,
+        .activity-log-modal-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
     }
 
 </style>
@@ -327,27 +468,93 @@
                 return $change;
             })->values();
         };
+
+        $activityLogModalItems = $activityLogs->mapWithKeys(function ($log) use ($buildChangeSummary, $fieldLabels, $formatLogValue, $resolveSubmenu, $resolveTargetUser, $actionLabels) {
+            $properties = $log->properties ?? [];
+            $before = is_array($properties['before'] ?? null) ? $properties['before'] : [];
+            $after = is_array($properties['after'] ?? null) ? $properties['after'] : [];
+            $changeSummary = $buildChangeSummary($before, $after)->map(function ($change) {
+                return [
+                    'key' => $change['key'] ?? null,
+                    'label' => $change['label'] ?? 'Alteração',
+                    'before' => $change['before'] ?? 'Não informado',
+                    'after' => $change['after'] ?? 'Não informado',
+                    'before_items' => isset($change['before_items']) ? $change['before_items']->values()->all() : [],
+                    'after_items' => isset($change['after_items']) ? $change['after_items']->values()->all() : [],
+                ];
+            })->values()->all();
+
+            $beforeItems = collect($before)->map(function ($value, $key) use ($fieldLabels, $formatLogValue) {
+                return [
+                    'label' => $fieldLabels[$key] ?? str_replace('_', ' ', $key),
+                    'value' => $formatLogValue($key, $value),
+                ];
+            })->values()->all();
+
+            $afterItems = collect($after)->map(function ($value, $key) use ($fieldLabels, $formatLogValue) {
+                return [
+                    'label' => $fieldLabels[$key] ?? str_replace('_', ' ', $key),
+                    'value' => $formatLogValue($key, $value),
+                ];
+            })->values()->all();
+
+            $propertyItems = collect($properties)
+                ->reject(fn ($value, $key) => $key === 'target_user' || $key === 'before' || $key === 'after')
+                ->map(function ($value, $key) use ($fieldLabels, $formatLogValue) {
+                    return [
+                        'label' => $fieldLabels[$key] ?? str_replace('_', ' ', $key),
+                        'value' => $formatLogValue($key, $value),
+                    ];
+                })->values()->all();
+
+            return [
+                (string) $log->id => [
+                    'title' => 'Detalhes do log de atividade',
+                    'record' => $resolveTargetUser($log),
+                    'action' => $actionLabels[$log->action] ?? 'Alteração',
+                    'submenu' => $resolveSubmenu($log),
+                    'target' => $resolveTargetUser($log),
+                    'description' => $log->description ?: 'Sem descrição.',
+                    'created_at' => $log->created_at?->format('d/m/Y H:i') ?: 'Não informado',
+                    'change_summary' => $changeSummary,
+                    'before_items' => $beforeItems,
+                    'after_items' => $afterItems,
+                    'property_items' => $propertyItems,
+                ],
+            ];
+        })->all();
     @endphp
 
     <div class="section-body">
         <div class="card" id="logs-atividade">
-            <div class="card-header d-flex flex-wrap justify-content-between align-items-center" style="gap: 12px;">
-                <h4 class="mb-0">Logs de atividade</h4>
-                <form action="{{ route('admin.settings.activity-logs') }}#logs-atividade" method="GET" class="d-flex flex-wrap align-items-center" style="gap: 8px;">
-                    <input type="text" class="form-control logs-filter-control" id="responsible-search" name="responsible" value="{{ $responsibleSearch ?? '' }}" placeholder="Responsável pela ação">
-                    <input type="text" class="form-control cpf-mask logs-filter-control" id="affected-user-cpf-search" name="affected_user_cpf" value="{{ $formatCpf($affectedUserCpfSearch ?? '') }}" placeholder="CPF do usuário afetado" maxlength="14" inputmode="numeric">
-                    <input type="date" class="form-control logs-filter-control" id="activity-date-search" name="activity_date" value="{{ $activityDateSearch ?? '' }}">
-                    <select class="form-control logs-filter-control logs-filter-select" id="logs-action-type-search" name="action_type">
-                        <option value="">Todos os tipos de alteração</option>
-                        <option value="created" {{ ($actionTypeSearch ?? '') === 'created' ? 'selected' : '' }}>Cadastro</option>
-                        <option value="updated" {{ ($actionTypeSearch ?? '') === 'updated' ? 'selected' : '' }}>Alteração</option>
-                        <option value="deleted" {{ ($actionTypeSearch ?? '') === 'deleted' ? 'selected' : '' }}>Exclusão</option>
-                    </select>
-                    <button type="submit" class="btn btn-primary">Pesquisar</button>
+            <div class="card-header">
+                <form action="{{ route('admin.settings.activity-logs') }}#logs-atividade" method="GET" class="logs-filter-form">
+                    <div class="logs-filter-item">
+                        <input type="text" class="form-control logs-filter-control" id="responsible-search" name="responsible" value="{{ $responsibleSearch ?? '' }}" placeholder="Responsável pela ação">
+                    </div>
+                    <div class="logs-filter-item">
+                        <input type="text" class="form-control cpf-mask logs-filter-control" id="affected-user-cpf-search" name="affected_user_cpf" value="{{ $formatCpf($affectedUserCpfSearch ?? '') }}" placeholder="CPF do usuário afetado" maxlength="14" inputmode="numeric">
+                    </div>
+                    <div class="logs-filter-item">
+                        <input type="date" class="form-control logs-filter-control logs-filter-date" id="activity-date-search" name="activity_date" value="{{ $activityDateSearch ?? '' }}">
+                    </div>
+                    <div class="logs-filter-item">
+                        <select class="form-control logs-filter-control logs-filter-select" id="logs-action-type-search" name="action_type">
+                            <option value="">Todos os tipos de alteração</option>
+                            <option value="created" {{ ($actionTypeSearch ?? '') === 'created' ? 'selected' : '' }}>Cadastro</option>
+                            <option value="updated" {{ ($actionTypeSearch ?? '') === 'updated' ? 'selected' : '' }}>Alteração</option>
+                            <option value="deleted" {{ ($actionTypeSearch ?? '') === 'deleted' ? 'selected' : '' }}>Exclusão</option>
+                        </select>
+                    </div>
+                    <div class="logs-filter-item">
+                        <button type="submit" class="btn btn-primary">Pesquisar</button>
+                    </div>
                     @if(!empty($responsibleSearch) || !empty($affectedUserCpfSearch) || !empty($activityDateSearch) || !empty($actionTypeSearch))
-                        <a href="{{ route('admin.settings.activity-logs') }}#logs-atividade" class="btn btn-light border">Limpar</a>
+                        <div class="logs-filter-item">
+                            <a href="{{ route('admin.settings.activity-logs') }}#logs-atividade" class="btn btn-light border">Limpar</a>
+                        </div>
                     @endif
-                    <div class="w-100 small text-muted mt-1">
+                    <div class="logs-filter-note small text-muted mt-1">
                         Preencha um ou mais campos para combinar os filtros na mesma pesquisa.
                     </div>
                 </form>
@@ -382,127 +589,9 @@
                                     <td>{{ $actionLabels[$log->action] ?? 'Alteração' }}</td>
                                     <td>{{ $log->description }}</td>
                                     <td class="text-center">
-                                        <button class="btn btn-sm btn-outline-primary" type="button" data-toggle="collapse" data-target="#log-details-{{ $log->id }}" aria-expanded="false" aria-controls="#log-details-{{ $log->id }}">
+                                        <button class="btn btn-sm btn-outline-primary" type="button" data-log-details-trigger data-log-id="{{ $log->id }}">
                                             Visualizar
                                         </button>
-                                    </td>
-                                </tr>
-                                <tr class="collapse bg-light" id="log-details-{{ $log->id }}">
-                                    <td colspan="7">
-                                        <div class="p-3">
-                                            <div class="row">
-                                                <div class="col-md-4 mb-3">
-                                                    <strong>Registro</strong>
-                                                    <div class="text-muted small mt-1">{{ $resolveTargetUser($log) }}</div>
-                                                    <div class="text-muted small mt-2"><strong>Tipo de alteração:</strong> {{ $actionLabels[$log->action] ?? 'Alteração' }}</div>
-                                                    <div class="text-muted small mt-2"><strong>Local da alteração:</strong> {{ $resolveSubmenu($log) }}</div>
-                                                    <div class="text-muted small mt-2"><strong>Usuário afetado:</strong> {{ $resolveTargetUser($log) }}</div>
-                                                </div>
-                                                <div class="col-md-8">
-                                                    <strong>Alterações</strong>
-
-                                                    @if($changeSummary->isNotEmpty())
-                                                        <div class="border rounded p-2 bg-white mt-2 mb-3">
-                                                            <div class="font-weight-bold mb-2">Resumo da alteração</div>
-                                                            @foreach($changeSummary as $change)
-                                                                <div class="small mb-2">
-                                                                    <div class="text-muted">{{ $change['label'] }}</div>
-                                                                    @if(($change['key'] ?? null) === 'schedules')
-                                                                        <div class="row mt-2">
-                                                                            <div class="col-md-6 mb-2">
-                                                                                <div class="log-change-before">
-                                                                                    <div class="font-weight-bold text-danger">Antes</div>
-                                                                                    @if(!empty($change['before_items']) && $change['before_items']->isNotEmpty())
-                                                                                        <div class="log-schedule-list">
-                                                                                            @foreach($change['before_items'] as $item)
-                                                                                                <span class="log-schedule-item log-schedule-item-before">{{ $item }}</span>
-                                                                                            @endforeach
-                                                                                        </div>
-                                                                                    @else
-                                                                                        <div class="mt-2 text-muted">Sem agenda definida anteriormente.</div>
-                                                                                    @endif
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="col-md-6 mb-2">
-                                                                                <div class="log-change-after">
-                                                                                    <div class="font-weight-bold text-success">Depois</div>
-                                                                                    @if(!empty($change['after_items']) && $change['after_items']->isNotEmpty())
-                                                                                        <div class="log-schedule-list">
-                                                                                            @foreach($change['after_items'] as $item)
-                                                                                                <span class="log-schedule-item log-schedule-item-after">{{ $item }}</span>
-                                                                                            @endforeach
-                                                                                        </div>
-                                                                                    @else
-                                                                                        <div class="mt-2 text-muted">Agenda removida ou não definida.</div>
-                                                                                    @endif
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    @else
-                                                                        <div><span class="text-danger">{{ $change['before'] }}</span> → <span class="text-success">{{ $change['after'] }}</span></div>
-                                                                    @endif
-                                                                </div>
-                                                            @endforeach
-                                                        </div>
-                                                    @endif
-
-                                                    @if($before || $after)
-                                                        <div class="row mt-2">
-                                                            <div class="col-md-6 mb-3">
-                                                                <div class="border rounded p-2 h-100 bg-white">
-                                                                    <div class="font-weight-bold mb-2">Antes</div>
-                                                                    @if(!empty($before))
-                                                                        @foreach($before as $key => $value)
-                                                                            <div class="small mb-2">
-                                                                                <div class="text-muted text-uppercase">{{ $fieldLabels[$key] ?? str_replace('_', ' ', $key) }}</div>
-                                                                                <div>{{ $formatLogValue($key, $value) }}</div>
-                                                                            </div>
-                                                                        @endforeach
-                                                                    @else
-                                                                        <div class="small text-muted">Sem valor anterior registrado.</div>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-md-6 mb-3">
-                                                                <div class="border rounded p-2 h-100 bg-white">
-                                                                    <div class="font-weight-bold mb-2">Depois</div>
-                                                                    @if(!empty($after))
-                                                                        @foreach($after as $key => $value)
-                                                                            <div class="small mb-2">
-                                                                                <div class="text-muted text-uppercase">{{ $fieldLabels[$key] ?? str_replace('_', ' ', $key) }}</div>
-                                                                                <div>{{ $formatLogValue($key, $value) }}</div>
-                                                                            </div>
-                                                                        @endforeach
-                                                                    @else
-                                                                        <div class="small text-muted">Sem valor novo registrado.</div>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    @elseif(!empty($properties))
-                                                        <div class="row mt-2">
-                                                            @foreach($properties as $key => $value)
-                                                                @continue($key === 'target_user')
-                                                                <div class="col-md-4 mb-3">
-                                                                    <div class="border rounded p-2 h-100 bg-white">
-                                                                        <div class="text-muted text-uppercase small">{{ $fieldLabels[$key] ?? str_replace('_', ' ', $key) }}</div>
-                                                                        <div class="mt-1">{{ $formatLogValue($key, $value) }}</div>
-                                                                    </div>
-                                                                </div>
-                                                            @endforeach
-                                                        </div>
-                                                    @else
-                                                        <div class="small text-muted mt-2">Este log não possui detalhes adicionais.</div>
-                                                    @endif
-
-                                                    <div class="d-flex justify-content-end mt-3">
-                                                        <button class="btn btn-sm btn-danger" type="button" data-toggle="collapse" data-target="#log-details-{{ $log->id }}" aria-expanded="true" aria-controls="#log-details-{{ $log->id }}">
-                                                            Fechar
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </td>
                                 </tr>
                             @empty
@@ -510,6 +599,21 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                <div class="activity-log-details-modal" id="activity-log-details-modal" aria-hidden="true">
+                    <div class="activity-log-details-dialog">
+                        <div class="card-header d-flex flex-wrap align-items-center justify-content-between" style="gap: 8px;">
+                            <h4 class="mb-0" data-activity-log-modal-title>Detalhes do log de atividade</h4>
+                            <button type="button" class="btn btn-link p-0 text-muted" data-activity-log-modal-close aria-label="Fechar" style="font-size: 24px; line-height: 1;">&times;</button>
+                        </div>
+                        <div class="card-body" data-activity-log-modal-body>
+                            <div class="text-muted">Selecione um log para visualizar os detalhes.</div>
+                        </div>
+                        <div class="card-header d-flex justify-content-end" style="gap: 8px;">
+                            <button class="btn btn-secondary" type="button" data-activity-log-modal-close>Fechar</button>
+                        </div>
+                    </div>
                 </div>
 
                 @if(method_exists($activityLogs, 'links'))
@@ -525,6 +629,193 @@
 @push('scripts')
 <script>
     $(function () {
+        var activityLogItems = {{ Illuminate\Support\Js::from($activityLogModalItems) }};
+        var activityLogModal = document.getElementById('activity-log-details-modal');
+        var activityLogModalTitle = activityLogModal ? activityLogModal.querySelector('[data-activity-log-modal-title]') : null;
+        var activityLogModalBody = activityLogModal ? activityLogModal.querySelector('[data-activity-log-modal-body]') : null;
+        var activityLogCloseButtons = activityLogModal ? activityLogModal.querySelectorAll('[data-activity-log-modal-close]') : [];
+
+        function escapeHtml(value) {
+            return $('<div>').text(value == null ? '' : String(value)).html();
+        }
+
+        function renderKeyValueCard(item) {
+            return '<div class="activity-log-modal-card">'
+                + '<div class="activity-log-modal-label">' + escapeHtml(item.label || '') + '</div>'
+                + '<div class="activity-log-modal-value">' + escapeHtml(item.value || 'Não informado') + '</div>'
+                + '</div>';
+        }
+
+        function renderScheduleDiff(items, emptyMessage, itemClass) {
+            if (!items || !items.length) {
+                return '<div class="mt-2 text-muted">' + escapeHtml(emptyMessage) + '</div>';
+            }
+
+            return '<div class="log-schedule-list">' + items.map(function (item) {
+                return '<span class="log-schedule-item ' + itemClass + '">' + escapeHtml(item) + '</span>';
+            }).join('') + '</div>';
+        }
+
+        function renderChangeSummary(items) {
+            if (!items || !items.length) {
+                return '';
+            }
+
+            return '<div class="activity-log-modal-card mb-3">'
+                + '<div class="font-weight-bold mb-3">Resumo da alteração</div>'
+                + '<div class="activity-log-modal-summary-grid">'
+                + items.map(function (item) {
+                    var content = '';
+
+                    if (item.key === 'schedules') {
+                        content = '<div class="row mt-2">'
+                            + '<div class="col-md-6 mb-2">'
+                            + '<div class="log-change-before">'
+                            + '<div class="font-weight-bold text-danger">Antes</div>'
+                            + renderScheduleDiff(item.before_items || [], 'Sem agenda definida anteriormente.', 'log-schedule-item-before')
+                            + '</div>'
+                            + '</div>'
+                            + '<div class="col-md-6 mb-2">'
+                            + '<div class="log-change-after">'
+                            + '<div class="font-weight-bold text-success">Depois</div>'
+                            + renderScheduleDiff(item.after_items || [], 'Agenda removida ou não definida.', 'log-schedule-item-after')
+                            + '</div>'
+                            + '</div>'
+                            + '</div>';
+                    } else {
+                        content = '<div class="activity-log-modal-inline-diff">'
+                            + '<span class="text-danger">' + escapeHtml(item.before || 'Não informado') + '</span>'
+                            + '<span>&rarr;</span>'
+                            + '<span class="text-success">' + escapeHtml(item.after || 'Não informado') + '</span>'
+                            + '</div>';
+                    }
+
+                    return '<div>'
+                        + '<div class="activity-log-modal-label">' + escapeHtml(item.label || 'Alteração') + '</div>'
+                        + content
+                        + '</div>';
+                }).join('')
+                + '</div>'
+                + '</div>';
+        }
+
+        function renderColumns(title, items, emptyMessage) {
+            return '<div class="activity-log-modal-card">'
+                + '<div class="font-weight-bold mb-3">' + escapeHtml(title) + '</div>'
+                + (items && items.length
+                    ? items.map(renderKeyValueCard).join('')
+                    : '<div class="text-muted">' + escapeHtml(emptyMessage) + '</div>')
+                + '</div>';
+        }
+
+        function renderActivityLogModal(logId) {
+            var item = activityLogItems[logId];
+
+            if (!item) {
+                if (activityLogModalTitle) {
+                    activityLogModalTitle.textContent = 'Detalhes do log de atividade';
+                }
+
+                if (activityLogModalBody) {
+                    activityLogModalBody.innerHTML = '<div class="text-muted">Não foi possível carregar os detalhes deste log.</div>';
+                }
+
+                return false;
+            }
+
+            if (activityLogModalTitle) {
+                activityLogModalTitle.textContent = item.title || 'Detalhes do log de atividade';
+            }
+
+            var metaHtml = '<div class="activity-log-modal-meta mb-3">'
+                + '<div class="activity-log-modal-grid">'
+                + renderKeyValueCard({ label: 'Registro', value: item.record || 'Não informado' })
+                + renderKeyValueCard({ label: 'Tipo de alteração', value: item.action || 'Alteração' })
+                + renderKeyValueCard({ label: 'Local da alteração', value: item.submenu || 'Não identificado' })
+                + renderKeyValueCard({ label: 'Usuário afetado', value: item.target || 'Não informado' })
+                + renderKeyValueCard({ label: 'Descrição', value: item.description || 'Sem descrição.' })
+                + renderKeyValueCard({ label: 'Data', value: item.created_at || 'Não informado' })
+                + '</div>'
+                + '</div>';
+
+            var summaryHtml = renderChangeSummary(item.change_summary || []);
+            var columnsHtml = '<div class="activity-log-modal-columns">'
+                + renderColumns('Antes', item.before_items || [], 'Sem valor anterior registrado.')
+                + renderColumns('Depois', item.after_items || [], 'Sem valor novo registrado.')
+                + '</div>';
+
+            var propertiesHtml = '';
+
+            if ((!item.before_items || !item.before_items.length) && (!item.after_items || !item.after_items.length) && item.property_items && item.property_items.length) {
+                propertiesHtml = '<div class="activity-log-modal-card mt-3">'
+                    + '<div class="font-weight-bold mb-3">Detalhes adicionais</div>'
+                    + '<div class="activity-log-modal-grid">' + item.property_items.map(renderKeyValueCard).join('') + '</div>'
+                    + '</div>';
+            }
+
+            if ((!item.before_items || !item.before_items.length) && (!item.after_items || !item.after_items.length) && (!item.property_items || !item.property_items.length)) {
+                propertiesHtml = '<div class="activity-log-modal-card mt-3"><div class="text-muted">Este log não possui detalhes adicionais.</div></div>';
+            }
+
+            if (activityLogModalBody) {
+                activityLogModalBody.innerHTML = metaHtml + summaryHtml + columnsHtml + propertiesHtml;
+            }
+
+            return true;
+        }
+
+        function openActivityLogModal() {
+            if (!activityLogModal) {
+                return;
+            }
+
+            activityLogModal.classList.add('is-open');
+            activityLogModal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeActivityLogModal() {
+            if (!activityLogModal) {
+                return;
+            }
+
+            activityLogModal.classList.remove('is-open');
+            activityLogModal.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        }
+
+        if (activityLogCloseButtons.length) {
+            activityLogCloseButtons.forEach(function (button) {
+                button.addEventListener('click', closeActivityLogModal);
+            });
+        }
+
+        if (activityLogModal) {
+            activityLogModal.addEventListener('click', function (event) {
+                if (event.target === activityLogModal) {
+                    closeActivityLogModal();
+                }
+            });
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && activityLogModal && activityLogModal.classList.contains('is-open')) {
+                closeActivityLogModal();
+            }
+        });
+
+        $(document).on('click', '[data-log-details-trigger]', function () {
+            var logId = String($(this).data('logId') || '');
+
+            if (!activityLogModal) {
+                return;
+            }
+
+            if (renderActivityLogModal(logId)) {
+                openActivityLogModal();
+            }
+        });
+
         function formatCpf(value) {
             var digits = String(value || '').replace(/\D/g, '').slice(0, 11);
 

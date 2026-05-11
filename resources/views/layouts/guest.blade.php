@@ -477,6 +477,9 @@
             if (savedRemember === 'true') {
                 rememberCheckbox.checked = true;
             }
+            if (savedRemember === 'false') {
+                rememberCheckbox.checked = false;
+            }
 
             // Salvar estado quando checkbox mudar
             rememberCheckbox.addEventListener('change', function() {

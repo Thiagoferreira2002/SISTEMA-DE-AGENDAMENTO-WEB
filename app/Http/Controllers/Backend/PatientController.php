@@ -12,8 +12,10 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class PatientController extends Controller
 {
@@ -118,6 +120,7 @@ class PatientController extends Controller
         $hasComplementoColumn = Schema::hasColumn('pacientes', 'complemento');
         $hasNumeroEnderecoColumn = Schema::hasColumn('pacientes', 'numero_endereco');
         $hasTipoMoradiaColumn = Schema::hasColumn('pacientes', 'tipo_moradia');
+        $hasFotoColumn = Schema::hasColumn('pacientes', 'foto');
         $duplicateRules = $this->patientDuplicateRules();
 
         $request->validate([
@@ -137,6 +140,8 @@ class PatientController extends Controller
             'data_nascimento' => 'nullable|date|before_or_equal:today',
             'sexo' => 'nullable|string|max:20',
             'endereco' => 'nullable|string',
+            'foto' => $hasFotoColumn ? 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048' : 'nullable',
+            'remove_foto' => 'nullable|boolean',
         ], $this->patientValidationMessages(), $this->patientValidationAttributes());
 
         $payload = $request->only([
@@ -167,6 +172,10 @@ class PatientController extends Controller
 
         if ($hasTipoMoradiaColumn) {
             $payload['tipo_moradia'] = $request->input('tipo_moradia');
+        }
+
+        if ($hasFotoColumn && $request->hasFile('foto')) {
+            $payload['foto'] = $this->storePatientPhoto($request);
         }
 
         $patient = Patient::create($payload);
@@ -259,6 +268,7 @@ class PatientController extends Controller
         $hasComplementoColumn = Schema::hasColumn('pacientes', 'complemento');
         $hasNumeroEnderecoColumn = Schema::hasColumn('pacientes', 'numero_endereco');
         $hasTipoMoradiaColumn = Schema::hasColumn('pacientes', 'tipo_moradia');
+        $hasFotoColumn = Schema::hasColumn('pacientes', 'foto');
         $duplicateRules = $this->patientDuplicateRules($patient->id);
 
         $request->validate([
@@ -277,6 +287,8 @@ class PatientController extends Controller
             'data_nascimento' => 'nullable|date|before_or_equal:today',
             'sexo' => 'nullable|string|max:20',
             'endereco' => 'nullable|string',
+            'foto' => $hasFotoColumn ? 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048' : 'nullable',
+            'remove_foto' => 'nullable|boolean',
         ], $this->patientValidationMessages(), $this->patientValidationAttributes());
 
         $payload = $request->only([
@@ -309,6 +321,13 @@ class PatientController extends Controller
             $payload['tipo_moradia'] = $request->input('tipo_moradia');
         }
 
+        if ($hasFotoColumn && $request->hasFile('foto')) {
+            $payload['foto'] = $this->storePatientPhoto($request, $patient->foto);
+        } elseif ($hasFotoColumn && $request->boolean('remove_foto')) {
+            $this->deletePreviousPatientPhoto($patient->foto);
+            $payload['foto'] = null;
+        }
+
         $patient->update($payload);
 
         $this->recordActivity('updated', $patient, 'Paciente atualizado.', [
@@ -334,6 +353,8 @@ class PatientController extends Controller
             'before' => $previousValues,
         ]);
 
+        $this->deletePreviousPatientPhoto($patient->foto);
+
         $patient->delete();
         return redirect()->route('admin.patients.index')->with('success', 'Paciente inativado com sucesso!');
     }
@@ -349,16 +370,54 @@ class PatientController extends Controller
             'nome.required' => 'Informe o nome completo do paciente.',
             'telefone.required' => 'Informe o celular do paciente.',
             'email.required' => 'Informe o e-mail do paciente.',
+            'foto.image' => 'Selecione uma imagem válida para a foto do paciente.',
+            'foto.mimes' => 'A foto do paciente deve ser JPG, PNG ou WEBP.',
+            'foto.max' => 'A foto do paciente deve ter no máximo 2 MB.',
         ];
     }
 
     private function patientValidationAttributes(): array
     {
         return [
+            'foto' => 'foto',
             'cpf' => 'CPF',
             'email' => 'e-mail',
             'telefone' => 'celular',
         ];
+    }
+
+    private function storePatientPhoto(Request $request, ?string $previousPath = null): ?string
+    {
+        if (! $request->hasFile('foto')) {
+            return $previousPath;
+        }
+
+        $directory = 'backend/assets/img/patients';
+        $fileName = 'patient-' . Str::uuid() . '.' . strtolower((string) $request->file('foto')->getClientOriginalExtension());
+
+        File::ensureDirectoryExists(public_path($directory));
+        $request->file('foto')->move(public_path($directory), $fileName);
+
+        $this->deletePreviousPatientPhoto($previousPath);
+
+        return $directory . '/' . $fileName;
+    }
+
+    private function deletePreviousPatientPhoto(?string $path): void
+    {
+        $normalizedPath = trim((string) $path);
+
+        if ($normalizedPath === '') {
+            return;
+        }
+
+        $normalizedPath = ltrim(str_replace('\\', '/', $normalizedPath), '/');
+
+        foreach ([public_path($normalizedPath), public_path('storage/' . $normalizedPath)] as $candidatePath) {
+            if (is_file($candidatePath)) {
+                @unlink($candidatePath);
+            }
+        }
     }
 
     private function patientDuplicateRules(?int $ignorePatientId = null): array
@@ -487,6 +546,7 @@ class PatientController extends Controller
     {
         return [
             'nome' => $patient->nome,
+            'foto' => $patient->foto,
             'cpf' => preg_replace('/\D/', '', (string) $patient->cpf) ?: null,
             'email' => $patient->email,
             'telefone' => $patient->telefone,

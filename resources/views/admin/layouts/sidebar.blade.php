@@ -463,7 +463,7 @@
                 <a href="#" class="nav-link has-dropdown" data-toggle="dropdown" aria-expanded="{{ $isAgendamentosMenuOpen ? 'true' : 'false' }}"><span>Agendamentos</span></a>
                 <ul class="dropdown-menu" style="{{ $isAgendamentosMenuOpen ? 'display:block;' : '' }}">
                   @if($loggedUser?->normalizedRole() !== 'profissional')
-                    <li class="{{ request()->routeIs('admin.agendamentos.calendar') && ! $isProfessionalAccount ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.calendar') }}">Calendário</a></li>
+                    <li class="{{ request()->routeIs('admin.agendamentos.calendar') && ! $isProfessionalCalendarRoute ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.calendar') }}">Calendário</a></li>
                   @endif
                   <li class="{{ request()->routeIs('admin.agendamentos.index') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.index') }}">Agenda Geral</a></li>
                   @if(! $loggedUser?->isClinicManager())
@@ -471,7 +471,7 @@
                   @endif
                   <li class="{{ request()->routeIs('admin.agendamentos.confirmations') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.confirmations') }}">Confirmações</a></li>
                   @if($loggedUser?->normalizedRole() !== 'profissional')
-                    <li class="{{ request()->routeIs('admin.agendamentos.completed') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.completed') }}">Agendamentos Finalizados</a></li>
+                    <li class="{{ request()->routeIs('admin.agendamentos.completed') && ! $isProfessionalCalendarRoute ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.completed') }}">Agendamentos Finalizados</a></li>
                   @endif
                 </ul>
               </li>
@@ -499,11 +499,13 @@
               <li class="dropdown {{ $isCadastrosMenuOpen ? 'active' : '' }}">
                 <a href="#" class="nav-link has-dropdown" data-toggle="dropdown" aria-expanded="{{ $isCadastrosMenuOpen ? 'true' : 'false' }}"><span>Cadastros Base</span></a>
                 <ul class="dropdown-menu" style="{{ $isCadastrosMenuOpen ? 'display:block;' : '' }}">
-                  <li class="{{ request()->routeIs('admin.settings.clinic-hours') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.settings.clinic-hours') }}">Horário da Clínica</a></li>
-                  <li class="{{ request()->routeIs('admin.settings.professionals') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.settings.professionals') }}">Profissionais de Saúde</a></li>
-                  <li class="{{ request()->routeIs('admin.settings.procedures') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.settings.procedures') }}">Procedimentos (Serviços)</a></li>
                   @if($loggedUser->canManageCadastrosBase())
                     <li class="{{ request()->routeIs('admin.settings.users') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.settings.users') }}">Usuários e Permissões</a></li>
+                  @endif
+                  <li class="{{ request()->routeIs('admin.settings.professionals') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.settings.professionals') }}">Profissionais de Saúde</a></li>
+                  <li class="{{ request()->routeIs('admin.settings.procedures') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.settings.procedures') }}">Procedimentos</a></li>
+                  <li class="{{ request()->routeIs('admin.settings.clinic-hours') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.settings.clinic-hours') }}">Horário da Clínica</a></li>
+                  @if($loggedUser->canManageCadastrosBase())
                     <li class="{{ request()->routeIs('admin.settings.activity-logs') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.settings.activity-logs') }}">Logs de Atividade</a></li>
                   @endif
                 </ul>

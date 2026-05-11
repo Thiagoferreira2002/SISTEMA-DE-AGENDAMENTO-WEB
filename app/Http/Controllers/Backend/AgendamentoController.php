@@ -311,6 +311,8 @@ class AgendamentoController extends Controller
     public function show(Request $request, Agendamento $agendamento)
     {
         $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
+        $agendamento->loadMissing(['patient', 'professional', 'procedure']);
+        $agendamento->cpf_exibicao = $agendamento->patient?->cpf ?: null;
         $returnUrl = $this->resolveDetailReturnUrl($request);
         $canEditAppointment = $this->canEditAppointment($agendamento);
 

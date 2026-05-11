@@ -309,4 +309,17 @@ class User extends Authenticatable
 
         return in_array($permission, $this->permissions ?? $this->submenuPermissions(), true);
     }
+
+    public function canViewUserPasswordSection(self $target): bool
+    {
+        if ($this->nivel === 'admin' || $this->role === 'admin') {
+            return true;
+        }
+
+        if (! $this->isClinicManager()) {
+            return false;
+        }
+
+        return in_array($target->normalizedRole(), ['profissional', 'recepcionista'], true);
+    }
 }

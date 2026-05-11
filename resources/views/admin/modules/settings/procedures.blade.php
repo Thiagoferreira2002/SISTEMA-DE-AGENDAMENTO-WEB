@@ -5,6 +5,18 @@
         z-index: 10060;
     }
 
+    .settings-actions {
+        display: inline-flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    .settings-actions form {
+        margin: 0;
+    }
+
     .procedure-edit-modal + .modal-backdrop,
     .modal-backdrop.show {
         z-index: 10050;
@@ -13,6 +25,24 @@
     .procedure-edit-modal .modal-dialog,
     .procedure-edit-modal .modal-content {
         pointer-events: auto;
+    }
+
+    @media (max-width: 767.98px) {
+        .settings-actions {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .settings-actions > *,
+        .settings-actions form,
+        .settings-actions .btn {
+            width: 100%;
+        }
+
+        .procedure-edit-modal .modal-dialog {
+            margin: 10px;
+            max-width: calc(100vw - 20px);
+        }
     }
 </style>
 <section class="section">
@@ -105,7 +135,7 @@
                                     <td>{{ $formatDuration($procedure->duracao_minutos) }}</td>
                                     <td><span class="badge badge-{{ $procedure->ativo ? 'success' : 'danger' }}">{{ $procedure->ativo ? 'Ativo' : 'Inativo' }}</span></td>
                                     <td>
-                                        <div class="d-flex flex-wrap" style="gap: 6px;">
+                                        <div class="settings-actions">
                                             <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#edit-procedure-modal-{{ $procedure->id }}">Editar</button>
                                             <form action="{{ route('admin.settings.procedures.status', $procedure) }}" method="POST" class="d-inline">
                                                 @csrf

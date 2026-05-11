@@ -1,5 +1,30 @@
 @extends('admin.layouts.master')
 @section('content')
+<style>
+    .patient-completion-card {
+        border: 1px solid rgba(71, 195, 99, 0.14);
+        background: linear-gradient(180deg, rgba(242, 252, 245, 0.96) 0%, rgba(234, 249, 239, 0.98) 100%);
+        box-shadow: 0 14px 28px rgba(71, 195, 99, 0.08);
+    }
+
+    .patient-completion-card .progress {
+        background: rgba(71, 195, 99, 0.14);
+    }
+
+    .patient-progress-bar {
+        background: linear-gradient(90deg, #47c363 0%, #2f9e44 100%) !important;
+    }
+
+    html[data-theme="dark"] .patient-completion-card {
+        background: linear-gradient(180deg, rgba(22, 47, 35, 0.96) 0%, rgba(19, 39, 31, 0.98) 100%);
+        border-color: rgba(96, 216, 131, 0.14);
+        box-shadow: 0 18px 30px rgba(2, 8, 15, 0.24);
+    }
+
+    html[data-theme="dark"] .patient-completion-card .progress {
+        background: rgba(96, 216, 131, 0.16);
+    }
+</style>
 <section class="section">
     <div class="section-header">
         <h1>Editar Paciente</h1>
@@ -24,15 +49,52 @@
                             </div>
                         @endif
 
+                        <div class="border rounded p-3 mb-4 patient-completion-card">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap: 10px;">
+                                <div>
+                                    <h5 class="mb-1">Qualidade do cadastro</h5>
+                                    <p class="text-muted mb-0 small">Use este painel para identificar rapidamente o que ainda falta preencher.</p>
+                                </div>
+                                <span class="small text-muted" data-patient-progress-text>0 de 0 campos preenchidos</span>
+                            </div>
+                            <div class="progress mt-3" style="height: 10px; border-radius: 999px; overflow: hidden;">
+                                <div class="progress-bar patient-progress-bar" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-patient-progress-bar></div>
+                            </div>
+                            <p class="small text-muted mt-2 mb-0" data-patient-missing-fields>Carregando campos do cadastro.</p>
+                        </div>
+
                         @if(! empty($patient->cadastro_pendencias))
                             <div class="alert alert-warning">
                                 <strong>Cadastro incompleto.</strong> Preencha os campos pendentes: {{ implode(', ', $patient->cadastro_pendencias) }}.
                             </div>
                         @endif
 
-                        <form action="{{ route('admin.patients.update', $patient) }}" method="POST" data-patient-live-check="true" data-patient-duplicate-url="{{ route('admin.patients.duplicate-check') }}" data-patient-id="{{ $patient->id }}">
+                        <form action="{{ route('admin.patients.update', $patient) }}" method="POST" enctype="multipart/form-data" data-patient-live-check="true" data-patient-duplicate-url="{{ route('admin.patients.duplicate-check') }}" data-patient-id="{{ $patient->id }}">
                             @csrf
                             @method('PUT')
+                            <div class="border rounded p-3 mb-4">
+                                <h5 class="mb-3">Foto do paciente</h5>
+                                <div class="row align-items-center">
+                                    <div class="col-md-3 text-center mb-3 mb-md-0">
+                                        <img src="{{ $patient->foto_url }}" alt="Foto do paciente" class="img-fluid rounded-circle border" style="width: 112px; height: 112px; object-fit: cover;" data-patient-photo-preview data-default-src="{{ $patient->foto_url }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-0">
+                                            <label for="foto">Atualizar foto</label>
+                                            <input type="file" class="form-control-file" id="foto" name="foto" accept=".jpg,.jpeg,.png,.webp,image/*" data-patient-photo-input>
+                                            <small class="text-muted d-block mt-2">Opcional. Envie JPG, PNG ou WEBP com até 2 MB.</small>
+                                            @if($patient->foto)
+                                                <div class="form-check mt-3">
+                                                    <input class="form-check-input" type="checkbox" id="remove_foto" name="remove_foto" value="1">
+                                                    <label class="form-check-label" for="remove_foto">Remover foto atual</label>
+                                                </div>
+                                            @endif
+                                            @error('foto')<div class="text-danger mt-1">{{ $message }}</div>@enderror
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="border rounded p-3 mb-4">
                                 <h5 class="mb-3">Dados Pessoais</h5>
                                 <div class="row">
@@ -80,6 +142,93 @@
 <script src="https://unpkg.com/imask"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        function initPatientCompletion(formSelector, options) {
+            var form = document.querySelector(formSelector);
+
+            if (!form) {
+                return;
+            }
+
+            var progressBar = form.querySelector(options.progressSelector) || document.querySelector(options.progressSelector);
+            var progressText = form.querySelector(options.progressTextSelector) || document.querySelector(options.progressTextSelector);
+            var missingList = form.querySelector(options.missingListSelector) || document.querySelector(options.missingListSelector);
+
+            if (!progressBar || !progressText || !missingList) {
+                return;
+            }
+
+            var watchedFields = [
+                { selector: '[name="nome"]', label: 'Nome completo', required: true },
+                { selector: '[name="telefone"]', label: 'Celular', required: true },
+                { selector: '[name="email"]', label: 'E-mail', required: true },
+                { selector: '[name="cpf"]', label: 'CPF', required: false },
+                { selector: '[name="sexo"]', label: 'Sexo', required: false },
+                { selector: '[name="data_nascimento"]', label: 'Data de nascimento', required: false },
+                { selector: '[name="cep"]', label: 'CEP', required: false },
+                { selector: '[name="endereco"]', label: 'Endereço', required: false },
+                { selector: '[name="bairro"]', label: 'Bairro', required: false },
+                { selector: '[name="tipo_moradia"]', label: 'Tipo de imóvel', required: false }
+            ].map(function(fieldConfig) {
+                fieldConfig.element = form.querySelector(fieldConfig.selector);
+                return fieldConfig;
+            }).filter(function(fieldConfig) {
+                return Boolean(fieldConfig.element);
+            });
+
+            function hasValue(element) {
+                return String(element.value || '').trim() !== '';
+            }
+
+            function refreshCompletion() {
+                var total = watchedFields.length;
+                var completed = watchedFields.filter(function(fieldConfig) {
+                    return hasValue(fieldConfig.element);
+                }).length;
+                var percent = total ? Math.round((completed / total) * 100) : 0;
+                var missing = watchedFields.filter(function(fieldConfig) {
+                    return !hasValue(fieldConfig.element);
+                });
+
+                progressBar.style.width = percent + '%';
+                progressBar.setAttribute('aria-valuenow', String(percent));
+                progressText.textContent = completed + ' de ' + total + ' campos preenchidos';
+
+                if (!missing.length) {
+                    missingList.textContent = 'Cadastro completo para continuar o atendimento com contexto suficiente.';
+                    return;
+                }
+
+                var requiredMissing = missing.filter(function(fieldConfig) {
+                    return fieldConfig.required;
+                }).map(function(fieldConfig) {
+                    return fieldConfig.label;
+                });
+                var optionalMissing = missing.filter(function(fieldConfig) {
+                    return !fieldConfig.required;
+                }).map(function(fieldConfig) {
+                    return fieldConfig.label;
+                });
+                var parts = [];
+
+                if (requiredMissing.length) {
+                    parts.push('Obrigatórios pendentes: ' + requiredMissing.join(', '));
+                }
+
+                if (optionalMissing.length) {
+                    parts.push('Recomendados pendentes: ' + optionalMissing.join(', '));
+                }
+
+                missingList.textContent = parts.join('. ');
+            }
+
+            watchedFields.forEach(function(fieldConfig) {
+                fieldConfig.element.addEventListener('input', refreshCompletion);
+                fieldConfig.element.addEventListener('change', refreshCompletion);
+            });
+
+            refreshCompletion();
+        }
+
         function bindCepLookup(cepId, enderecoId, bairroId) {
             var cepField = document.getElementById(cepId);
             var enderecoField = document.getElementById(enderecoId);
@@ -131,6 +280,61 @@
             }
         }
 
+        function bindPhotoPreview(formSelector) {
+            var form = document.querySelector(formSelector);
+
+            if (!form) {
+                return;
+            }
+
+            var fileInput = form.querySelector('[data-patient-photo-input]');
+            var preview = form.querySelector('[data-patient-photo-preview]');
+            var removeInput = form.querySelector('[name="remove_foto"]');
+            var objectUrl = null;
+
+            if (!fileInput || !preview) {
+                return;
+            }
+
+            fileInput.addEventListener('change', function () {
+                var file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
+                if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                    objectUrl = null;
+                }
+
+                if (!file) {
+                    preview.setAttribute('src', preview.dataset.defaultSrc || '');
+                    return;
+                }
+
+                if (removeInput) {
+                    removeInput.checked = false;
+                }
+
+                objectUrl = URL.createObjectURL(file);
+                preview.setAttribute('src', objectUrl);
+            });
+
+            if (removeInput) {
+                removeInput.addEventListener('change', function () {
+                    if (removeInput.checked) {
+                        if (objectUrl) {
+                            URL.revokeObjectURL(objectUrl);
+                            objectUrl = null;
+                        }
+
+                        fileInput.value = '';
+                        preview.setAttribute('src', '{{ asset('backend/assets/img/avatar/avatar-1.png') }}');
+                        return;
+                    }
+
+                    preview.setAttribute('src', preview.dataset.defaultSrc || '');
+                });
+            }
+        }
+
         if (window.IMask) {
             IMask(document.getElementById('cpf'), { mask: '000.000.000-00' });
             IMask(document.getElementById('telefone'), { mask: '(00) 00000-0000' });
@@ -140,6 +344,12 @@
         }
 
         bindCepLookup('cep', 'endereco', 'bairro');
+        bindPhotoPreview('form[data-patient-live-check="true"]');
+        initPatientCompletion('form[data-patient-live-check="true"]', {
+            progressSelector: '[data-patient-progress-bar]',
+            progressTextSelector: '[data-patient-progress-text]',
+            missingListSelector: '[data-patient-missing-fields]'
+        });
     });
 </script>
 @endsection

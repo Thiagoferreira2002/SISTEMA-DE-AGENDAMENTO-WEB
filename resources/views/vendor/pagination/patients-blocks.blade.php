@@ -12,6 +12,16 @@
 
     <nav aria-label="Paginacao de pacientes">
         <ul class="pagination mb-0">
+            <li class="page-item {{ $currentPage <= 1 ? 'disabled' : '' }}">
+                <a
+                    class="page-link"
+                    href="{{ $currentPage <= 1 ? '#' : $paginator->url(1) }}"
+                    aria-label="Primeira pagina"
+                >
+                    <span aria-hidden="true">&lt;&lt;&lt;</span>
+                </a>
+            </li>
+
             <li class="page-item {{ $startPage <= 1 ? 'disabled' : '' }}">
                 <a
                     class="page-link"
@@ -35,6 +45,16 @@
                     aria-label="Proximas paginas"
                 >
                     <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+
+            <li class="page-item {{ $currentPage >= $lastPage ? 'disabled' : '' }}">
+                <a
+                    class="page-link"
+                    href="{{ $currentPage >= $lastPage ? '#' : $paginator->url($lastPage) }}"
+                    aria-label="Ultima pagina"
+                >
+                    <span aria-hidden="true">&gt;&gt;&gt;</span>
                 </a>
             </li>
         </ul>

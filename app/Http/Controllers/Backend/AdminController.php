@@ -28,6 +28,7 @@ class AdminController extends Controller
            'pendentes' => route('admin.agendamentos.confirmations'),
            'confirmados' => route('admin.agendamentos.index'),
            'complementar' => route('admin.patients.index'),
+           'atrasados' => route('admin.doctor.pending-finalization'),
            'finalizados' => route('admin.agendamentos.completed'),
        ];
 
@@ -84,6 +85,12 @@ class AdminController extends Controller
            $query->whereNull('status')->orWhere('status', 'pendente');
        })->count();
        $agendamentosConfirmados = (clone $activeAppointmentsQuery)->where('status', 'confirmado')->count();
+       $agendamentosEmAtraso = (clone $activeAppointmentsQuery)
+           ->orderBy('data_agendamento')
+           ->orderBy('horario')
+           ->get()
+           ->filter(fn (Agendamento $agendamento) => $this->appointmentHasPassedEndTime($agendamento))
+           ->count();
        $agendamentosFinalizados = (clone $completedAppointmentsQuery)->count();
        $proximosAgendamentos = $upcomingAppointmentsQuery
            ->orderBy('data_agendamento')
@@ -97,6 +104,7 @@ class AdminController extends Controller
            'totalAgendamentos',
            'agendamentosPendentes',
            'agendamentosConfirmados',
+           'agendamentosEmAtraso',
            'totalPacientes',
            'proximosAgendamentos',
            'isProfessionalDashboard',

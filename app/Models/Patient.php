@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Patient extends Model
 {
@@ -13,6 +15,7 @@ class Patient extends Model
 
     protected $fillable = [
         'nome',
+        'foto',
         'cpf',
         'email',
         'telefone',
@@ -42,6 +45,35 @@ class Patient extends Model
     public function agendamentos()
     {
         return $this->hasMany(Agendamento::class, 'paciente_id');
+    }
+
+    public function getFotoUrlAttribute(): string
+    {
+        $path = trim((string) $this->foto);
+
+        if ($path === '') {
+            return asset('backend/assets/img/avatar/avatar-1.png');
+        }
+
+        $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
+
+        if (Str::startsWith($normalizedPath, ['http://', 'https://'])) {
+            return $normalizedPath;
+        }
+
+        if (Storage::disk('public')->exists($normalizedPath)) {
+            return asset('storage/' . $normalizedPath);
+        }
+
+        if (is_file(public_path($normalizedPath))) {
+            return asset($normalizedPath);
+        }
+
+        if (is_file(public_path('storage/' . $normalizedPath))) {
+            return asset('storage/' . $normalizedPath);
+        }
+
+        return asset('backend/assets/img/avatar/avatar-1.png');
     }
 
     public function getCadastroStatusLabelAttribute(): string

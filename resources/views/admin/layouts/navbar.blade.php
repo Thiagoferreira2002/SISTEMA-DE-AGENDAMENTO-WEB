@@ -6,6 +6,7 @@
             box-shadow: 0 14px 34px rgba(13, 51, 88, 0.22);
             padding: 8px 22px;
           border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+          flex-wrap: nowrap;
         }
 
         .main-navbar-cms .nav-link,
@@ -132,8 +133,12 @@
 
         .main-navbar-cms .navbar-right {
           display: flex;
+          flex-direction: row;
+          flex-wrap: nowrap;
           align-items: center;
           gap: 16px;
+          margin-bottom: 0;
+          margin-left: auto;
         }
 
         .main-navbar-cms .navbar-action-item {
@@ -157,9 +162,31 @@
           min-width: 176px;
         }
 
+        .main-navbar-cms .notification-action-item {
+          width: 68px;
+        }
+
+        .main-navbar-cms .notification-action-link {
+          min-width: 68px;
+          width: 68px;
+          padding: 8px 10px;
+          gap: 0;
+        }
+
+        .main-navbar-cms .theme-action-item {
+          width: 68px;
+        }
+
+        .main-navbar-cms .theme-action-link {
+          min-width: 68px;
+          width: 68px;
+          padding: 8px 10px;
+          gap: 0;
+        }
+
         .main-navbar-cms .theme-toggle-link {
           justify-content: center;
-          gap: 12px;
+          gap: 0;
           position: relative;
           overflow: hidden;
         }
@@ -205,7 +232,7 @@
         }
 
         .main-navbar-cms .theme-toggle-copy {
-          display: flex;
+          display: none;
           flex-direction: column;
           align-items: center;
           justify-content: center;
@@ -258,7 +285,66 @@
           color: #8fc5ff !important;
         }
 
+        html[data-theme="dark"] .main-navbar-cms .dropdown-list,
+        html[data-theme="dark"] .main-navbar-cms .dropdown-list-content,
+        html[data-theme="dark"] .main-navbar-cms .dropdown-item,
+        html[data-theme="dark"] .main-navbar-cms .dropdown-item-unread,
+        html[data-theme="dark"] .main-navbar-cms .dropdown-footer {
+          background: linear-gradient(180deg, rgba(24, 45, 66, 0.98) 0%, rgba(18, 35, 52, 0.98) 100%) !important;
+          color: #e6eef8 !important;
+          border-color: rgba(138, 174, 209, 0.14);
+        }
+
+        html[data-theme="dark"] .main-navbar-cms .dropdown-list {
+          border: 1px solid rgba(143, 197, 255, 0.16);
+          box-shadow: 0 24px 48px rgba(3, 12, 22, 0.42);
+        }
+
+        html[data-theme="dark"] .main-navbar-cms .dropdown-list-content {
+          background: linear-gradient(180deg, rgba(20, 39, 58, 0.98) 0%, rgba(15, 31, 47, 0.98) 100%) !important;
+        }
+
+        html[data-theme="dark"] .main-navbar-cms .dropdown-item {
+          border-bottom-color: rgba(143, 197, 255, 0.12);
+        }
+
+        html[data-theme="dark"] .main-navbar-cms .dropdown-item-desc,
+        html[data-theme="dark"] .main-navbar-cms .dropdown-item-desc strong,
+        html[data-theme="dark"] .main-navbar-cms .dropdown-item-desc div,
+        html[data-theme="dark"] .main-navbar-cms .dropdown-footer a {
+          color: #e6eef8 !important;
+        }
+
+        html[data-theme="dark"] .main-navbar-cms .dropdown-item .text-muted,
+        html[data-theme="dark"] .main-navbar-cms .dropdown-item-desc .small {
+          color: #a9bfd7 !important;
+        }
+
+        html[data-theme="dark"] .main-navbar-cms .dropdown-item .bg-light,
+        html[data-theme="dark"] .main-navbar-cms .dropdown-item-icon.bg-light {
+          background: #27405a !important;
+          color: #e6eef8 !important;
+        }
+
+        html[data-theme="dark"] .main-navbar-cms .dropdown-item-unread {
+          background: linear-gradient(90deg, rgba(84, 156, 225, 0.18), rgba(84, 156, 225, 0.05)) !important;
+        }
+
+        html[data-theme="dark"] .main-navbar-cms .dropdown-item:hover,
+        html[data-theme="dark"] .main-navbar-cms .dropdown-item:focus {
+          background: linear-gradient(90deg, rgba(64, 125, 188, 0.2), rgba(64, 125, 188, 0.08)) !important;
+        }
+
         @media (max-width: 991.98px) {
+          .main-navbar-cms {
+            padding: 8px 12px;
+          }
+
+          .main-navbar-cms .navbar-left-actions {
+            gap: 8px;
+            min-width: 0;
+          }
+
           .main-navbar-cms .navbar-action-item,
           .main-navbar-cms .navbar-action-item-compact,
           .main-navbar-cms .navbar-action-link,
@@ -267,9 +353,117 @@
             min-width: auto;
           }
 
+          .main-navbar-cms .navbar-brand-cms {
+            min-width: 0;
+            max-width: 112px;
+            padding: 0;
+            flex: 0 1 112px;
+          }
+
+          .main-navbar-cms .navbar-brand-logo {
+            max-width: 100px;
+          }
+
+          .main-navbar-cms .navbar-right {
+            gap: 8px;
+          }
+
+          .main-navbar-cms .navbar-nav {
+            flex-direction: row;
+          }
+
           .main-navbar-cms .theme-toggle-copy,
           .main-navbar-cms .notification-toggle .d-lg-inline {
             display: none;
+          }
+        }
+
+        @media (max-width: 767.98px) {
+          .main-navbar-cms {
+            padding: 8px 10px;
+          }
+
+          .main-navbar-cms .navbar-left-actions {
+            flex: 0 1 auto;
+            gap: 6px;
+          }
+
+          .main-navbar-cms .navbar-brand-cms {
+            max-width: 88px;
+            flex-basis: 88px;
+          }
+
+          .main-navbar-cms .navbar-brand-logo {
+            max-width: 88px;
+          }
+
+          .main-navbar-cms .navbar-right {
+            gap: 6px;
+          }
+
+          .main-navbar-cms .navbar-pill {
+            min-height: 42px;
+            padding: 6px 10px;
+            border-radius: 14px;
+          }
+
+          .main-navbar-cms .notification-action-item,
+          .main-navbar-cms .theme-action-item {
+            width: 52px;
+          }
+
+          .main-navbar-cms .notification-action-link,
+          .main-navbar-cms .theme-action-link {
+            width: 52px;
+            min-width: 52px;
+            padding: 6px 8px;
+          }
+
+          .main-navbar-cms .theme-toggle-icon {
+            width: 42px;
+            height: 26px;
+            flex-basis: 42px;
+          }
+
+          .main-navbar-cms .theme-toggle-thumb {
+            width: 18px;
+            height: 18px;
+          }
+
+          .main-navbar-cms .theme-toggle-link.is-dark .theme-toggle-thumb {
+            transform: translateX(14px);
+          }
+
+          .main-navbar-cms .user-pill {
+            min-width: 0;
+            padding: 6px 10px;
+          }
+
+          .main-navbar-cms .user-pill-content {
+            gap: 8px;
+            min-width: 0;
+          }
+
+          .main-navbar-cms .user-avatar {
+            width: 32px;
+            height: 32px;
+          }
+
+          .main-navbar-cms .user-name {
+            font-size: 12px;
+          }
+
+          .main-navbar-cms .user-role {
+            font-size: 9px;
+          }
+
+          .main-navbar-cms .user-meta,
+          .main-navbar-cms .user-pill > .fas {
+            display: none;
+          }
+
+          .main-navbar-cms .user-pill {
+            justify-content: center;
           }
         }
 
@@ -501,10 +695,9 @@
                 $userRoleLabel = Auth::user()->roleLabel();
               $userAvatar = Auth::user()->profile_photo_url;
           @endphp
-          <li class="dropdown dropdown-list-toggle navbar-action-item">
-            <a href="#" data-toggle="dropdown" class="nav-link notification-toggle nav-link-lg navbar-pill navbar-action-link {{ ($navbarNotificationCount ?? 0) > 0 ? 'beep' : '' }}" style="display:flex;align-items:center;">
+          <li class="dropdown dropdown-list-toggle navbar-action-item notification-action-item">
+            <a href="#" data-toggle="dropdown" class="nav-link notification-toggle nav-link-lg navbar-pill navbar-action-link notification-action-link {{ ($navbarNotificationCount ?? 0) > 0 ? 'beep' : '' }}" style="display:flex;align-items:center;justify-content:center;" title="Notificações" aria-label="Notificações">
               <i class="far fa-bell"></i>
-              <span class="d-none d-lg-inline">Notificações</span>
               @if(($navbarNotificationCount ?? 0) > 0)
                 <span class="notification-badge">{{ $navbarNotificationCount }}</span>
               @endif
@@ -542,14 +735,10 @@
                   </div>
                 @endforelse
               </div>
-              <div class="dropdown-footer text-center">
-                <a href="{{ $notificationClearUrl }}" class="mr-3">Limpar alertas</a>
-                <a href="{{ $notificationOpenUrl }}">Veja tudo <i class="fas fa-chevron-right"></i></a>
-              </div>
             </div>
           </li>
-          <li class="navbar-action-item navbar-action-item-compact">
-            <a href="#" class="nav-link nav-link-lg navbar-pill navbar-action-link navbar-action-link-compact theme-toggle-link" data-theme-toggle aria-pressed="false" title="Ativar modo escuro">
+          <li class="navbar-action-item navbar-action-item-compact theme-action-item">
+            <a href="#" class="nav-link nav-link-lg navbar-pill navbar-action-link navbar-action-link-compact theme-toggle-link theme-action-link" data-theme-toggle aria-pressed="false" title="Alternar tema" aria-label="Alternar tema">
               <span class="theme-toggle-icon"><span class="theme-toggle-thumb" data-theme-thumb><i class="fas fa-moon" data-theme-icon></i></span></span>
               <span class="theme-toggle-copy">
                 <span class="theme-toggle-label" data-theme-label>Modo Escuro</span>

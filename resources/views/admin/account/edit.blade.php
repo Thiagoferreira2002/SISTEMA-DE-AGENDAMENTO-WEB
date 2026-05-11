@@ -73,7 +73,8 @@
         border: 1px solid rgba(13, 51, 88, 0.08);
         border-radius: 16px;
         background: #f8fbff;
-        padding: 18px 18px 8px;
+        padding: 16px 16px 8px;
+        max-width: 540px;
     }
 
     html[data-theme="dark"] .account-access-card {
@@ -84,6 +85,47 @@
     .account-access-card ul {
         padding-left: 18px;
         margin-bottom: 0;
+    }
+
+    .account-phone-input {
+        letter-spacing: 0.04em;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .account-feedback-stack {
+        margin: 0 0 24px;
+    }
+
+    .account-feedback-stack .alert {
+        margin-bottom: 0;
+    }
+
+    @media (max-width: 767.98px) {
+        .account-shell {
+            padding: 18px;
+            border-radius: 18px;
+        }
+
+        .account-hero .card-body,
+        .account-form-card .card-body {
+            padding: 18px;
+        }
+
+        .account-avatar {
+            width: 76px;
+            height: 76px;
+            border-radius: 20px;
+        }
+
+        .account-photo-preview {
+            width: 104px;
+            height: 104px;
+            border-radius: 22px;
+        }
+
+        .account-access-card {
+            max-width: 100%;
+        }
     }
 </style>
 <section class="section">
@@ -118,18 +160,22 @@
                 </div>
             </div>
 
-            @if(session('success'))
-                <div class="alert alert-success mt-4">{{ session('success') }}</div>
-            @endif
+            @if(session('success') || $errors->any())
+                <div class="account-feedback-stack">
+                    @if(session('success'))
+                        <div class="alert alert-success">{{ session('success') }}</div>
+                    @endif
 
-            @if($errors->any())
-                <div class="alert alert-danger mt-4">
-                    <strong>Não foi possível atualizar sua conta.</strong>
-                    <ul class="mb-0 mt-2 pl-3">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
+                    @if($errors->any())
+                        <div class="alert alert-danger">
+                            <strong>Não foi possível atualizar sua conta.</strong>
+                            <ul class="mb-0 mt-2 pl-3">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
                 </div>
             @endif
 
@@ -149,19 +195,19 @@
 
                             <div class="col-lg-8">
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-lg-4 col-md-6">
                                         <div class="form-group">
                                             <label for="nome">Nome *</label>
                                             <input type="text" class="form-control @error('nome') is-invalid @enderror" id="nome" name="nome" value="{{ old('nome', $user->nome) }}" required>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-lg-2 col-md-6">
                                         <div class="form-group">
                                             <label for="sobrenome">Sobrenome</label>
                                             <input type="text" class="form-control @error('sobrenome') is-invalid @enderror" id="sobrenome" name="sobrenome" value="{{ old('sobrenome', $user->sobrenome) }}">
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-lg-3 col-md-4">
                                         <div class="form-group">
                                             <label for="cpf">CPF</label>
                                             <input type="text" class="form-control @error('cpf') is-invalid @enderror" id="cpf" name="cpf" value="{{ old('cpf', $user->cpf ? preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', preg_replace('/\D+/', '', $user->cpf)) : '') }}" maxlength="14" {{ $canEditCpf ? '' : 'readonly' }}>
@@ -170,19 +216,19 @@
                                             @endif
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-lg-3 col-md-4">
                                         <div class="form-group">
                                             <label for="fone">Telefone</label>
-                                            <input type="text" class="form-control @error('fone') is-invalid @enderror" id="fone" name="fone" value="{{ old('fone', $user->fone) }}">
+                                            <input type="text" class="form-control account-phone-input @error('fone') is-invalid @enderror" id="fone" name="fone" value="{{ old('fone', $user->fone) }}" placeholder="(75) 98888 - 8297">
                                         </div>
                                     </div>
-                                    <div class="col-md-8">
+                                    <div class="col-lg-5 col-md-8">
                                         <div class="form-group">
                                             <label for="email">E-mail *</label>
                                             <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email', $user->email) }}" required>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-lg-3 col-md-4">
                                         <div class="form-group">
                                             <label>Nível de acesso</label>
                                             <input type="text" class="form-control" value="{{ $roleLabel }}" readonly>
@@ -203,9 +249,9 @@
                             </div>
                         </div>
 
-                        <div class="mt-4 d-flex flex-wrap" style="gap: 10px;">
-                            <button type="submit" class="btn btn-primary">Salvar alterações</button>
-                            <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">Voltar</a>
+                        <div class="mt-4 d-flex flex-wrap align-items-center" style="gap: 10px;">
+                            <button type="submit" class="btn btn-primary px-4">Salvar alterações</button>
+                            <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary px-4">Voltar</a>
                         </div>
                     </form>
                 </div>
@@ -226,7 +272,7 @@
         }
 
         if (window.IMask && phoneInput) {
-            IMask(phoneInput, { mask: [{ mask: '(00) 00000-0000' }, { mask: '(00) 0000-0000' }] });
+            IMask(phoneInput, { mask: [{ mask: '(00) 00000 - 0000' }, { mask: '(00) 0000 - 0000' }] });
         }
 
         if (photoInput && photoPreview) {

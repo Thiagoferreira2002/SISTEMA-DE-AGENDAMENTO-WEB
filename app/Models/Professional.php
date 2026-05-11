@@ -12,15 +12,18 @@ class Professional extends Model
         'user_id',
         'nome',
         'especialidade_principal',
+        'subespecialidades',
         'cpf',
         'registro_tipo',
         'registro_numero',
+        'rqe',
         'agenda_color',
         'repasse_percentual',
         'ativo',
     ];
 
     protected $casts = [
+        'subespecialidades' => 'array',
         'repasse_percentual' => 'decimal:2',
         'ativo' => 'boolean',
     ];

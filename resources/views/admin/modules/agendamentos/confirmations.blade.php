@@ -10,6 +10,27 @@
         ];
     @endphp
     <style>
+        .confirmation-summary-card {
+            width: fit-content;
+            min-width: 190px;
+            max-width: 100%;
+        }
+
+        .confirmation-summary-card .card-icon {
+            margin: 14px 14px 0;
+        }
+
+        .confirmation-summary-card .card-wrap {
+            padding: 14px 14px 16px;
+        }
+
+        .confirmation-summary-card .card-header h4 {
+            font-size: 11px;
+            line-height: 1.25;
+            white-space: normal;
+            margin-bottom: 0;
+        }
+
         .confirmation-contact-stack {
             display: flex;
             flex-direction: column;
@@ -42,6 +63,24 @@
         .confirmation-contact-stack .btn {
             align-self: center;
             min-width: 170px;
+        }
+
+        .confirmation-actions {
+            display: inline-flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .confirmation-actions form {
+            margin: 0;
+        }
+
+        .confirmation-actions .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         html[data-theme="dark"] .section-body .card,
@@ -109,6 +148,18 @@
             border-color: rgba(118, 187, 255, 0.36) !important;
             color: #cfe6fb !important;
         }
+
+        @media (max-width: 767.98px) {
+            .confirmation-contact-stack {
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .confirmation-contact-stack .btn {
+                width: 100%;
+                min-width: 0;
+            }
+        }
     </style>
     <div class="section-header">
         <h1>Confirmações</h1>
@@ -120,8 +171,8 @@
         @endif
 
         <div class="row">
-            <div class="col-lg-4 col-md-6 col-12">
-                <div class="card card-statistic-1">
+            <div class="col-xl-auto col-lg-auto col-md-5 col-12">
+                <div class="card card-statistic-1 confirmation-summary-card">
                     <div class="card-icon bg-warning"><i class="fas fa-hourglass-half"></i></div>
                     <div class="card-wrap">
                         <div class="card-header"><h4>Pendentes</h4></div>
@@ -138,20 +189,24 @@
             <div class="card-body">
                 <form method="GET" action="{{ route('admin.agendamentos.confirmations') }}" class="mb-4">
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-lg-3 col-md-5">
                             <div class="form-group">
                                 <label for="q">Busca por nome, CPF ou data</label>
                                 <input type="text" class="form-control" id="q" name="q" value="{{ request('q') }}" placeholder="Digite o nome, CPF ou data do agendamento">
                             </div>
-                            <div class="mb-3 d-flex flex-wrap" style="gap: 8px;">
+                        </div>
+                        <div class="col-lg-9 col-md-7"></div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-lg-4 col-md-6">
+                            <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
                                 @if(request()->filled('period'))
                                     <input type="hidden" name="period" value="{{ request('period') }}">
                                 @endif
-                                <button type="submit" class="btn btn-primary">Aplicar filtros</button>
-                                <a href="{{ route('admin.agendamentos.confirmations', request()->except('q')) }}" class="btn btn-light">Limpar</a>
+                                <button type="submit" class="btn btn-primary px-4">Aplicar filtros</button>
+                                <a href="{{ route('admin.agendamentos.confirmations', request()->except('q')) }}" class="btn btn-light px-4">Limpar</a>
                             </div>
                         </div>
-                        <div class="col-md-8"></div>
                     </div>
                 </form>
 
@@ -197,8 +252,8 @@
                                         </div>
                                     </td>
                                     @if(! $isClinicManager)
-                                        <td class="text-center align-middle">
-                                            <div class="d-flex flex-wrap justify-content-center align-items-center" style="gap: 8px;">
+                                        <td class="text-center align-middle action-button-cell">
+                                            <div class="confirmation-actions action-button-group">
                                                 <form action="{{ route('admin.agendamentos.confirm', $appointment) }}" method="POST" class="mb-0 d-inline-block">
                                                 @csrf
                                                     <button type="submit" class="btn btn-sm btn-success">Confirmar</button>

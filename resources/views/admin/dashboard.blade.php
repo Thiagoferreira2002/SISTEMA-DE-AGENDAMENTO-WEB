@@ -170,6 +170,11 @@
     line-height: 1;
   }
 
+  html[data-theme="dark"] .dashboard-metric-card .metric-value {
+    color: #f4f8fc;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.24);
+  }
+
   .dashboard-metric-card .metric-footnote {
     margin-top: 10px;
     margin-top: auto;
@@ -273,6 +278,7 @@
   }
 
   .dashboard-secondary-row {
+    justify-content: center;
     margin-top: 28px;
   }
 
@@ -284,6 +290,26 @@
     .dashboard-shell {
       padding: 18px;
       border-radius: 20px;
+    }
+
+    .dashboard-hero .card-body,
+    .dashboard-list-card .card-body,
+    .dashboard-list-card .card-header {
+      padding-left: 18px;
+      padding-right: 18px;
+    }
+
+    .dashboard-hero h2 {
+      font-size: 1.6rem;
+    }
+
+    .dashboard-metric-card .metric-value {
+      font-size: 1.65rem;
+    }
+
+    .dashboard-list-card .card-header-action,
+    .dashboard-list-card .card-header-action .btn {
+      width: 100%;
     }
 
     .dashboard-secondary-row {
@@ -355,6 +381,20 @@
               <h4>Agendamentos Confirmados</h4>
               <div class="metric-value">{{ $agendamentosConfirmados }}</div>
               <div class="metric-footnote">{{ ($isProfessionalDashboard ?? false) ? 'Mostra apenas confirmações vinculadas ao seu perfil.' : 'Somente agendamentos confirmados e ainda não concluídos.' }}</div>
+            </div>
+          </div>
+        </a>
+      </div>
+      <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <a href="{{ $dashboardLinks['atrasados'] ?? route('admin.doctor.pending-finalization') }}" class="dashboard-metric-link">
+          <div class="card dashboard-metric-card" style="animation-delay:.26s;">
+            <div class="card-body">
+              <div class="metric-icon"><i class="fas fa-exclamation-triangle"></i></div>
+              <h4>Agendamentos em Atraso</h4>
+              <div class="metric-value">{{ $agendamentosEmAtraso ?? 0 }}</div>
+              <div class="metric-footnote">
+                {{ ($isProfessionalDashboard ?? false) ? 'Atendimentos do seu perfil cujo horário final já passou.' : 'Atendimentos ativos cujo horário final já foi ultrapassado.' }}
+              </div>
             </div>
           </div>
         </a>

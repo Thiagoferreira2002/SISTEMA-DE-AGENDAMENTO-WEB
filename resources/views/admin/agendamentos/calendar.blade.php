@@ -14,6 +14,32 @@
         background: linear-gradient(180deg, rgba(22,40,59,.98), rgba(19,33,49,.98));
         box-shadow: 0 22px 44px rgba(2, 8, 15, 0.34);
     }
+
+    .calendar-shell .form-control-sm {
+        min-height: 40px;
+        border-radius: 999px;
+        transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+    }
+
+    .calendar-shell .form-control-sm:hover {
+        border-color: rgba(23, 111, 190, 0.28);
+    }
+
+    .calendar-shell .form-control-sm:focus {
+        border-color: rgba(23, 111, 190, 0.4) !important;
+        box-shadow: 0 0 0 3px rgba(23, 111, 190, 0.12) !important;
+    }
+
+    .calendar-shell select.form-control-sm {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        padding-right: 42px;
+        background-image: linear-gradient(45deg, transparent 50%, #5f7388 50%), linear-gradient(135deg, #5f7388 50%, transparent 50%);
+        background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px);
+        background-size: 6px 6px, 6px 6px;
+        background-repeat: no-repeat;
+    }
 </style>
 <section class="section">
     <div class="section-header">
@@ -193,6 +219,29 @@
                 return false;
             }
 
+            function shortProfessionalName(name) {
+                var value = String(name || '').trim();
+
+                if (!value) {
+                    return 'Equipe';
+                }
+
+                var parts = value.split(/\s+/).filter(Boolean);
+
+                if (parts.length === 1) {
+                    return parts[0];
+                }
+
+                return parts[0] + ' ' + parts[parts.length - 1].charAt(0) + '.';
+            }
+
+            function buildMonthEventTitle(event) {
+                var patientName = String(event.nome || 'Agendamento').trim();
+                var firstName = patientName.split(/\s+/)[0] || patientName;
+
+                return firstName + ' • ' + shortProfessionalName(event.medico || '');
+            }
+
             calendarEl.fullCalendar({
                 defaultView: 'agendaWeek',
                 defaultDate: calendarFocusDate || undefined,
@@ -216,6 +265,7 @@
                 timeFormat: 'H:mm',
                 slotLabelFormat: 'H:mm',
                 eventLimit: true,
+                eventLimitClick: 'popover',
                 eventLimitText: 'mais',
                 displayEventEnd: true,
                 fixedWeekCount: false,
@@ -232,7 +282,8 @@
                 views: {
                     month: {
                         titleFormat: 'MMMM [de] YYYY',
-                        columnHeaderFormat: 'ddd'
+                        columnHeaderFormat: 'ddd',
+                        eventLimit: 2
                     },
                     agendaWeek: {
                         columnHeaderFormat: 'ddd D/M'
@@ -266,7 +317,7 @@
                     if (calendarEl.fullCalendar('getView').name === 'month') {
                         element.addClass('calendar-month-event-card');
                         element.find('.fc-time').text((event.horario || '').trim());
-                        element.find('.fc-title').text((event.nome || 'Agendamento') + ' • ' + (event.servico || 'Consulta'));
+                        element.find('.fc-title').text(buildMonthEventTitle(event));
                     }
 
                     if (event.is_finalized) {
@@ -447,9 +498,31 @@
     .fc-month-view .fc-more {
         display: inline-block;
         margin: 4px 6px 2px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: rgba(23, 111, 190, 0.1);
         color: #176fbe;
         font-weight: 700;
         font-size: 11px;
+    }
+
+    .fc-popover {
+        border: 1px solid rgba(23, 111, 190, 0.18);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 18px 34px rgba(15, 61, 107, 0.16);
+    }
+
+    .fc-popover .fc-header {
+        padding: 10px 14px;
+        background: linear-gradient(180deg, rgba(244, 249, 255, 0.98) 0%, rgba(233, 242, 252, 0.98) 100%);
+        color: #35536e;
+        font-weight: 700;
+    }
+
+    .fc-popover .fc-body {
+        padding: 8px 6px 10px;
+        background: rgba(255, 255, 255, 0.98);
     }
 
     .fc-month-view .fc-today {
@@ -509,11 +582,31 @@
     }
 
     html[data-theme="dark"] .calendar-shell .form-control-sm {
-        border-radius: 999px;
-        min-height: 40px;
-        background: rgba(19, 33, 49, 0.92) !important;
-        border-color: rgba(143, 197, 255, 0.22) !important;
+        border-radius: 14px;
+        min-height: 42px;
+        background: linear-gradient(180deg, #24415f 0%, #17304a 100%) !important;
+        border-color: rgba(143, 197, 255, 0.18) !important;
         color: #eef5fc !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 8px 18px rgba(0, 0, 0, 0.14) !important;
+    }
+
+    html[data-theme="dark"] .calendar-shell .form-control-sm:hover {
+        background: linear-gradient(180deg, #2a4969 0%, #1c3956 100%) !important;
+        border-color: rgba(158, 208, 255, 0.3) !important;
+    }
+
+    html[data-theme="dark"] .calendar-shell .form-control-sm:focus {
+        background: linear-gradient(180deg, #315477 0%, #21405f 100%) !important;
+        border-color: rgba(177, 219, 255, 0.36) !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 0 0 3px rgba(143, 197, 255, 0.18), 0 10px 22px rgba(0, 0, 0, 0.18) !important;
+    }
+
+    html[data-theme="dark"] .calendar-shell select.form-control-sm {
+        padding-right: 50px;
+        background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0) 42%), linear-gradient(180deg, #24415f 0%, #17304a 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)), linear-gradient(45deg, transparent 50%, #b8dcff 50%), linear-gradient(135deg, #b8dcff 50%, transparent 50%) !important;
+        background-position: 0 0, 0 0, calc(100% - 40px) 50%, calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px) !important;
+        background-size: 100% 100%, 100% 100%, 1px 18px, 6px 6px, 6px 6px !important;
+        background-repeat: no-repeat !important;
     }
 
     html[data-theme="dark"] .fc {
@@ -608,6 +701,55 @@
         box-shadow: inset -2px 0 0 rgba(143, 197, 255, 0.34);
     }
 
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-slats .fc-widget-content,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-skeleton .fc-widget-content,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-col,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-bg .fc-day,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-day,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-event-container,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-bgevent-container,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-highlight-container {
+        border-right: 1px solid rgba(143, 197, 255, 0.28) !important;
+        box-shadow: inset -1px 0 0 rgba(143, 197, 255, 0.26) !important;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-col:last-child,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-bg .fc-day:last-child,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-day:last-child,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-event-container:last-child,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-bgevent-container:last-child,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-highlight-container:last-child {
+        border-right: 0 !important;
+        box-shadow: none !important;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-col {
+        background-image: linear-gradient(180deg, rgba(143, 197, 255, 0.09) 0%, rgba(143, 197, 255, 0.02) 100%);
+        background-clip: padding-box;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-col:nth-child(odd),
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-bg td:nth-child(odd) {
+        background-color: rgba(143, 197, 255, 0.05) !important;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-col:nth-child(even),
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-bg td:nth-child(even) {
+        background-color: rgba(255, 255, 255, 0.015) !important;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-col:first-child,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-bg td:first-child,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-day-header:first-child {
+        border-left: 1px solid rgba(143, 197, 255, 0.34) !important;
+        box-shadow: inset 1px 0 0 rgba(143, 197, 255, 0.28), inset -1px 0 0 rgba(143, 197, 255, 0.26) !important;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-day-header:not(:last-child) {
+        border-right: 1px solid rgba(143, 197, 255, 0.38) !important;
+        box-shadow: inset -2px 0 0 rgba(143, 197, 255, 0.3) !important;
+    }
+
     html[data-theme="dark"] .fc-time-grid,
     html[data-theme="dark"] .fc-time-grid-container,
     html[data-theme="dark"] .fc-view,
@@ -652,7 +794,24 @@
     }
 
     html[data-theme="dark"] .fc-month-view .fc-more {
+        background: rgba(158, 208, 255, 0.14);
         color: #9ed0ff;
+    }
+
+    html[data-theme="dark"] .fc-popover {
+        background: #16283b;
+        border-color: rgba(143, 197, 255, 0.24) !important;
+        box-shadow: 0 22px 42px rgba(2, 8, 15, 0.36);
+    }
+
+    html[data-theme="dark"] .fc-popover .fc-header {
+        background: linear-gradient(180deg, rgba(23, 40, 59, 0.98) 0%, rgba(19, 33, 49, 0.98) 100%);
+        color: #d7e9f8;
+        border-bottom: 1px solid rgba(143, 197, 255, 0.2);
+    }
+
+    html[data-theme="dark"] .fc-popover .fc-body {
+        background: #16283b;
     }
 
     html[data-theme="dark"] .fc-agendaWeek-view .fc-axis {
@@ -695,6 +854,36 @@
     html[data-theme="dark"] .fc-agendaDay-view .fc-axis {
         font-weight: 700;
         color: #9bb4ca;
+    }
+
+    @media (max-width: 767.98px) {
+        .card-header-action .form-control-sm {
+            min-width: 0;
+            width: 100%;
+        }
+
+        #calendar {
+            min-height: 540px;
+        }
+
+        .fc-toolbar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .fc-toolbar .fc-left,
+        .fc-toolbar .fc-center,
+        .fc-toolbar .fc-right {
+            float: none;
+            width: 100%;
+            text-align: center;
+        }
+
+        .fc-toolbar .fc-button-group,
+        .fc-toolbar button {
+            margin-bottom: 6px;
+        }
     }
 </style>
 @endsection
