@@ -31,6 +31,32 @@
             margin-bottom: 0;
         }
 
+        .confirmation-table {
+            min-width: 760px;
+        }
+
+        .confirmation-patient-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-width: 170px;
+        }
+
+        .confirmation-patient-cell img {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(23, 111, 190, 0.12);
+            flex: 0 0 auto;
+        }
+
+        .confirmation-patient-cell span {
+            text-align: left;
+            word-break: break-word;
+        }
+
         .confirmation-contact-stack {
             display: flex;
             flex-direction: column;
@@ -128,6 +154,12 @@
             justify-content: center;
         }
 
+        .confirmation-table td:nth-child(2),
+        .confirmation-table td:nth-child(3) {
+            min-width: 150px;
+            white-space: normal;
+        }
+
         html[data-theme="dark"] .section-body .card,
         html[data-theme="dark"] .card-statistic-1 {
             background: linear-gradient(180deg, rgba(22, 40, 59, 0.98) 0%, rgba(19, 33, 49, 0.98) 100%);
@@ -200,6 +232,10 @@
                 width: 100%;
             }
 
+            .confirmation-table {
+                min-width: 760px;
+            }
+
             .section-body form.mb-4 .confirmation-filter-actions > *,
             .confirmation-period-actions > * {
                 flex: 0 0 auto !important;
@@ -227,6 +263,11 @@
         }
 
         @media (max-width: 767.98px) {
+            .confirmation-table {
+                border-collapse: separate;
+                border-spacing: 0;
+            }
+
             .confirmation-contact-stack {
                 min-width: 0;
                 max-width: 100%;
@@ -254,11 +295,172 @@
             }
 
             .confirmation-template-wrap {
-                max-width: 280px;
+                width: 100%;
+                max-width: none;
             }
 
             .confirmation-whatsapp-wrap {
-                max-width: 210px;
+                width: 100%;
+                max-width: none;
+            }
+
+            .confirmation-whatsapp-wrap .btn {
+                width: 100% !important;
+            }
+
+            .confirmation-patient-cell {
+                justify-content: flex-start;
+                min-width: 0;
+                gap: 12px;
+                align-items: center;
+            }
+
+            .confirmation-patient-cell span {
+                line-height: 1.45;
+            }
+
+            .confirmation-actions {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 8px;
+                width: 100%;
+                max-width: 100%;
+                margin: 0;
+                white-space: normal;
+            }
+
+            .confirmation-actions > *,
+            .confirmation-actions form,
+            .confirmation-actions .btn {
+                width: auto !important;
+                min-width: 0;
+                max-width: 100%;
+                box-sizing: border-box;
+                flex: 0 0 auto;
+            }
+
+            .confirmation-actions .btn {
+                padding-left: 10px !important;
+                padding-right: 10px !important;
+                min-height: 38px;
+            }
+
+            .table-responsive .table.table-mobile-cards tbody td {
+                padding: 18px 18px !important;
+            }
+
+            .table-responsive .table.table-mobile-cards tbody td::before {
+                margin-bottom: 10px;
+                line-height: 1.2;
+            }
+
+            .confirmation-template-wrap,
+            .confirmation-whatsapp-wrap,
+            .confirmation-actions {
+                margin-top: 8px;
+            }
+
+            .confirmation-contact-block {
+                padding: 14px;
+                border-radius: 14px;
+            }
+
+            .confirmation-template-wrap .form-control {
+                min-height: 48px;
+            }
+
+            .table-responsive .table.table-mobile-cards tbody tr > td:nth-child(4),
+            .table-responsive .table.table-mobile-cards tbody tr > td:nth-child(5),
+            .table-responsive .table.table-mobile-cards tbody tr > td:nth-child(6) {
+                padding-top: 22px !important;
+                padding-bottom: 22px !important;
+            }
+
+            .table-responsive .table.table-mobile-cards tbody td[data-label="Tipo de confirmaÃ§Ã£o"],
+            .table-responsive .table.table-mobile-cards tbody td[data-label="Contato com o paciente"],
+            .table-responsive .table.table-mobile-cards tbody td[data-label="AÃ§Ãµes"] {
+                padding-top: 18px !important;
+                padding-bottom: 18px !important;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .table-responsive .confirmation-table.table-mobile-cards tbody {
+                gap: 18px;
+            }
+
+            .table-responsive .confirmation-table.table-mobile-cards {
+                width: 100% !important;
+                min-width: 0 !important;
+                table-layout: fixed;
+            }
+
+            .table-responsive .confirmation-table.table-mobile-cards tbody tr {
+                width: 100%;
+                border-radius: 18px;
+                overflow: hidden;
+            }
+
+            .table-responsive .confirmation-table.table-mobile-cards tbody td {
+                justify-content: flex-start;
+                gap: 10px;
+                padding: 24px 20px !important;
+            }
+
+            .table-responsive .confirmation-table.table-mobile-cards tbody td::before {
+                margin-bottom: 0;
+                line-height: 1.2;
+            }
+
+            .table-responsive .confirmation-table.table-mobile-cards tbody td.table-mobile-full {
+                padding-top: 26px !important;
+                padding-bottom: 26px !important;
+            }
+
+            .table-responsive .confirmation-table.table-mobile-cards tbody td[data-label="Paciente"] {
+                padding-bottom: 28px !important;
+            }
+
+            .table-responsive .confirmation-table.table-mobile-cards tbody td[data-label="Data"],
+            .table-responsive .confirmation-table.table-mobile-cards tbody td[data-label="ServiÃ§o"] {
+                min-height: 104px;
+            }
+
+            .confirmation-template-wrap,
+            .confirmation-whatsapp-wrap {
+                margin-top: 0;
+                padding: 0;
+                border: 0;
+                background: transparent;
+                max-width: none;
+            }
+
+            html[data-theme="dark"] .confirmation-template-wrap,
+            html[data-theme="dark"] .confirmation-whatsapp-wrap {
+                border: 0 !important;
+                background: transparent !important;
+            }
+
+            .confirmation-template-wrap .form-control {
+                min-height: 48px;
+                padding: 10px 14px;
+            }
+
+            .confirmation-whatsapp-wrap .btn {
+                min-height: 42px;
+            }
+
+            .confirmation-actions {
+                margin-top: 0;
+                gap: 10px;
+            }
+
+            .confirmation-actions .btn {
+                min-height: 38px;
+                padding-left: 12px !important;
+                padding-right: 12px !important;
             }
         }
     </style>
@@ -319,7 +521,7 @@
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-striped table-mobile-cards">
+                    <table class="table table-striped table-mobile-cards confirmation-table">
                         <thead>
                             <tr>
                                 <th class="text-center">Paciente</th>
@@ -335,7 +537,12 @@
                         <tbody>
                             @forelse($appointments as $appointment)
                                 <tr>
-                                    <td class="text-center align-middle table-mobile-full" data-label="Paciente">{{ $appointment->nome }}</td>
+                                    <td class="text-center align-middle table-mobile-full" data-label="Paciente">
+                                        <div class="confirmation-patient-cell">
+                                            <img src="{{ $appointment->patient?->foto_url ?? asset('backend/assets/img/avatar/avatar-1.png') }}" alt="Foto de {{ $appointment->nome }}">
+                                            <span>{{ $appointment->nome }}</span>
+                                        </div>
+                                    </td>
                                     <td class="text-center align-middle" data-label="Data">{{ $appointment->data_agendamento->format('d/m/Y') }} às {{ $appointment->horario }}</td>
                                     <td class="text-center align-middle" data-label="Serviço">{{ $appointment->servico }}</td>
                                     <td class="text-center align-middle table-mobile-full" data-label="Tipo de confirmação">
