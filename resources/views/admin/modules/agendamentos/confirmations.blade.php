@@ -463,6 +463,131 @@
                 padding-right: 12px !important;
             }
         }
+
+        .confirmation-template-wrap,
+        .confirmation-whatsapp-wrap {
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+
+        @media (max-width: 767.98px) {
+            .confirmation-table-responsive {
+                overflow-x: visible !important;
+                padding: 0 10px 18px;
+            }
+
+            .confirmation-table-responsive .confirmation-table.table-mobile-cards {
+                display: block;
+                width: 100% !important;
+                min-width: 0 !important;
+                table-layout: auto;
+            }
+
+            .confirmation-table-responsive .confirmation-table.table-mobile-cards tbody {
+                display: grid;
+                width: 100%;
+                gap: 20px;
+            }
+
+            .confirmation-table-responsive .confirmation-table.table-mobile-cards tbody tr {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 18px 22px;
+                width: 100%;
+                min-height: 520px;
+                padding: 22px 22px 34px !important;
+                border-radius: 18px;
+                overflow: visible;
+            }
+
+            .confirmation-table-responsive .confirmation-table.table-mobile-cards tbody td {
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+                gap: 8px;
+                min-height: 0;
+                padding: 0 !important;
+                border: 0 !important;
+            }
+
+            .confirmation-table-responsive .confirmation-table.table-mobile-cards tbody td::before {
+                margin-bottom: 2px;
+                line-height: 1.2;
+            }
+
+            .confirmation-table-responsive .confirmation-table.table-mobile-cards tbody td + td {
+                border-top: 0 !important;
+            }
+
+            .confirmation-table-responsive .confirmation-table.table-mobile-cards tbody td:nth-child(1) {
+                grid-column: 1 / -1;
+                padding-bottom: 18px !important;
+                border-bottom: 1px solid var(--border-soft) !important;
+            }
+
+            .confirmation-table-responsive .confirmation-table.table-mobile-cards tbody td:nth-child(2),
+            .confirmation-table-responsive .confirmation-table.table-mobile-cards tbody td:nth-child(3) {
+                min-height: 62px;
+                padding-bottom: 18px !important;
+                border-bottom: 1px solid var(--border-soft) !important;
+            }
+
+            .confirmation-table-responsive .confirmation-table.table-mobile-cards tbody td:nth-child(4),
+            .confirmation-table-responsive .confirmation-table.table-mobile-cards tbody td:nth-child(5),
+            .confirmation-table-responsive .confirmation-table.table-mobile-cards tbody td:nth-child(6) {
+                grid-column: 1 / -1;
+            }
+
+            .confirmation-table-responsive .confirmation-table.table-mobile-cards tbody td.table-mobile-full {
+                grid-column: 1 / -1;
+                min-height: 0;
+                padding: 0 !important;
+                border-top: 0 !important;
+            }
+
+            .confirmation-table-responsive .confirmation-template-wrap,
+            .confirmation-table-responsive .confirmation-whatsapp-wrap {
+                width: fit-content !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: 0 !important;
+                background: transparent !important;
+            }
+
+            .confirmation-table-responsive .confirmation-template-wrap .form-control {
+                width: auto !important;
+                min-width: 0;
+                max-width: 100%;
+                min-height: 48px;
+                padding: 10px 14px;
+            }
+
+            .confirmation-table-responsive .confirmation-whatsapp-wrap .btn {
+                width: auto !important;
+                max-width: 100%;
+                min-height: 44px;
+                padding-left: 18px !important;
+                padding-right: 18px !important;
+            }
+
+            .confirmation-table-responsive .confirmation-actions.action-button-group {
+                display: flex !important;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+                gap: 10px;
+                width: 100%;
+                max-width: none;
+                margin: 0;
+                padding-top: 8px;
+                padding-bottom: 8px;
+            }
+
+            .confirmation-table-responsive .confirmation-actions-cell {
+                min-height: 78px !important;
+            }
+        }
     </style>
     <div class="section-header">
         <h1>Confirmações</h1>
@@ -520,7 +645,7 @@
                     <a href="{{ route('admin.agendamentos.confirmations', request()->except('page', 'period')) }}" class="btn btn-light btn-sm">Ver todos</a>
                 </div>
 
-                <div class="table-responsive">
+                <div class="table-responsive confirmation-table-responsive">
                     <table class="table table-striped table-mobile-cards confirmation-table">
                         <thead>
                             <tr>
@@ -545,7 +670,7 @@
                                     </td>
                                     <td class="text-center align-middle" data-label="Data">{{ $appointment->data_agendamento->format('d/m/Y') }} às {{ $appointment->horario }}</td>
                                     <td class="text-center align-middle" data-label="Serviço">{{ $appointment->servico }}</td>
-                                    <td class="text-center align-middle table-mobile-full" data-label="Tipo de confirmação">
+                                    <td class="text-center align-middle table-mobile-full confirmation-template-cell" data-label="Tipo de confirmação">
                                         <div class="confirmation-contact-block confirmation-template-wrap">
                                             <select class="form-control form-control-sm js-message-template" data-target="message-link-{{ $appointment->id }}" data-name="{{ $appointment->nome }}" data-service="{{ $appointment->servico }}" data-date="{{ $appointment->data_agendamento->format('d/m/Y') }}" data-time="{{ $appointment->horario }}" data-phone="{{ preg_replace('/\D+/', '', $appointment->telefone) }}">
                                                 @foreach($messageTemplates as $templateKey => $templateText)
@@ -554,13 +679,13 @@
                                             </select>
                                         </div>
                                     </td>
-                                    <td class="text-center align-middle table-mobile-full" data-label="Contato com o paciente">
+                                    <td class="text-center align-middle table-mobile-full confirmation-whatsapp-cell" data-label="Contato com o paciente">
                                         <div class="confirmation-contact-block text-center confirmation-whatsapp-wrap">
                                             <a id="message-link-{{ $appointment->id }}" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success d-inline-flex align-items-center justify-content-center js-whatsapp-message">Enviar por WhatsApp</a>
                                         </div>
                                     </td>
                                     @if(! $isClinicManager)
-                                        <td class="text-center align-middle action-button-cell table-mobile-full" data-label="Ações">
+                                        <td class="text-center align-middle action-button-cell table-mobile-full confirmation-actions-cell" data-label="Ações">
                                             <div class="confirmation-actions action-button-group">
                                                 <form action="{{ route('admin.agendamentos.confirm', $appointment) }}" method="POST" class="mb-0 d-inline-block">
                                                 @csrf

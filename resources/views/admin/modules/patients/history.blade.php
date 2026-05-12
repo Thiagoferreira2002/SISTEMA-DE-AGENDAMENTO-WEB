@@ -40,6 +40,56 @@
         justify-content: center;
     }
 
+    .history-filters-row {
+        row-gap: 14px;
+    }
+
+    .history-filter-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        min-height: 42px;
+    }
+
+    .history-filter-actions .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: auto;
+        white-space: nowrap;
+    }
+
+    .history-enhanced-table {
+        min-width: 900px;
+    }
+
+    .history-patient-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 170px;
+    }
+
+    .history-patient-cell img {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid rgba(23, 111, 190, 0.12);
+        flex: 0 0 auto;
+    }
+
+    .history-patient-cell span {
+        min-width: 0;
+        word-break: break-word;
+    }
+
+    .history-service-cell {
+        min-width: 170px;
+        white-space: normal;
+    }
+
     .history-status-badge {
         display: inline-flex;
         align-items: center;
@@ -156,17 +206,139 @@
     }
 
     @media (max-width: 767.98px) {
-        .patient-history-actions {
+        .history-filters-row {
+            display: block;
+        }
+
+        .history-filter-actions {
+            align-items: flex-start;
+            margin-top: 2px;
+            width: 100%;
+        }
+
+        .history-filter-actions .btn {
+            width: auto !important;
+            min-width: 0;
+            max-width: 100%;
+            padding-left: 14px !important;
+            padding-right: 14px !important;
+        }
+
+        .history-table-responsive {
+            overflow-x: visible !important;
+            padding: 0 10px 18px;
+        }
+
+        .history-table-responsive .history-enhanced-table.table-mobile-cards {
+            display: block;
+            width: 100% !important;
+            min-width: 0 !important;
+            table-layout: auto;
+        }
+
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody {
+            display: grid;
+            width: 100%;
+            gap: 18px;
+        }
+
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody tr {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 8px;
+            gap: 18px 22px;
             width: 100%;
+            min-height: 330px;
+            padding: 22px !important;
+            border-radius: 18px;
+            overflow: visible;
+        }
+
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody td {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 8px;
+            min-height: 0;
+            padding: 0 !important;
+            border: 0 !important;
+        }
+
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody td::before {
+            margin-bottom: 2px;
+            line-height: 1.2;
+        }
+
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody td + td {
+            border-top: 0 !important;
+        }
+
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody td:nth-child(1),
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody td:nth-child(2) {
+            grid-column: 1 / -1;
+            padding-bottom: 18px !important;
+            border-bottom: 1px solid var(--border-soft) !important;
+        }
+
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody td:nth-child(1) {
+            order: 2;
+        }
+
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody td:nth-child(2) {
+            order: 1;
+        }
+
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody td:nth-child(3),
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody td:nth-child(4) {
+            order: 3;
+            min-height: 62px;
+            padding-bottom: 18px !important;
+            border-bottom: 1px solid var(--border-soft) !important;
+        }
+
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody td:nth-child(5),
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody td:nth-child(6) {
+            grid-column: 1 / -1;
+        }
+
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody td:nth-child(5) {
+            order: 4;
+        }
+
+        .history-table-responsive .history-enhanced-table.table-mobile-cards tbody td:nth-child(6) {
+            order: 5;
+        }
+
+        .history-patient-cell {
+            justify-content: flex-start;
+            min-width: 0;
+            gap: 12px;
+        }
+
+        .patient-history-actions {
+            display: flex !important;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            gap: 10px;
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            padding-top: 4px;
         }
 
         .patient-history-actions > *,
         .patient-history-actions form,
         .patient-history-actions .btn {
-            width: 100%;
+            width: auto !important;
+            min-width: 0;
+            max-width: 100%;
+            box-sizing: border-box;
+            flex: 0 0 auto;
+        }
+
+        .patient-history-actions .btn {
+            min-height: 38px;
+            padding-left: 12px !important;
+            padding-right: 12px !important;
         }
 
         .history-details-grid {
@@ -203,7 +375,7 @@
             </div>
             <div class="card-body">
                 <form method="GET" action="{{ $moduleRoute ?? route('admin.agendamentos.completed') }}">
-                    <div class="row align-items-end">
+                    <div class="row align-items-end history-filters-row">
                         <div class="col-xl-2 col-lg-2 col-md-3">
                             <div class="form-group mb-md-0">
                                 <label for="period">Período</label>
@@ -247,7 +419,7 @@
                             </div>
                         @endif
                         <div class="col-lg-3 col-md-3">
-                            <div class="form-group mb-0 d-flex flex-wrap align-items-center h-100" style="gap: 8px;">
+                            <div class="form-group mb-0 history-filter-actions">
                                 <button type="submit" class="btn btn-primary px-4">Filtrar</button>
                                 <a href="{{ $moduleRoute ?? route('admin.agendamentos.completed') }}" class="btn btn-light px-4">Limpar</a>
                             </div>
@@ -262,8 +434,8 @@
                 <h4>{{ $moduleCardTitle ?? 'Lista de agendamentos finalizados' }}</h4>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped table-mobile-cards">
+                <div class="table-responsive history-table-responsive">
+                    <table class="table table-striped table-mobile-cards history-enhanced-table">
                         <thead>
                             <tr>
                                 <th>Linha do Tempo</th>
@@ -292,9 +464,14 @@
                                 @endphp
                                 <tr>
                                     <td data-label="Linha do Tempo">{{ $item->data_agendamento->format('d/m/Y') }} às {{ $item->horario }}</td>
-                                    <td class="table-mobile-full" data-label="Paciente">{{ $item->nome }}</td>
+                                    <td class="table-mobile-full" data-label="Paciente">
+                                        <div class="history-patient-cell">
+                                            <img src="{{ $item->patient?->foto_url ?? asset('backend/assets/img/avatar/avatar-1.png') }}" alt="Foto de {{ $item->nome }}">
+                                            <span>{{ $item->nome }}</span>
+                                        </div>
+                                    </td>
                                     <td data-label="Profissional">{{ $item->medico_historico }}</td>
-                                    <td data-label="Serviço">{{ $item->servico }}</td>
+                                    <td class="history-service-cell" data-label="Serviço">{{ $item->servico }}</td>
                                     <td data-label="Status"><span class="history-status-badge" style="background-color: {{ $historyStatusColor }};">{{ $historyStatusLabel }}</span></td>
                                     <td class="table-mobile-full action-button-cell" data-label="Ações">
                                         <div class="patient-history-actions action-button-group">
