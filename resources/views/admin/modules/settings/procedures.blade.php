@@ -29,8 +29,10 @@
 
     @media (max-width: 767.98px) {
         .settings-actions {
-            flex-wrap: wrap;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            width: 100%;
         }
 
         .settings-actions > *,
@@ -115,7 +117,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped table-mobile-cards">
                         <thead>
                             <tr>
                                 <th>Profissional</th>
@@ -128,13 +130,13 @@
                         <tbody>
                             @forelse($procedures as $procedure)
                                 <tr>
-                                    <td>{{ $procedure->professional?->nome ?? '-' }}</td>
-                                    <td>
+                                    <td class="table-mobile-full" data-label="Profissional">{{ $procedure->professional?->nome ?? '-' }}</td>
+                                    <td data-label="Serviço">
                                         <div class="font-weight-600">{{ $procedure->nome }}</div>
                                     </td>
-                                    <td>{{ $formatDuration($procedure->duracao_minutos) }}</td>
-                                    <td><span class="badge badge-{{ $procedure->ativo ? 'success' : 'danger' }}">{{ $procedure->ativo ? 'Ativo' : 'Inativo' }}</span></td>
-                                    <td>
+                                    <td data-label="Duração">{{ $formatDuration($procedure->duracao_minutos) }}</td>
+                                    <td data-label="Status"><span class="badge badge-{{ $procedure->ativo ? 'success' : 'danger' }}">{{ $procedure->ativo ? 'Ativo' : 'Inativo' }}</span></td>
+                                    <td class="table-mobile-full action-button-cell" data-label="Ação">
                                         <div class="settings-actions">
                                             <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#edit-procedure-modal-{{ $procedure->id }}">Editar</button>
                                             <form action="{{ route('admin.settings.procedures.status', $procedure) }}" method="POST" class="d-inline">

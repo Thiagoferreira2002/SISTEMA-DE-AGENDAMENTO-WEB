@@ -496,8 +496,10 @@
         }
 
         .professional-actions {
-            flex-wrap: wrap;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            width: 100%;
         }
 
         .professional-actions > *,
@@ -849,7 +851,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped professionals-table">
+                    <table class="table table-striped professionals-table table-mobile-cards">
                         <thead>
                             <tr>
                                 <th>Profissional</th>
@@ -869,7 +871,7 @@
                                     $professionalLabel = $professionalCouncils[$professional->registro_tipo]['profession'] ?? ($professional->registro_tipo ?: 'Profissional');
                                 @endphp
                                 <tr>
-                                    <td class="professional-identity-cell">
+                                    <td class="professional-identity-cell table-mobile-full" data-label="Profissional">
                                         <div class="professional-identity-content">
                                             <img src="{{ $professionalPhotoUrl($professional) }}" alt="Foto de {{ $professional->nome }}" class="professional-avatar">
                                             <div class="professional-identity-meta">
@@ -878,17 +880,17 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="professional-linked-user-cell">
+                                    <td class="professional-linked-user-cell" data-label="Usuário vinculado">
                                         @if($professional->user)
                                             <div class="professional-primary-text">{{ trim(($professional->user->nome ?? '') . ' ' . ($professional->user->sobrenome ?? '')) }}</div>
                                         @else
                                             <span class="text-muted">Usuário não vinculado</span>
                                         @endif
                                     </td>
-                                    <td class="professional-specialty-cell">
+                                    <td class="professional-specialty-cell" data-label="Especialidade">
                                         <div class="professional-primary-text">{{ $professional->especialidade_principal }}</div>
                                     </td>
-                                    <td class="professional-subspecialty-cell">
+                                    <td class="professional-subspecialty-cell" data-label="Subespecialidades">
                                         @if(!empty($professional->subespecialidades))
                                             <div class="text-center">
                                                 <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#subspecialties-professional-modal-{{ $professional->id }}">Exibir subespecialidades</button>
@@ -897,23 +899,23 @@
                                             <span class="professional-subspecialty-empty">Sem subespecialidades</span>
                                         @endif
                                     </td>
-                                    <td class="professional-registry-cell">
+                                    <td class="professional-registry-cell" data-label="RQE / Registro">
                                         <div class="professional-primary-text">{{ $professional->registro_completo }}</div>
                                         @if($professional->rqe)
                                             <div class="professional-secondary-text">RQE {{ $professional->rqe }}</div>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td data-label="Cor da agenda">
                                         <span class="badge" style="background: {{ $professional->agenda_color }}; color: #fff;">{{ $professional->agenda_color }}</span>
                                     </td>
-                                    <td>
+                                    <td data-label="Disponibilidade">
                                         @if(($professional->display_schedules ?? collect())->isNotEmpty())
                                             <button type="button" class="btn btn-sm btn-outline-primary professional-availability-trigger" data-toggle="modal" data-target="#availability-professional-modal-{{ $professional->id }}">Exibir horários</button>
                                         @else
                                             <span class="text-muted">Sem agenda definida</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td class="table-mobile-full action-button-cell" data-label="Ações">
                                         <div class="professional-actions">
                                             <button type="button" class="btn btn-sm btn-secondary" data-toggle="modal" data-target="#view-professional-modal-{{ $professional->id }}">Ver</button>
                                             <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#edit-professional-modal-{{ $professional->id }}">Editar</button>

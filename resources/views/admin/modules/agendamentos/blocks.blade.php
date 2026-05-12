@@ -43,7 +43,7 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped table-mobile-cards">
                         <thead>
                             <tr>
                                 <th>Título</th>
@@ -57,12 +57,12 @@
                         <tbody>
                             @foreach($blockedSlots as $slot)
                                 <tr>
-                                    <td>{{ $slot['titulo'] }}</td>
-                                    <td>{{ $slot['tipo'] }}</td>
-                                    <td>{{ $slot['data'] }}</td>
-                                    <td>{{ $slot['periodo'] }}</td>
-                                    <td>{{ $slot['recorrencia'] }}</td>
-                                    <td>{{ $slot['motivo'] }}</td>
+                                    <td class="table-mobile-full" data-label="Título">{{ $slot['titulo'] }}</td>
+                                    <td data-label="Tipo">{{ $slot['tipo'] }}</td>
+                                    <td data-label="Data">{{ $slot['data'] }}</td>
+                                    <td data-label="Período">{{ $slot['periodo'] }}</td>
+                                    <td data-label="Recorrência">{{ $slot['recorrencia'] }}</td>
+                                    <td class="table-mobile-full" data-label="Motivo">{{ $slot['motivo'] }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

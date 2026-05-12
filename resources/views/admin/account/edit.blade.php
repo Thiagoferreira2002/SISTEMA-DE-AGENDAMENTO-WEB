@@ -100,6 +100,21 @@
         margin-bottom: 0;
     }
 
+    .account-form-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .account-form-actions .btn {
+        width: auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
     @media (max-width: 767.98px) {
         .account-shell {
             padding: 18px;
@@ -125,6 +140,11 @@
 
         .account-access-card {
             max-width: 100%;
+        }
+
+        .account-form-actions .btn {
+            padding-left: 14px !important;
+            padding-right: 14px !important;
         }
     }
 </style>
@@ -249,7 +269,7 @@
                             </div>
                         </div>
 
-                        <div class="mt-4 d-flex flex-wrap align-items-center" style="gap: 10px;">
+                        <div class="mt-4 account-form-actions">
                             <button type="submit" class="btn btn-primary px-4">Salvar alterações</button>
                             <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary px-4">Voltar</a>
                         </div>

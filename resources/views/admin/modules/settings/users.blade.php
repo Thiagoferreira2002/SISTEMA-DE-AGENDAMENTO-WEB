@@ -201,8 +201,10 @@
 
     @media (max-width: 767.98px) {
         .users-actions {
-            flex-wrap: wrap;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            width: 100%;
         }
 
         .users-actions > *,
@@ -403,7 +405,7 @@
             @endif
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped users-permissions-table">
+                    <table class="table table-striped users-permissions-table table-mobile-cards">
                         <thead>
                             <tr>
                                 <th>Nome</th>
@@ -424,14 +426,14 @@
                                     $canViewPasswordSection = $authenticatedUser?->canViewUserPasswordSection($user) ?? false;
                                 @endphp
                                 <tr>
-                                    <td>
+                                    <td class="table-mobile-full" data-label="Nome">
                                         <div class="user-identity-cell">
                                             <img src="{{ $user->profile_photo_url }}" alt="Foto de {{ trim(($user->nome ?? '') . ' ' . ($user->sobrenome ?? '')) }}">
                                             <span>{{ trim(($user->nome ?? '') . ' ' . ($user->sobrenome ?? '')) }}</span>
                                         </div>
                                     </td>
-                                    <td><span class="cpf-nowrap">{{ $authenticatedUser?->isClinicManager() && $user->isPrimaryAdmin() ? 'Protegido' : $formatCpf($user->cpf) }}</span></td>
-                                    <td>
+                                    <td data-label="CPF"><span class="cpf-nowrap">{{ $authenticatedUser?->isClinicManager() && $user->isPrimaryAdmin() ? 'Protegido' : $formatCpf($user->cpf) }}</span></td>
+                                    <td data-label="Papel">
                                         @if($user->isPrimaryAdmin())
                                             <div class="d-flex justify-content-center">
                                                 <span class="badge badge-dark">Admin</span>
@@ -440,7 +442,7 @@
                                             <div class="text-center font-weight-600">{{ $roleLabels[$user->normalizedRole()] ?? ucfirst($user->normalizedRole()) }}</div>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td data-label="Permissões">
                                         @if($user->isPrimaryAdmin())
                                             <div class="text-center permission-nowrap">
                                                 <span class="text-muted">Acesso total fixo</span>
@@ -451,10 +453,10 @@
                                             </div>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td data-label="Status">
                                         <span class="badge badge-{{ $user->status === 'ativo' ? 'success' : 'danger' }}">{{ ucfirst($user->status) }}</span>
                                     </td>
-                                    <td>
+                                    <td class="table-mobile-full action-button-cell" data-label="Ação">
                                         @if($user->isPrimaryAdmin())
                                             <div class="users-actions">
                                                 <button type="button" class="btn btn-sm btn-secondary" data-toggle="modal" data-target="#view-user-modal-{{ $user->id }}">Ver</button>

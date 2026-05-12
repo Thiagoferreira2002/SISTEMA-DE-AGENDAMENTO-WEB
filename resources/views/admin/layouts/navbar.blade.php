@@ -7,6 +7,7 @@
             padding: 8px 22px;
           border-bottom: 1px solid rgba(255, 255, 255, 0.12);
           flex-wrap: nowrap;
+          overflow: visible;
         }
 
         .main-navbar-cms .nav-link,
@@ -21,6 +22,7 @@
           align-items: center;
           gap: 12px;
           flex: 1 1 auto;
+          min-width: 0;
         }
 
         .main-navbar-cms .navbar-brand-cms {
@@ -78,6 +80,70 @@
           background: linear-gradient(180deg, rgba(7, 34, 58, 0.62) 0%, rgba(14, 73, 123, 0.42) 100%);
           transform: translateY(-1px);
           box-shadow: 0 14px 28px rgba(7, 30, 52, 0.2);
+        }
+
+        .main-navbar-cms .mobile-sidebar-toggle {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          min-width: 40px;
+          height: 40px;
+          padding: 0;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.22);
+          background: rgba(255, 255, 255, 0.16);
+          box-shadow: 0 6px 16px rgba(7, 30, 52, 0.12);
+          color: #ffffff !important;
+        }
+
+        .main-navbar-cms .mobile-sidebar-toggle:hover,
+        .main-navbar-cms .mobile-sidebar-toggle:focus {
+          background: rgba(255, 255, 255, 0.24);
+          color: #ffffff !important;
+        }
+
+        .main-navbar-cms .mobile-sidebar-toggle:active,
+        .main-navbar-cms .mobile-sidebar-toggle[aria-expanded="true"] {
+          background: rgba(255, 255, 255, 0.28);
+          color: #ffffff !important;
+        }
+
+        html[data-theme="light"] .main-navbar-cms .mobile-sidebar-toggle {
+          background: rgba(255, 255, 255, 0.94);
+          border-color: rgba(23, 111, 190, 0.18);
+          color: #0f4f86 !important;
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+        }
+
+        html[data-theme="light"] .main-navbar-cms .mobile-sidebar-toggle .fas {
+          color: #0f4f86 !important;
+        }
+
+        html[data-theme="light"] .main-navbar-cms .mobile-sidebar-toggle:hover,
+        html[data-theme="light"] .main-navbar-cms .mobile-sidebar-toggle:focus {
+          background: #ffffff;
+          border-color: rgba(23, 111, 190, 0.28);
+        }
+
+        html[data-theme="dark"] .main-navbar-cms .mobile-sidebar-toggle {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(143, 197, 255, 0.16);
+          color: #f5ffff !important;
+        }
+
+        html[data-theme="dark"] .main-navbar-cms .mobile-sidebar-toggle:hover,
+        html[data-theme="dark"] .main-navbar-cms .mobile-sidebar-toggle:focus,
+        html[data-theme="dark"] .main-navbar-cms .mobile-sidebar-toggle:active,
+        html[data-theme="dark"] .main-navbar-cms .mobile-sidebar-toggle[aria-expanded="true"] {
+          background: rgba(118, 187, 255, 0.18);
+          border-color: rgba(158, 208, 255, 0.28);
+          color: #f5ffff !important;
+          box-shadow: 0 8px 18px rgba(2, 8, 15, 0.24);
+        }
+
+        html[data-theme="dark"] .main-navbar-cms .mobile-sidebar-toggle .fas {
+          color: #f5ffff !important;
         }
 
         .main-navbar-cms .navbar-sidebar-toggle-icon {
@@ -139,6 +205,7 @@
           gap: 16px;
           margin-bottom: 0;
           margin-left: auto;
+          min-width: 0;
         }
 
         .main-navbar-cms .navbar-action-item {
@@ -380,17 +447,17 @@
 
         @media (max-width: 767.98px) {
           .main-navbar-cms {
-            padding: 8px 10px;
+            padding: 8px 8px;
+            overflow: visible;
           }
 
           .main-navbar-cms .navbar-left-actions {
             flex: 0 1 auto;
-            gap: 6px;
+            gap: 4px;
           }
 
           .main-navbar-cms .navbar-brand-cms {
-            max-width: 88px;
-            flex-basis: 88px;
+            display: none;
           }
 
           .main-navbar-cms .navbar-brand-logo {
@@ -398,55 +465,76 @@
           }
 
           .main-navbar-cms .navbar-right {
-            gap: 6px;
+            gap: 4px;
+            position: relative;
           }
 
           .main-navbar-cms .navbar-pill {
-            min-height: 42px;
-            padding: 6px 10px;
-            border-radius: 14px;
+            min-height: 38px;
+            padding: 4px 6px;
+            border-radius: 12px;
           }
 
           .main-navbar-cms .notification-action-item,
           .main-navbar-cms .theme-action-item {
-            width: 52px;
+            width: 42px;
           }
 
           .main-navbar-cms .notification-action-link,
           .main-navbar-cms .theme-action-link {
-            width: 52px;
-            min-width: 52px;
-            padding: 6px 8px;
+            width: 42px;
+            min-width: 42px;
+            padding: 4px 6px;
           }
 
           .main-navbar-cms .theme-toggle-icon {
-            width: 42px;
-            height: 26px;
-            flex-basis: 42px;
+            width: 34px;
+            height: 22px;
+            flex-basis: 34px;
+            padding: 0 2px;
           }
 
           .main-navbar-cms .theme-toggle-thumb {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
           }
 
           .main-navbar-cms .theme-toggle-link.is-dark .theme-toggle-thumb {
-            transform: translateX(14px);
+            transform: translateX(12px);
           }
 
           .main-navbar-cms .user-pill {
             min-width: 0;
-            padding: 6px 10px;
+            padding: 4px 6px;
+            width: 42px;
+            max-width: 42px;
+          }
+
+          .main-navbar-cms .user-pill-icon {
+            width: 26px;
+            height: 26px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            font-size: 13px;
           }
 
           .main-navbar-cms .user-pill-content {
-            gap: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
             min-width: 0;
+            width: 100%;
           }
 
           .main-navbar-cms .user-avatar {
-            width: 32px;
-            height: 32px;
+            width: 26px;
+            height: 26px;
           }
 
           .main-navbar-cms .user-name {
@@ -457,13 +545,70 @@
             font-size: 9px;
           }
 
+          .main-navbar-cms .user-avatar,
           .main-navbar-cms .user-meta,
           .main-navbar-cms .user-pill > .fas {
             display: none;
           }
 
+          .main-navbar-cms .user-pill-icon {
+            display: inline-flex !important;
+          }
+
           .main-navbar-cms .user-pill {
             justify-content: center;
+          }
+
+          .main-navbar-cms .notification-badge {
+            min-width: 16px;
+            height: 16px;
+            font-size: 9px;
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            margin-left: 0;
+          }
+
+          html[data-theme="light"] .main-navbar-cms .user-pill-icon {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(23, 111, 190, 0.18);
+            color: #0f4f86;
+          }
+
+          html[data-theme="dark"] .main-navbar-cms .user-pill-icon {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(143, 197, 255, 0.16);
+            color: #f5ffff;
+          }
+        }
+
+        @media (max-width: 767.98px) {
+          .main-navbar-cms .navbar-action-item:last-child {
+            width: 42px;
+          }
+
+          .main-navbar-cms .navbar-action-item:last-child .user-pill {
+            min-width: 42px;
+            width: 42px;
+            max-width: 42px;
+            padding: 4px 6px;
+          }
+
+          .main-navbar-cms .navbar-action-item:last-child .user-pill-content {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+          }
+
+          .main-navbar-cms .navbar-action-item:last-child .user-avatar,
+          .main-navbar-cms .navbar-action-item:last-child .user-meta,
+          .main-navbar-cms .navbar-action-item:last-child > .user-pill > .fas {
+            display: none !important;
+          }
+
+          .main-navbar-cms .navbar-action-item:last-child .user-pill-icon {
+            display: inline-flex !important;
           }
         }
 
@@ -618,6 +763,14 @@
             pointer-events: none;
           }
 
+          .main-navbar-cms .dropdown.show .profile-dropdown {
+            right: 0;
+            left: auto;
+            top: calc(100% + 8px);
+            margin-top: 0;
+            z-index: 1200;
+          }
+
           .main-navbar-cms .user-pill.dropdown-toggle::after {
             display: none !important;
           }
@@ -672,7 +825,7 @@
 
     <nav class="navbar navbar-expand-lg main-navbar main-navbar-cms" style="position:sticky;top:0;z-index:1050;">
         <div class="navbar-left-actions mr-auto">
-          <button id="sidebarToggle" class="btn btn-light btn-sm mr-3 d-inline-flex d-lg-none align-items-center justify-content-center" style="border-radius:8px;min-width:40px;min-height:40px;box-shadow:0 2px 8px rgba(30,144,255,0.08);position:relative;top:0;left:0;z-index:1100;" onclick="document.body.classList.toggle('sidebar-mini')" title="Abrir/Fechar Menu">
+          <button id="sidebarToggle" type="button" class="btn btn-sm mr-3 d-inline-flex d-lg-none align-items-center justify-content-center mobile-sidebar-toggle" title="Abrir lateral" aria-label="Abrir lateral" aria-expanded="false">
             <i class="fas fa-bars"></i>
           </button>
           <a href="{{ route('admin.dashboard') }}" class="navbar-brand-cms" aria-label="CMS Consulta">
@@ -749,6 +902,7 @@
           <li class="dropdown navbar-action-item">
             <a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user navbar-pill navbar-action-link user-pill" style="display:flex;align-items:center;">
               <div class="user-pill-content">
+                <span class="user-pill-icon d-inline-flex d-md-none"><i class="fas fa-user"></i></span>
                 <img src="{{ $userAvatar }}" class="user-avatar" alt="">
                 <div class="user-meta">
                   <span class="user-name">{{ $userDisplayName }}</span>

@@ -93,7 +93,7 @@
             <div class="card-body">
                 <p class="text-muted">Agendamentos pendentes podem ser tratados como fila de oportunidade para encaixes e desistências.</p>
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped table-mobile-cards">
                         <thead>
                             <tr>
                                 <th>Paciente</th>
@@ -115,7 +115,7 @@
                                     $priorityLabel = $item->prioridade >= 10 ? 'Urgente' : ($item->prioridade >= 5 ? 'Preferencial' : 'Normal');
                                 @endphp
                                 <tr>
-                                    <td>
+                                    <td class="table-mobile-full" data-label="Paciente">
                                         <div class="waitlist-patient-cell">
                                             <img src="{{ $item->patient?->foto_url ?? asset('backend/assets/img/avatar/avatar-1.png') }}" alt="Foto de {{ $item->nome }}">
                                             <div>
@@ -124,7 +124,7 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-label="Serviço">
                                         <div class="waitlist-service-cell">
                                             <span class="waitlist-service-title">{{ $item->servico }}</span>
                                             <span class="waitlist-meta-line">Preferência: {{ $item->preferencia_turno ?: 'Qualquer horário' }}</span>
@@ -132,16 +132,16 @@
                                             <span class="waitlist-meta-line">Limite: {{ $item->data_limite_espera?->format('d/m/Y') ?: '-' }}</span>
                                         </div>
                                     </td>
-                                    <td>{{ $item->medico ?: 'Não informado' }}</td>
-                                    <td>{{ $item->data_agendamento->format('d/m/Y') }}</td>
-                                    <td>{{ $item->horario }}</td>
-                                    <td>
+                                    <td data-label="Profissional">{{ $item->medico ?: 'Não informado' }}</td>
+                                    <td data-label="Data">{{ $item->data_agendamento->format('d/m/Y') }}</td>
+                                    <td data-label="Horário">{{ $item->horario }}</td>
+                                    <td data-label="Final">
                                         <div class="waitlist-end-cell">
                                             <span>{{ $endTime }}</span>
                                             <span class="badge badge-{{ $item->prioridade >= 10 ? 'danger' : ($item->prioridade >= 5 ? 'warning' : 'secondary') }}">{{ $priorityLabel }}</span>
                                         </div>
                                     </td>
-                                    <td class="text-center align-middle action-button-cell">
+                                    <td class="text-center align-middle action-button-cell table-mobile-full" data-label="Ação">
                                         <div class="waitlist-actions action-button-group">
                                             <form action="{{ route('admin.agendamentos.promote', $item) }}" method="POST" class="d-inline">
                                                 @csrf

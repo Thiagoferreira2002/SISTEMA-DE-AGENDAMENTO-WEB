@@ -351,42 +351,80 @@
 
     @media (max-width: 1024px) {
       .main-sidebar {
-        top: 0;
+        top: 60px;
         bottom: 0;
-        height: 100vh;
-        width: min(290px, calc(100vw - 18px));
+        height: calc(100vh - 60px);
+        width: min(274px, calc(100vw - 28px));
+        transform: translate3d(var(--mobile-sidebar-drag-x, 0), 0, 0);
+        transition: transform .24s ease, box-shadow .24s ease, visibility .24s ease;
+        will-change: transform;
+        border-radius: 0 18px 18px 0;
+      }
+
+      .main-sidebar.is-dragging {
+        transition: none;
+      }
+
+      body.sidebar-gone .main-sidebar {
+        transform: translate3d(calc(-100% - 18px), 0, 0);
+        box-shadow: none;
+        visibility: hidden;
+      }
+
+      body.sidebar-show .main-sidebar {
+        transform: translate3d(0, 0, 0);
+        visibility: visible;
       }
 
       body.sidebar-mini .main-sidebar {
-        height: 100vh;
+        height: calc(100vh - 60px);
       }
 
       .main-sidebar .sidebar-menu {
-        padding: 10px 10px 24px;
+        padding: 12px 8px 20px;
+      }
+
+      .main-sidebar .sidebar-menu-shell {
+        padding-top: 18px;
       }
 
       .main-sidebar .sidebar-menu li a {
-        min-height: 46px;
-        padding: 12px 40px 12px 16px;
+        min-height: 42px;
+        padding: 10px 36px 10px 14px;
+        border-radius: 12px;
       }
 
       .main-sidebar .dropdown-menu li a {
-        min-height: 42px;
-        font-size: 11.5px;
+        min-height: 38px;
+        font-size: 11px;
+        padding: 9px 12px;
       }
     }
 
     @media (max-width: 767.98px) {
+      .main-sidebar .sidebar-menu-shell {
+        padding-top: 20px;
+      }
+
       .main-sidebar .sidebar-menu > li {
-        margin-bottom: 8px;
+        margin-bottom: 10px;
+      }
+
+      .main-sidebar .sidebar-menu li.menu-header {
+        margin: 6px 0 6px;
       }
 
       .main-sidebar .sidebar-menu li a span {
-        font-size: 13px;
+        font-size: 12px;
+      }
+
+      .main-sidebar .menu-header {
+        margin: 10px 0 6px;
+        font-size: 9px;
       }
 
       .main-sidebar .dropdown-menu {
-        padding-top: 8px;
+        padding-top: 6px;
       }
 
       .main-sidebar .dropdown-menu li {

@@ -157,8 +157,10 @@
 
     @media (max-width: 767.98px) {
         .patient-history-actions {
-            flex-wrap: wrap;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            width: 100%;
         }
 
         .patient-history-actions > *,
@@ -261,7 +263,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped table-mobile-cards">
                         <thead>
                             <tr>
                                 <th>Linha do Tempo</th>
@@ -289,12 +291,12 @@
                                     $historyDescription = $item->motivo_consulta ?: ($item->descricao ?: '-');
                                 @endphp
                                 <tr>
-                                    <td>{{ $item->data_agendamento->format('d/m/Y') }} às {{ $item->horario }}</td>
-                                    <td>{{ $item->nome }}</td>
-                                    <td>{{ $item->medico_historico }}</td>
-                                    <td>{{ $item->servico }}</td>
-                                    <td><span class="history-status-badge" style="background-color: {{ $historyStatusColor }};">{{ $historyStatusLabel }}</span></td>
-                                    <td>
+                                    <td data-label="Linha do Tempo">{{ $item->data_agendamento->format('d/m/Y') }} às {{ $item->horario }}</td>
+                                    <td class="table-mobile-full" data-label="Paciente">{{ $item->nome }}</td>
+                                    <td data-label="Profissional">{{ $item->medico_historico }}</td>
+                                    <td data-label="Serviço">{{ $item->servico }}</td>
+                                    <td data-label="Status"><span class="history-status-badge" style="background-color: {{ $historyStatusColor }};">{{ $historyStatusLabel }}</span></td>
+                                    <td class="table-mobile-full action-button-cell" data-label="Ações">
                                         <div class="patient-history-actions action-button-group">
                                             <button
                                                 type="button"

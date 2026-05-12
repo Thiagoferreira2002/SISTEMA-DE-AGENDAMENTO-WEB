@@ -189,6 +189,37 @@
             margin-top: 2px;
         }
 
+        .agenda-filter-buttons,
+        .agenda-period-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .agenda-filter-buttons .btn,
+        .agenda-period-actions .btn,
+        .agenda-list-header .card-header-action .btn {
+            width: auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            flex: 0 0 auto;
+        }
+
+        .agenda-list-header {
+            gap: 12px;
+        }
+
+        .agenda-list-header-main {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
         .agenda-stat-col {
             flex: 0 0 auto;
             width: auto;
@@ -408,9 +439,84 @@
             .agenda-enhanced-table {
                 min-width: 900px;
             }
+
+            .agenda-list-header {
+                flex-direction: column;
+                align-items: flex-start !important;
+            }
+
+            .agenda-list-header-main,
+            .agenda-period-actions {
+                width: 100%;
+            }
+
+            .agenda-list-header .card-header-action {
+                width: auto;
+                max-width: 100%;
+                align-self: flex-start;
+            }
         }
 
         @media (max-width: 767.98px) {
+            .agenda-filter-buttons,
+            .agenda-period-actions {
+                justify-content: flex-start;
+                width: 100%;
+                align-items: flex-start;
+            }
+
+            .agenda-filter-buttons .btn,
+            .agenda-period-actions .btn,
+            .agenda-list-header .card-header-action .btn {
+                width: auto !important;
+                min-width: 0;
+                max-width: 100%;
+                padding-left: 14px !important;
+                padding-right: 14px !important;
+                flex: 0 0 auto;
+            }
+
+            .agenda-list-header-main {
+                align-items: flex-start;
+            }
+
+            .agenda-list-header-main h4 {
+                width: 100%;
+                margin-bottom: 2px;
+            }
+
+            .agenda-list-header .card-header-action {
+                width: auto;
+                max-width: 100%;
+            }
+
+            .agenda-actions {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 8px;
+                width: 100%;
+                max-width: 100%;
+                margin: 0;
+                white-space: normal;
+            }
+
+            .agenda-actions > *,
+            .agenda-actions form,
+            .agenda-actions .btn {
+                width: auto !important;
+                min-width: 0;
+                max-width: 100%;
+                box-sizing: border-box;
+                flex: 0 0 auto;
+            }
+
+            .agenda-actions .btn {
+                padding-left: 10px !important;
+                padding-right: 10px !important;
+            }
+
             .agenda-stat-col {
                 max-width: 100%;
             }
@@ -542,7 +648,7 @@
                                 </div>
                                 <div class="row agenda-filters-actions">
                                         <div class="col-lg-12 col-12">
-                                            <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                                            <div class="agenda-filter-buttons">
                                                 <button type="submit" class="btn btn-primary px-4">Aplicar filtros</button>
                                                 <a href="{{ route('admin.agendamentos.index') }}" class="btn btn-light px-4">Limpar</a>
                                             </div>
@@ -556,13 +662,15 @@
 
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between" style="gap: 12px;">
-                        <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between agenda-list-header">
+                        <div class="agenda-list-header-main">
                             <h4 class="mb-0">Lista de Agendamentos</h4>
-                            <a href="{{ route('admin.agendamentos.index', array_merge(request()->except('page', 'period'), ['period' => 'dia'])) }}" class="btn btn-outline-primary btn-sm">Agendamentos do Dia</a>
-                            <a href="{{ route('admin.agendamentos.index', array_merge(request()->except('page', 'period'), ['period' => 'semana'])) }}" class="btn btn-outline-primary btn-sm">Agendamentos da Semana</a>
-                            <a href="{{ route('admin.agendamentos.index', array_merge(request()->except('page', 'period'), ['period' => 'mes'])) }}" class="btn btn-outline-primary btn-sm">Agendamentos do Mês</a>
-                            <a href="{{ route('admin.agendamentos.index', request()->except('page', 'period')) }}" class="btn btn-light btn-sm">Ver Todos</a>
+                            <div class="agenda-period-actions">
+                                <a href="{{ route('admin.agendamentos.index', array_merge(request()->except('page', 'period'), ['period' => 'dia'])) }}" class="btn btn-outline-primary btn-sm">Agendamentos do Dia</a>
+                                <a href="{{ route('admin.agendamentos.index', array_merge(request()->except('page', 'period'), ['period' => 'semana'])) }}" class="btn btn-outline-primary btn-sm">Agendamentos da Semana</a>
+                                <a href="{{ route('admin.agendamentos.index', array_merge(request()->except('page', 'period'), ['period' => 'mes'])) }}" class="btn btn-outline-primary btn-sm">Agendamentos do Mês</a>
+                                <a href="{{ route('admin.agendamentos.index', request()->except('page', 'period')) }}" class="btn btn-light btn-sm">Ver Todos</a>
+                            </div>
                         </div>
                         <div class="card-header-action">
                             <a href="{{ route('admin.agendamentos.create') }}" class="btn btn-primary btn-sm">Novo Agendamento</a>
@@ -582,7 +690,7 @@
                                     </div>
                                 @endif
                                 <div class="table-responsive">
-                                    <table class="table table-striped agenda-enhanced-table mb-0">
+                                    <table class="table table-striped agenda-enhanced-table mb-0 table-mobile-cards">
                                         <thead>
                                             <tr>
                                                 <th class="text-center">Nome</th>
@@ -612,21 +720,21 @@
                                                     $appointmentEditUrl = $canManageAppointment ? route('admin.agendamentos.edit', ['agendamento' => $agendamento, 'return_to' => url()->full()]) : '';
                                                 @endphp
                                                 <tr>
-                                                    <td class="text-center align-middle">
+                                                    <td class="text-center align-middle table-mobile-full" data-label="Nome">
                                                         <div class="agenda-patient-cell">
                                                             <img src="{{ $agendamento->patient?->foto_url ?? asset('backend/assets/img/avatar/avatar-1.png') }}" alt="Foto de {{ $agendamento->nome }}">
                                                             <span>{{ $agendamento->nome }}</span>
                                                         </div>
                                                     </td>
-                                                    <td class="text-center align-middle agenda-service-cell">{{ $agendamento->servico }}</td>
-                                                    <td class="text-center align-middle">{{ $agendamento->medico_exibicao }}</td>
-                                                    <td class="text-center align-middle">{{ $agendamento->data_agendamento->format('d/m/Y') }}</td>
-                                                    <td class="text-center align-middle">{{ $agendamento->horario }}</td>
-                                                    <td class="text-center align-middle">{{ $endTime }}</td>
-                                                    <td class="text-center align-middle">
+                                                    <td class="text-center align-middle agenda-service-cell" data-label="Serviço">{{ $agendamento->servico }}</td>
+                                                    <td class="text-center align-middle" data-label="Profissional">{{ $agendamento->medico_exibicao }}</td>
+                                                    <td class="text-center align-middle" data-label="Data">{{ $agendamento->data_agendamento->format('d/m/Y') }}</td>
+                                                    <td class="text-center align-middle" data-label="Horário">{{ $agendamento->horario }}</td>
+                                                    <td class="text-center align-middle" data-label="Final">{{ $endTime }}</td>
+                                                    <td class="text-center align-middle table-mobile-full" data-label="Status">
                                                         <span class="agenda-status-badge" style="background-color: {{ $agendamento->status_visual['color'] }};">{{ $agendamento->status_visual['label'] }}</span>
                                                     </td>
-                                                    <td class="text-center align-middle action-button-cell">
+                                                    <td class="text-center align-middle action-button-cell table-mobile-full" data-label="Ações">
                                                         <div class="agenda-actions action-button-group">
                                                         <button
                                                             type="button"
@@ -665,7 +773,7 @@
                             </div>
                         @empty
                             <div class="table-responsive">
-                                <table class="table table-striped agenda-enhanced-table mb-0">
+                                <table class="table table-striped agenda-enhanced-table mb-0 table-mobile-cards">
                                     <tbody>
                                         <tr>
                                             <td colspan="8" class="text-center">Nenhum agendamento encontrado</td>

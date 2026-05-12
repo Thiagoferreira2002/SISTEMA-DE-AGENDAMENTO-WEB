@@ -24,6 +24,49 @@
     html[data-theme="dark"] .patient-completion-card .progress {
         background: rgba(96, 216, 131, 0.16);
     }
+
+    .patient-form-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .patient-form-actions .btn {
+        width: auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 991.98px) {
+        .patient-personal-name-col {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+
+        .patient-personal-cpf-col,
+        .patient-personal-sex-col,
+        .patient-personal-birth-col {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .patient-form-actions .btn {
+            padding-left: 14px !important;
+            padding-right: 14px !important;
+        }
+
+        .patient-personal-cpf-col,
+        .patient-personal-sex-col,
+        .patient-personal-birth-col {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+    }
 </style>
 <section class="section">
     <div class="section-header">
@@ -98,12 +141,12 @@
                             <div class="border rounded p-3 mb-4">
                                 <h5 class="mb-3">Dados Pessoais</h5>
                                 <div class="row">
-                                    <div class="col-md-8"><div class="form-group"><label for="nome">Nome completo *</label><input type="text" class="form-control" id="nome" name="nome" value="{{ old('nome', $patient->nome) }}" required>@error('nome')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
-                                    <div class="col-md-2"><div class="form-group"><label for="cpf">CPF</label><input type="text" class="form-control" id="cpf" name="cpf" value="{{ old('cpf', $patient->cpf) }}">@error('cpf')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
-                                    <div class="col-md-2"><div class="form-group"><label for="sexo">Sexo</label><select class="form-control" id="sexo" name="sexo"><option value="">Selecione</option><option value="feminino" {{ old('sexo', $patient->sexo) === 'feminino' ? 'selected' : '' }}>Feminino</option><option value="masculino" {{ old('sexo', $patient->sexo) === 'masculino' ? 'selected' : '' }}>Masculino</option><option value="outro" {{ old('sexo', $patient->sexo) === 'outro' ? 'selected' : '' }}>Outro</option></select></div></div>
+                                    <div class="col-lg-8 col-md-12 patient-personal-name-col"><div class="form-group"><label for="nome">Nome completo *</label><input type="text" class="form-control" id="nome" name="nome" value="{{ old('nome', $patient->nome) }}" required>@error('nome')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
+                                    <div class="col-lg-2 col-md-6 patient-personal-cpf-col"><div class="form-group"><label for="cpf">CPF</label><input type="text" class="form-control" id="cpf" name="cpf" value="{{ old('cpf', $patient->cpf) }}">@error('cpf')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
+                                    <div class="col-lg-2 col-md-6 patient-personal-sex-col"><div class="form-group"><label for="sexo">Sexo</label><select class="form-control" id="sexo" name="sexo"><option value="">Selecione</option><option value="feminino" {{ old('sexo', $patient->sexo) === 'feminino' ? 'selected' : '' }}>Feminino</option><option value="masculino" {{ old('sexo', $patient->sexo) === 'masculino' ? 'selected' : '' }}>Masculino</option><option value="outro" {{ old('sexo', $patient->sexo) === 'outro' ? 'selected' : '' }}>Outro</option></select></div></div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-md-4"><div class="form-group"><label for="data_nascimento">Data de Nascimento</label><input type="date" class="form-control" id="data_nascimento" name="data_nascimento" value="{{ old('data_nascimento', $patient->data_nascimento ? $patient->data_nascimento->format('Y-m-d') : '') }}" max="{{ now()->format('Y-m-d') }}">@error('data_nascimento')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
+                                    <div class="col-lg-4 col-md-6 patient-personal-birth-col"><div class="form-group"><label for="data_nascimento">Data de Nascimento</label><input type="date" class="form-control" id="data_nascimento" name="data_nascimento" value="{{ old('data_nascimento', $patient->data_nascimento ? $patient->data_nascimento->format('Y-m-d') : '') }}" max="{{ now()->format('Y-m-d') }}">@error('data_nascimento')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
                                 </div>
                             </div>
 
@@ -128,7 +171,7 @@
                                     <div class="col-md-5"><div class="form-group mb-0"><label for="complemento">Complemento</label><input type="text" class="form-control" id="complemento" name="complemento" value="{{ old('complemento', $patient->complemento) }}">@error('complemento')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
                                 </div>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group patient-form-actions">
                                 <button type="submit" class="btn btn-primary">Atualizar Paciente</button>
                                 <a href="{{ route('admin.patients.index') }}" class="btn btn-secondary">Cancelar</a>
                             </div>

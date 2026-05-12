@@ -64,10 +64,34 @@
         white-space: nowrap;
     }
 
+    .patient-log-change-table td,
+    .patient-log-change-table th {
+        background: transparent;
+    }
+
+    .patient-log-change-table tbody tr:hover,
+    .patient-log-change-table.table tbody tr:hover,
+    .patient-log-change-table tbody tr:hover > td,
+    .patient-log-change-table tbody tr:hover > th,
+    .patient-log-change-table.table tbody tr:hover > td,
+    .patient-log-change-table.table tbody tr:hover > th {
+        background: transparent !important;
+        box-shadow: none !important;
+        transform: none !important;
+    }
+
     html[data-theme="dark"] .patient-log-detail-card,
-    html[data-theme="dark"] .patient-log-change-table {
+    html[data-theme="dark"] .patient-log-change-table,
+    html[data-theme="dark"] .patient-log-change-table td,
+    html[data-theme="dark"] .patient-log-change-table th {
         background: rgba(22, 40, 59, 0.96);
         border-color: rgba(143, 197, 255, 0.12);
+    }
+
+    html[data-theme="dark"] .patient-log-change-table tbody tr:hover,
+    html[data-theme="dark"] .patient-log-change-table tbody tr:hover > td,
+    html[data-theme="dark"] .patient-log-change-table tbody tr:hover > th {
+        background: rgba(22, 40, 59, 0.96) !important;
     }
 
     html[data-theme="dark"] .patient-log-details-dialog {
@@ -210,7 +234,7 @@
                 <div class="patient-log-detail-value"><?php echo e($log->description ?: 'Nenhuma descrição registrada.'); ?></div>
             </div>
 
-            <?php if ($changes->isNotEmpty()): ?>
+            <?php if ($changes->isNotEmpty()) { ?>
                 <div class="table-responsive patient-log-detail-card">
                     <table class="table table-sm table-bordered patient-log-change-table">
                         <thead>
@@ -221,17 +245,17 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($changes as $key): ?>
+                            <?php foreach ($changes as $key) { ?>
                                 <tr>
                                     <td><?php echo e($fieldLabels[$key] ?? ucfirst(str_replace('_', ' ', $key))); ?></td>
                                     <td><?php echo e($formatValue($key, data_get($log->properties, 'before.' . $key))); ?></td>
                                     <td><?php echo e($formatValue($key, data_get($log->properties, 'after.' . $key))); ?></td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php } ?>
                         </tbody>
                     </table>
                 </div>
-            <?php elseif (! empty(data_get($log->properties, 'before'))): ?>
+            <?php } elseif (! empty(data_get($log->properties, 'before'))) { ?>
                 <div class="table-responsive patient-log-detail-card">
                     <table class="table table-sm table-bordered patient-log-change-table">
                         <thead>
@@ -241,16 +265,16 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach (data_get($log->properties, 'before') as $key => $value): ?>
+                            <?php foreach (data_get($log->properties, 'before') as $key => $value) { ?>
                                 <tr>
                                     <td><?php echo e($fieldLabels[$key] ?? ucfirst(str_replace('_', ' ', $key))); ?></td>
                                     <td><?php echo e($formatValue($key, $value)); ?></td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php } ?>
                         </tbody>
                     </table>
                 </div>
-            <?php elseif (! empty(data_get($log->properties, 'after'))): ?>
+            <?php } elseif (! empty(data_get($log->properties, 'after'))) { ?>
                 <div class="table-responsive patient-log-detail-card">
                     <table class="table table-sm table-bordered patient-log-change-table">
                         <thead>
@@ -260,20 +284,20 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach (data_get($log->properties, 'after') as $key => $value): ?>
+                            <?php foreach (data_get($log->properties, 'after') as $key => $value) { ?>
                                 <tr>
                                     <td><?php echo e($fieldLabels[$key] ?? ucfirst(str_replace('_', ' ', $key))); ?></td>
                                     <td><?php echo e($formatValue($key, $value)); ?></td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php } ?>
                         </tbody>
                     </table>
                 </div>
-            <?php else: ?>
+            <?php } else { ?>
                 <div class="patient-log-detail-card">
                     <div class="patient-log-detail-value text-muted">Nenhum detalhe adicional registrado para esta ação.</div>
                 </div>
-            <?php endif;
+            <?php }
 
             return trim(ob_get_clean());
         };
@@ -329,7 +353,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped table-mobile-cards">
                         <thead>
                             <tr>
                                 <th>Data</th>
@@ -343,12 +367,12 @@
                         <tbody>
                             @forelse($patientLogs as $log)
                                 <tr>
-                                    <td>{{ $log->created_at?->format('d/m/Y H:i') }}</td>
-                                    <td>{{ $resolvePatientName($log) }}</td>
-                                    <td>{{ $resolvePatientCpf($log) }}</td>
-                                    <td>{{ $actionLabels[$log->action] ?? ucfirst($log->action) }}</td>
-                                    <td>{{ trim(($log->user->nome ?? '') . ' ' . ($log->user->sobrenome ?? '')) ?: 'Sistema' }}</td>
-                                    <td>
+                                    <td data-label="Data">{{ $log->created_at?->format('d/m/Y H:i') }}</td>
+                                    <td class="table-mobile-full" data-label="Paciente">{{ $resolvePatientName($log) }}</td>
+                                    <td data-label="CPF">{{ $resolvePatientCpf($log) }}</td>
+                                    <td data-label="Tipo de alteração">{{ $actionLabels[$log->action] ?? ucfirst($log->action) }}</td>
+                                    <td data-label="Responsável">{{ trim(($log->user->nome ?? '') . ' ' . ($log->user->sobrenome ?? '')) ?: 'Sistema' }}</td>
+                                    <td class="table-mobile-full action-button-cell" data-label="Detalhes">
                                         <button class="btn btn-sm btn-outline-primary patient-log-toggle" type="button" data-patient-log-trigger data-patient-log-id="{{ $log->id }}" data-patient-log-title="{{ e('Detalhes do log de ' . $resolvePatientName($log)) }}">
                                             Ver detalhes
                                         </button>

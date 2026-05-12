@@ -187,9 +187,28 @@
   }
 
   .dashboard-list-card .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
     padding: 20px 24px 0;
     background: linear-gradient(180deg, rgba(30, 144, 255, 0.12) 0%, rgba(30, 144, 255, 0) 100%);
     border-bottom: 0;
+  }
+
+  .dashboard-list-card .card-header-action {
+    margin-left: auto;
+    width: auto !important;
+    flex: 0 0 auto;
+    align-self: flex-start;
+  }
+
+  .dashboard-list-card .card-header-action .btn {
+    width: auto !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
   }
 
   .dashboard-list-card {
@@ -230,6 +249,32 @@
     box-shadow: inset 0 0 0 9999px rgba(30, 144, 255, 0.1);
   }
 
+  .dashboard-table-responsive {
+    overflow-x: auto;
+  }
+
+  .dashboard-table {
+    min-width: 860px;
+  }
+
+  .dashboard-table td {
+    vertical-align: middle;
+  }
+
+  .dashboard-table td:nth-child(1) {
+    min-width: 230px;
+  }
+
+  .dashboard-table td:nth-child(2) {
+    min-width: 180px;
+    white-space: normal;
+  }
+
+  .dashboard-table td:nth-child(3) {
+    min-width: 170px;
+    white-space: normal;
+  }
+
   html[data-theme="dark"] .dashboard-table tbody tr:hover {
     box-shadow: inset 0 0 0 9999px rgba(118, 187, 255, 0.08);
   }
@@ -260,6 +305,48 @@
     color: #155a9d;
   }
 
+  .dashboard-patient-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .dashboard-patient-cell img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(23, 111, 190, 0.12);
+    flex: 0 0 auto;
+  }
+
+  .dashboard-patient-copy {
+    min-width: 0;
+  }
+
+  .dashboard-patient-copy strong {
+    display: block;
+    color: var(--dashboard-dark);
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .dashboard-patient-copy small {
+    display: none;
+    margin-top: 4px;
+    color: #5b7895;
+    line-height: 1.3;
+  }
+
+  html[data-theme="dark"] .dashboard-patient-copy strong {
+    color: #eef5fc;
+  }
+
+  html[data-theme="dark"] .dashboard-patient-copy small {
+    color: #a9c5df;
+  }
+
   .dashboard-shell .btn-primary {
     background: #1E90FF;
     border: 0;
@@ -286,10 +373,34 @@
     margin-top: 34px;
   }
 
+  .dashboard-mobile-label {
+    display: none;
+  }
+
+  @media (max-width: 991.98px) {
+    .dashboard-metrics-row,
+    .dashboard-secondary-row {
+      row-gap: 28px;
+    }
+
+    .dashboard-metrics-row > [class*='col-'],
+    .dashboard-secondary-row > [class*='col-'] {
+      margin-bottom: 0;
+    }
+
+    .dashboard-metric-card {
+      height: auto;
+    }
+  }
+
   @media (max-width: 767.98px) {
     .dashboard-shell {
       padding: 18px;
       border-radius: 20px;
+    }
+
+    .dashboard-hero {
+      margin-bottom: 20px !important;
     }
 
     .dashboard-hero .card-body,
@@ -304,20 +415,190 @@
     }
 
     .dashboard-metric-card .metric-value {
-      font-size: 1.65rem;
+      font-size: 1.55rem;
     }
 
     .dashboard-list-card .card-header-action,
     .dashboard-list-card .card-header-action .btn {
-      width: 100%;
+      width: auto;
+    }
+
+    .dashboard-list-card .card-header-action {
+      align-self: flex-start;
+    }
+
+    .dashboard-list-card .card-header-action .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 14px;
+      white-space: nowrap;
+    }
+
+    .dashboard-metrics-row > [class*='col-'],
+    .dashboard-secondary-row > [class*='col-'] {
+      margin-bottom: 20px;
+    }
+
+    .dashboard-metrics-row > [class*='col-']:last-child,
+    .dashboard-secondary-row > [class*='col-']:last-child {
+      margin-bottom: 0;
     }
 
     .dashboard-secondary-row {
-      margin-top: 20px;
+      margin-top: 24px;
     }
 
     .dashboard-schedule-row {
-      margin-top: 24px;
+      margin-top: 28px;
+    }
+
+    .dashboard-metric-card .card-body {
+      padding: 18px 16px;
+      min-height: 0;
+      height: auto;
+    }
+
+    .dashboard-metric-card {
+      min-height: 0;
+      height: auto;
+    }
+
+    .dashboard-metric-card h4 {
+      min-height: 32px;
+      line-height: 1.25;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .dashboard-metric-card .metric-footnote {
+      min-height: 0;
+      line-height: 1.35;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .dashboard-metric-card .metric-icon {
+      width: 50px;
+      height: 50px;
+      margin-bottom: 14px;
+      font-size: 20px;
+    }
+
+    .dashboard-list-card {
+      border-radius: 20px;
+    }
+
+    .dashboard-list-card .card-header {
+      gap: 12px;
+    }
+
+    .dashboard-list-card .card-body {
+      padding-top: 18px;
+      padding-bottom: 20px;
+    }
+
+    .dashboard-mobile-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #7a95af;
+      line-height: 1.1;
+    }
+
+    html[data-theme="dark"] .dashboard-mobile-label {
+      color: #a9c5df;
+    }
+
+    .dashboard-table-responsive {
+      overflow: visible;
+    }
+
+    .dashboard-table.dashboard-table-mobile {
+      border: 0;
+      min-width: 0;
+    }
+
+    .dashboard-patient-copy small {
+      display: block;
+    }
+
+    .dashboard-table.dashboard-table-mobile thead {
+      display: none;
+    }
+
+    .dashboard-table.dashboard-table-mobile tbody {
+      display: grid;
+      gap: 16px;
+    }
+
+    .dashboard-table.dashboard-table-mobile tbody tr {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border: 1px solid var(--dashboard-soft-border);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 14px 28px rgba(30, 144, 255, 0.09);
+      overflow: hidden;
+    }
+
+    html[data-theme="dark"] .dashboard-table.dashboard-table-mobile tbody tr {
+      background: linear-gradient(180deg, rgba(22, 40, 59, 0.98) 0%, rgba(19, 33, 49, 0.98) 100%);
+      box-shadow: 0 18px 34px rgba(2, 8, 15, 0.26);
+    }
+
+    .dashboard-table.dashboard-table-mobile tbody td {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+      width: 100%;
+      padding: 15px 16px !important;
+      border: 0;
+      border-top: 1px solid var(--dashboard-soft-border);
+      text-align: left !important;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .dashboard-table.dashboard-table-mobile tbody tr > td:first-child,
+    .dashboard-table.dashboard-table-mobile tbody tr > td:last-child,
+    .dashboard-table.dashboard-table-mobile tbody tr > td.dashboard-mobile-full,
+    .dashboard-table.dashboard-table-mobile tbody tr > td[colspan] {
+      grid-column: 1 / -1;
+    }
+
+    .dashboard-table.dashboard-table-mobile tbody tr > td:nth-child(odd):not(:first-child):not(:last-child):not(.dashboard-mobile-full):not([colspan]) {
+      border-right: 1px solid var(--dashboard-soft-border);
+    }
+
+    .dashboard-table.dashboard-table-mobile tbody tr > td:not(:last-child) {
+      min-height: 72px;
+    }
+
+    .dashboard-table.dashboard-table-mobile tbody td[colspan] {
+      text-align: center !important;
+    }
+
+    .dashboard-table.dashboard-table-mobile .dashboard-status {
+      align-self: flex-start;
+      min-width: 0;
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .dashboard-table.dashboard-table-mobile tbody tr {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-table.dashboard-table-mobile tbody tr > td:not(:last-child) {
+      min-height: 0;
     }
   }
 
@@ -442,8 +723,8 @@
             </div>
           </div>
           <div class="card-body">
-            <div class="table-responsive">
-              <table class="table dashboard-table mb-0">
+            <div class="table-responsive dashboard-table-responsive">
+              <table class="table dashboard-table dashboard-table-mobile mb-0">
                 <thead>
                   <tr>
                     <th>Paciente</th>
@@ -457,12 +738,34 @@
                 <tbody>
                   @forelse($proximosAgendamentos as $agendamento)
                     <tr>
-                      <td>{{ $agendamento->nome }}</td>
-                      <td>{{ $agendamento->servico }}</td>
-                      <td>{{ $agendamento->professional->nome ?? $agendamento->medico ?? 'Não informado' }}</td>
-                      <td>{{ optional($agendamento->data_agendamento)->format('d/m/Y') }}</td>
-                      <td>{{ $agendamento->horario }}</td>
-                      <td>
+                      <td class="dashboard-mobile-full" data-label="Paciente">
+                        <span class="dashboard-mobile-label">Paciente</span>
+                        <div class="dashboard-patient-cell">
+                          <img src="{{ $agendamento->patient?->foto_url ?? asset('backend/assets/img/avatar/avatar-1.png') }}" alt="Foto de {{ $agendamento->nome }}">
+                          <div class="dashboard-patient-copy">
+                            <strong>{{ $agendamento->nome }}</strong>
+                            <small>{{ $agendamento->servico }}</small>
+                          </div>
+                        </div>
+                      </td>
+                      <td data-label="Serviço">
+                        <span class="dashboard-mobile-label">Serviço</span>
+                        {{ $agendamento->servico }}
+                      </td>
+                      <td data-label="Profissional">
+                        <span class="dashboard-mobile-label">Profissional</span>
+                        {{ $agendamento->professional->nome ?? $agendamento->medico ?? 'Não informado' }}
+                      </td>
+                      <td data-label="Data">
+                        <span class="dashboard-mobile-label">Data</span>
+                        {{ optional($agendamento->data_agendamento)->format('d/m/Y') }}
+                      </td>
+                      <td data-label="Horário">
+                        <span class="dashboard-mobile-label">Horário</span>
+                        {{ $agendamento->horario }}
+                      </td>
+                      <td class="dashboard-mobile-full" data-label="Status">
+                        <span class="dashboard-mobile-label">Status</span>
                         <span class="dashboard-status {{ $agendamento->status }}">
                           {{ ucfirst($agendamento->status ?? 'pendente') }}
                         </span>

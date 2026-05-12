@@ -111,6 +111,12 @@
       color: var(--text-primary);
     }
 
+    #app,
+    .main-wrapper,
+    .main-content {
+      max-width: 100%;
+    }
+
     .sidebar-toggle-fixed {
       position: fixed;
       top: 18px;
@@ -347,9 +353,113 @@
     }
 
     @media (max-width: 767.98px) {
-      .action-button-group {
-        flex-wrap: wrap;
+      .table-mobile-label {
+        display: none;
+      }
+
+      .table-responsive .table.table-mobile-cards {
+        border: 0;
+      }
+
+      .table-responsive .table.table-mobile-cards thead {
+        display: none;
+      }
+
+      .table-responsive .table.table-mobile-cards tbody {
+        display: grid;
+        gap: 14px;
+      }
+
+      .table-responsive .table.table-mobile-cards tbody tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        border: 1px solid var(--border-soft);
+        border-radius: 16px;
+        background: var(--surface-primary);
+        box-shadow: var(--shadow-soft);
+        overflow: visible;
+      }
+
+      .table-responsive .table.table-mobile-cards tbody td {
+        display: flex;
+        flex-direction: column;
         justify-content: center;
+        width: 100%;
+        min-width: 0;
+        padding: 14px 16px !important;
+        border: 0;
+        text-align: left !important;
+        white-space: normal !important;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+
+      .table-responsive .table.table-mobile-cards tbody td + td {
+        border-top: 1px solid var(--border-soft);
+      }
+
+      .table-responsive .table.table-mobile-cards tbody tr > td.table-mobile-full,
+      .table-responsive .table.table-mobile-cards tbody tr > td:first-child,
+      .table-responsive .table.table-mobile-cards tbody tr > td:last-child,
+      .table-responsive .table.table-mobile-cards tbody tr > td[colspan] {
+        grid-column: 1 / -1;
+      }
+
+      .table-responsive .table.table-mobile-cards tbody tr > td:nth-child(odd):not(:first-child):not(:last-child):not(.table-mobile-full):not([colspan]) {
+        border-right: 1px solid var(--border-soft);
+      }
+
+      .table-responsive .table.table-mobile-cards tbody tr > td:not(:last-child) {
+        min-height: 74px;
+      }
+
+      .table-responsive .table.table-mobile-cards .table-mobile-label,
+      .table-responsive .table.table-mobile-cards tbody td::before {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        line-height: 1.1;
+      }
+
+      .table-responsive .table.table-mobile-cards tbody td[data-label]::before {
+        content: attr(data-label);
+      }
+
+      .table-responsive .table.table-mobile-cards tbody td:not([data-label])::before {
+        content: none;
+      }
+
+      .table-responsive .table.table-mobile-cards tbody td .badge {
+        align-self: flex-start;
+      }
+
+      .table-responsive .table.table-mobile-cards tbody td[colspan] {
+        text-align: center !important;
+      }
+
+      @media (max-width: 420px) {
+        .table-responsive .table.table-mobile-cards tbody tr {
+          grid-template-columns: 1fr;
+        }
+
+        .table-responsive .table.table-mobile-cards tbody tr > td:not(:last-child) {
+          min-height: 0;
+        }
+      }
+
+      .action-button-group {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+        justify-content: stretch;
+        gap: 8px;
+        width: 100%;
+        max-width: 320px;
+        margin: 0 auto;
       }
 
       .action-button-group > *,
@@ -359,8 +469,65 @@
       }
 
       .action-button-cell {
-        min-width: 220px !important;
+        min-width: 0 !important;
         white-space: normal !important;
+        padding-top: 14px !important;
+        padding-bottom: 14px !important;
+      }
+
+      .action-button-cell .action-button-group {
+        width: 100%;
+      }
+
+      .table-responsive .action-button-group .btn,
+      .table-responsive .action-button-group form .btn,
+      .table-responsive .action-button-cell .btn,
+      .table-responsive .patients-actions .btn,
+      .settings-actions .btn,
+      .users-actions .btn,
+      .professional-actions .btn,
+      .patients-actions .btn,
+      .patient-history-actions .btn,
+      .queue-actions .btn,
+      .agenda-actions .btn,
+      .confirmation-actions .btn,
+      .waitlist-actions .btn {
+        min-height: 30px !important;
+        padding: 5px 7px !important;
+        font-size: 10.75px !important;
+        line-height: 1.15 !important;
+        border-radius: 10px !important;
+      }
+
+      .table-responsive .table .btn-sm,
+      .table-responsive .btn-sm {
+        min-height: 30px !important;
+        padding: 5px 7px !important;
+        font-size: 10.75px !important;
+      }
+
+      .action-button-group > *:first-child:nth-last-child(1),
+      .action-button-group form:first-child:nth-last-child(1) {
+        grid-column: 1 / -1;
+      }
+
+      .action-button-group > *:nth-child(odd):last-child {
+        grid-column: 1 / -1;
+      }
+
+      .action-button-group form {
+        display: block;
+      }
+
+      .action-button-group .btn {
+        justify-content: center;
+      }
+
+      @media (max-width: 420px) {
+        .action-button-group {
+          grid-template-columns: 1fr;
+          max-width: 260px;
+        }
       }
     }
 
@@ -987,6 +1154,10 @@
       padding-left: 30px;
     }
 
+    .mobile-sidebar-backdrop {
+      display: none;
+    }
+
     .section-header,
     .card-header,
     .card-header-action,
@@ -1137,6 +1308,11 @@
       .modal-dialog {
         margin: 10px;
       }
+
+      body.sidebar-gone .main-content,
+      body.sidebar-gone .main-footer {
+        padding-left: 12px;
+      }
     }
 
     body:not(.sidebar-gone) .sidebar-toggle-fixed {
@@ -1148,11 +1324,34 @@
     }
 
     @media (max-width: 1024px) {
+      body.sidebar-gone .main-content,
+      body.sidebar-gone .main-footer,
+      body.sidebar-show .main-content,
+      body.sidebar-show .main-footer {
+        padding-left: 18px;
+      }
+
+      .mobile-sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1040;
+        background: transparent;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .22s ease;
+        display: none !important;
+      }
+
+      body.sidebar-show .mobile-sidebar-backdrop {
+        display: none !important;
+        opacity: 0;
+        pointer-events: none;
+      }
+
       .sidebar-toggle-fixed,
       body:not(.sidebar-gone) .sidebar-toggle-fixed,
       body.sidebar-mini .sidebar-toggle-fixed {
-        left: 14px;
-        top: 14px;
+        display: none !important;
       }
 
       .layout-alert-section {
@@ -1176,6 +1375,10 @@
 
       .card-header-action {
         width: 100%;
+      }
+
+      body.sidebar-show {
+        overflow-x: hidden;
       }
 
       .card-header-action > * {
@@ -1269,6 +1472,7 @@
     <div class="main-wrapper main-wrapper-1">
       <div class=""></div>
       <a href="#" id="sidebar-toggle-fixed" data-toggle="sidebar" class="sidebar-toggle-fixed" data-state="closed" aria-label="Abrir lateral" aria-pressed="false">Abrir lateral</a>
+      <button type="button" class="mobile-sidebar-backdrop" id="mobile-sidebar-backdrop" aria-label="Fechar lateral"></button>
 
       <!-- START NAVABAR - MAYKONSILVEIRA.COM.BR -->
       @include('admin.layouts.navbar')
@@ -1472,7 +1676,34 @@
       var sidebarStateStorageKey = 'admin.ui.sidebar-state';
       var sidebarMenusStorageKey = 'admin.ui.sidebar-open-menus';
       var sidebarToggleButton = document.getElementById('sidebar-toggle-fixed');
+      var mobileSidebarToggleButton = document.getElementById('sidebarToggle');
+      var mobileSidebarBackdrop = document.getElementById('mobile-sidebar-backdrop');
+      var mainSidebar = document.querySelector('.main-sidebar');
       var sidebarDropdownLinks = Array.from(document.querySelectorAll('.main-sidebar .nav-link.has-dropdown'));
+      var touchState = null;
+
+      function isMobileSidebarViewport() {
+        return window.innerWidth <= 1024;
+      }
+
+      function isSidebarClosed() {
+        return document.body.classList.contains('sidebar-gone') && !document.body.classList.contains('sidebar-show');
+      }
+
+      function openMobileSidebar() {
+        document.body.classList.remove('sidebar-gone');
+        document.body.classList.remove('sidebar-mini');
+        document.body.classList.add('sidebar-show');
+        updateMobileSidebarToggle();
+        persistSidebarPreferences();
+      }
+
+      function closeMobileSidebar() {
+        document.body.classList.add('sidebar-gone');
+        document.body.classList.remove('sidebar-show');
+        updateMobileSidebarToggle();
+        persistSidebarPreferences();
+      }
 
       function getSidebarMenuKey(link) {
         var label = link ? link.textContent : '';
@@ -1486,7 +1717,7 @@
 
         var savedState = window.localStorage.getItem(sidebarStateStorageKey);
 
-        if (window.innerWidth > 1024) {
+        if (!isMobileSidebarViewport()) {
           document.body.classList.remove('sidebar-gone');
           document.body.classList.remove('sidebar-show');
 
@@ -1502,6 +1733,7 @@
         if (savedState === 'open') {
           document.body.classList.remove('sidebar-gone');
           document.body.classList.remove('sidebar-mini');
+          document.body.classList.add('sidebar-show');
         }
 
         if (savedState === 'closed') {
@@ -1577,6 +1809,60 @@
       window.setTimeout(applySidebarStateFromStorage, 320);
       window.setTimeout(restoreOpenSidebarMenus, 650);
 
+      function updateMobileSidebarToggle() {
+        if (!mobileSidebarToggleButton || !isMobileSidebarViewport()) {
+          return;
+        }
+
+        var isClosed = isSidebarClosed();
+
+        mobileSidebarToggleButton.setAttribute('title', isClosed ? 'Abrir lateral' : 'Fechar lateral');
+        mobileSidebarToggleButton.setAttribute('aria-label', isClosed ? 'Abrir lateral' : 'Fechar lateral');
+        mobileSidebarToggleButton.setAttribute('aria-expanded', isClosed ? 'false' : 'true');
+      }
+
+      updateMobileSidebarToggle();
+
+      if (mobileSidebarToggleButton) {
+        mobileSidebarToggleButton.addEventListener('click', function () {
+          if (!isMobileSidebarViewport()) {
+            document.body.classList.toggle('sidebar-mini');
+            persistSidebarPreferences();
+            return;
+          }
+
+          if (isSidebarClosed()) {
+            openMobileSidebar();
+            return;
+          }
+
+          closeMobileSidebar();
+        });
+      }
+
+      if (mobileSidebarBackdrop) {
+        mobileSidebarBackdrop.addEventListener('click', function () {
+          if (isMobileSidebarViewport()) {
+            closeMobileSidebar();
+          }
+        });
+      }
+
+      document.addEventListener('click', function (event) {
+        if (!isMobileSidebarViewport() || isSidebarClosed()) {
+          return;
+        }
+
+        var clickedInsideSidebar = event.target.closest('.main-sidebar');
+        var clickedSidebarToggle = event.target.closest('#sidebarToggle') || event.target.closest('#sidebar-toggle-fixed');
+
+        if (clickedInsideSidebar || clickedSidebarToggle) {
+          return;
+        }
+
+        closeMobileSidebar();
+      });
+
       if (sidebarToggleButton) {
         var updateSidebarToggleLabel = function () {
           if (window.innerWidth > 1024) {
@@ -1596,15 +1882,97 @@
         sidebarToggleButton.addEventListener('click', function () {
           window.setTimeout(function () {
             updateSidebarToggleLabel();
+            updateMobileSidebarToggle();
             persistSidebarPreferences();
           }, 20);
         });
 
         var sidebarObserver = new MutationObserver(function () {
           updateSidebarToggleLabel();
+          updateMobileSidebarToggle();
           persistSidebarPreferences();
         });
         sidebarObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      } else if (mobileSidebarToggleButton) {
+        var mobileSidebarObserver = new MutationObserver(function () {
+          updateMobileSidebarToggle();
+        });
+        mobileSidebarObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      }
+
+      function clearTouchState() {
+        touchState = null;
+        if (mainSidebar) {
+          mainSidebar.style.removeProperty('--mobile-sidebar-drag-x');
+          mainSidebar.classList.remove('is-dragging');
+        }
+      }
+
+      if (mainSidebar) {
+        document.addEventListener('touchstart', function (event) {
+          if (!isMobileSidebarViewport() || !event.touches.length) {
+            return;
+          }
+
+          var touch = event.touches[0];
+          var startedInsideSidebar = mainSidebar.contains(event.target);
+          var canOpenFromEdge = isSidebarClosed() && touch.clientX <= 24;
+          var canCloseFromSidebar = !isSidebarClosed() && startedInsideSidebar;
+
+          if (!canOpenFromEdge && !canCloseFromSidebar) {
+            clearTouchState();
+            return;
+          }
+
+          touchState = {
+            startX: touch.clientX,
+            startY: touch.clientY,
+            mode: canOpenFromEdge ? 'open' : 'close',
+          };
+
+          mainSidebar.classList.add('is-dragging');
+        }, { passive: true });
+
+        document.addEventListener('touchmove', function (event) {
+          if (!touchState || !event.touches.length || !isMobileSidebarViewport()) {
+            return;
+          }
+
+          var touch = event.touches[0];
+          var deltaX = touch.clientX - touchState.startX;
+          var deltaY = touch.clientY - touchState.startY;
+
+          if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 12) {
+            clearTouchState();
+            return;
+          }
+
+          if (touchState.mode === 'open') {
+            mainSidebar.style.setProperty('--mobile-sidebar-drag-x', Math.min(0, -290 + Math.max(0, deltaX)) + 'px');
+          } else {
+            mainSidebar.style.setProperty('--mobile-sidebar-drag-x', Math.min(0, deltaX) + 'px');
+          }
+        }, { passive: true });
+
+        document.addEventListener('touchend', function (event) {
+          if (!touchState || !isMobileSidebarViewport()) {
+            clearTouchState();
+            return;
+          }
+
+          var touch = event.changedTouches && event.changedTouches[0];
+          var deltaX = touch ? (touch.clientX - touchState.startX) : 0;
+
+          if (touchState.mode === 'open' && deltaX > 70) {
+            openMobileSidebar();
+          } else if (touchState.mode === 'close' && deltaX < -70) {
+            closeMobileSidebar();
+          } else {
+            updateMobileSidebarToggle();
+          }
+
+          clearTouchState();
+        }, { passive: true });
       }
 
       sidebarDropdownLinks.forEach(function (link) {

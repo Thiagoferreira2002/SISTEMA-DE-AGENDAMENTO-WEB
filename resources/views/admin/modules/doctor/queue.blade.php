@@ -345,7 +345,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped table-mobile-cards">
                         <thead>
                             <tr>
                                 <th>Paciente</th>
@@ -372,23 +372,23 @@
                                     $queueDescription = $item->motivo_consulta ?: ($item->descricao ?: '-');
                                 @endphp
                                 <tr>
-                                    <td>
+                                    <td class="table-mobile-full" data-label="Paciente">
                                         <div class="queue-patient-cell">
                                             <img src="{{ $item->patient?->foto_url ?? asset('backend/assets/img/avatar/avatar-1.png') }}" alt="Foto de {{ $item->nome }}">
                                             <span>{{ $item->nome }}</span>
                                         </div>
                                     </td>
-                                    <td class="queue-service-cell">{{ $item->servico }}</td>
-                                    <td>{{ $item->profissional_fila }}</td>
-                                    <td>{{ $item->data_agendamento->format('d/m/Y') }}</td>
-                                    <td>{{ $item->horario }}</td>
-                                    <td>{{ $item->horario_final_exibicao ?: '-' }}</td>
-                                    <td>
+                                    <td class="queue-service-cell" data-label="Serviço">{{ $item->servico }}</td>
+                                    <td data-label="Profissional">{{ $item->profissional_fila }}</td>
+                                    <td data-label="Data">{{ $item->data_agendamento->format('d/m/Y') }}</td>
+                                    <td data-label="Horário">{{ $item->horario }}</td>
+                                    <td data-label="Final">{{ $item->horario_final_exibicao ?: '-' }}</td>
+                                    <td data-label="Status">
                                         <span class="badge badge-{{ $item->status === 'confirmado' ? 'success' : ($item->status === 'cancelado' ? 'danger' : 'warning') }}">
                                             {{ $queueStatusLabel }}
                                         </span>
                                     </td>
-                                    <td class="queue-actions-cell action-button-cell" style="white-space: nowrap; min-width: 250px;">
+                                    <td class="queue-actions-cell action-button-cell table-mobile-full" data-label="Ações">
                                         <div class="queue-actions action-button-group">
                                             <button
                                                 type="button"

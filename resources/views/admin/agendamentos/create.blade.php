@@ -185,6 +185,56 @@
         font-size: 0.8rem;
     }
 
+    .patient-create-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .patient-create-actions .btn {
+        width: auto;
+        min-width: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 991.98px) {
+        .patient-create-name-col {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+
+        .patient-create-cpf-col,
+        .patient-create-sex-col,
+        .patient-create-birth-col {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+
+    @media (max-width: 1024px) {
+        .section-body form .form-action-bar,
+        .appointment-planner-shell .form-action-bar {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-body form .form-action-bar > *,
+        .appointment-planner-shell .form-action-bar > *,
+        .appointment-planner-shell .btn-form-action {
+            flex: 0 0 auto !important;
+            width: auto !important;
+            min-width: 0;
+            max-width: 100%;
+        }
+    }
+
     @media (max-width: 767.98px) {
         .appointment-planner-shell {
             padding: 16px !important;
@@ -196,10 +246,37 @@
         }
 
         .appointment-planner-shell .nav-tabs .nav-link,
-        .appointment-planner-shell .form-action-bar > *,
-        .appointment-planner-shell .btn-form-search,
-        .appointment-planner-shell .btn-form-action {
+        .appointment-planner-shell .btn-form-search {
             width: 100%;
+        }
+
+        .appointment-planner-shell .form-action-bar {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .appointment-planner-shell .form-action-bar > *,
+        .appointment-planner-shell .btn-form-action {
+            width: auto !important;
+            min-width: 0;
+            max-width: 100%;
+            flex: 0 0 auto;
+        }
+
+        .patient-create-actions .btn {
+            width: auto;
+            padding-left: 14px !important;
+            padding-right: 14px !important;
+        }
+
+        .patient-create-cpf-col,
+        .patient-create-sex-col,
+        .patient-create-birth-col {
+            flex: 0 0 100%;
+            max-width: 100%;
         }
 
         .appointment-planner-shell .form-action-bar {
@@ -487,12 +564,12 @@
                                     <div class="border rounded p-3 mb-4">
                                         <h5 class="mb-3">Dados Pessoais</h5>
                                         <div class="row">
-                                            <div class="col-lg-6 col-md-8"><div class="form-group"><label for="p_nome">Nome completo *</label><input type="text" class="form-control" id="p_nome" name="nome" value="{{ old('nome') }}" autocomplete="off" required>@error('nome')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
-                                            <div class="col-md-2"><div class="form-group"><label for="p_cpf">CPF</label><input type="text" class="form-control" id="p_cpf" name="cpf" value="{{ old('cpf') }}" autocomplete="off">@error('cpf')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
-                                            <div class="col-lg-2 col-md-2"><div class="form-group"><label for="p_sexo">Sexo</label><select class="form-control" id="p_sexo" name="sexo"><option value="">Selecione</option><option value="feminino" {{ old('sexo') === 'feminino' ? 'selected' : '' }}>Feminino</option><option value="masculino" {{ old('sexo') === 'masculino' ? 'selected' : '' }}>Masculino</option><option value="outro" {{ old('sexo') === 'outro' ? 'selected' : '' }}>Outro</option></select></div></div>
+                                            <div class="col-lg-8 col-md-12 patient-create-name-col"><div class="form-group"><label for="p_nome">Nome completo *</label><input type="text" class="form-control" id="p_nome" name="nome" value="{{ old('nome') }}" autocomplete="off" required>@error('nome')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
+                                            <div class="col-lg-2 col-md-6 patient-create-cpf-col"><div class="form-group"><label for="p_cpf">CPF</label><input type="text" class="form-control" id="p_cpf" name="cpf" value="{{ old('cpf') }}" autocomplete="off">@error('cpf')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
+                                            <div class="col-lg-2 col-md-6 patient-create-sex-col"><div class="form-group"><label for="p_sexo">Sexo</label><select class="form-control" id="p_sexo" name="sexo"><option value="">Selecione</option><option value="feminino" {{ old('sexo') === 'feminino' ? 'selected' : '' }}>Feminino</option><option value="masculino" {{ old('sexo') === 'masculino' ? 'selected' : '' }}>Masculino</option><option value="outro" {{ old('sexo') === 'outro' ? 'selected' : '' }}>Outro</option></select></div></div>
                                         </div>
                                         <div class="row">
-                                            <div class="col-lg-3 col-md-4"><div class="form-group"><label for="p_data_nascimento">Data de Nascimento</label><input type="date" class="form-control" id="p_data_nascimento" name="data_nascimento" value="{{ old('data_nascimento') }}" autocomplete="off" max="{{ now()->format('Y-m-d') }}">@error('data_nascimento')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
+                                            <div class="col-lg-4 col-md-6 patient-create-birth-col"><div class="form-group"><label for="p_data_nascimento">Data de Nascimento</label><input type="date" class="form-control" id="p_data_nascimento" name="data_nascimento" value="{{ old('data_nascimento') }}" autocomplete="off" max="{{ now()->format('Y-m-d') }}">@error('data_nascimento')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
                                         </div>
                                     </div>
 
@@ -517,7 +594,7 @@
                                             <div class="col-md-5"><div class="form-group mb-0"><label for="p_complemento">Complemento</label><input type="text" class="form-control" id="p_complemento" name="complemento" value="{{ old('complemento') }}" autocomplete="off">@error('complemento')<div class="text-danger">{{ $message }}</div>@enderror</div></div>
                                         </div>
                                     </div>
-                                    <div class="d-flex flex-wrap align-items-center form-action-bar" style="gap: 10px;">
+                                    <div class="patient-create-actions">
                                         <button type="submit" class="btn btn-success btn-form-action">Cadastrar Paciente</button>
                                         <a href="{{ $returnUrl }}" class="btn btn-secondary btn-form-action">Cancelar</a>
                                     </div>

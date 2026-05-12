@@ -561,7 +561,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped table-mobile-cards">
                         <thead>
                             <tr>
                                 <th>Data</th>
@@ -582,13 +582,13 @@
                                     $changeSummary = $buildChangeSummary($before, $after);
                                 @endphp
                                 <tr>
-                                    <td>{{ $log->created_at?->format('d/m/Y H:i') }}</td>
-                                    <td>{{ trim((($log->user->nome ?? '') . ' ' . ($log->user->sobrenome ?? ''))) ?: 'Sistema' }}</td>
-                                    <td>{{ $resolveSubmenu($log) }}</td>
-                                    <td>{{ $resolveTargetUser($log) }}</td>
-                                    <td>{{ $actionLabels[$log->action] ?? 'Alteração' }}</td>
-                                    <td>{{ $log->description }}</td>
-                                    <td class="text-center">
+                                    <td data-label="Data">{{ $log->created_at?->format('d/m/Y H:i') }}</td>
+                                    <td data-label="Responsável">{{ trim((($log->user->nome ?? '') . ' ' . ($log->user->sobrenome ?? ''))) ?: 'Sistema' }}</td>
+                                    <td data-label="Local da alteração">{{ $resolveSubmenu($log) }}</td>
+                                    <td data-label="Usuário afetado">{{ $resolveTargetUser($log) }}</td>
+                                    <td data-label="Tipo de alteração">{{ $actionLabels[$log->action] ?? 'Alteração' }}</td>
+                                    <td class="table-mobile-full" data-label="Descrição">{{ $log->description }}</td>
+                                    <td class="text-center table-mobile-full action-button-cell" data-label="Detalhes">
                                         <button class="btn btn-sm btn-outline-primary" type="button" data-log-details-trigger data-log-id="{{ $log->id }}">
                                             Visualizar
                                         </button>

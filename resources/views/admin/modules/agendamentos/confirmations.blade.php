@@ -65,6 +65,51 @@
             min-width: 170px;
         }
 
+        .confirmation-filter-actions,
+        .confirmation-period-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .confirmation-filter-actions .btn,
+        .confirmation-period-actions .btn,
+        .confirmation-whatsapp-wrap .btn {
+            width: auto;
+            min-width: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            flex: 0 0 auto;
+        }
+
+        .confirmation-period-actions {
+            justify-content: flex-end;
+        }
+
+        .confirmation-template-wrap {
+            width: 100%;
+            max-width: 308px;
+            margin: 0 auto;
+        }
+
+        .confirmation-template-wrap .form-control {
+            min-height: 42px;
+        }
+
+        .confirmation-whatsapp-wrap {
+            width: 100%;
+            max-width: 220px;
+            margin: 0 auto;
+        }
+
+        .confirmation-whatsapp-wrap .btn {
+            padding-left: 14px;
+            padding-right: 14px;
+        }
+
         .confirmation-actions {
             display: inline-flex;
             flex-wrap: nowrap;
@@ -149,6 +194,38 @@
             color: #cfe6fb !important;
         }
 
+        @media (max-width: 1024px) {
+            .section-body form.mb-4 .confirmation-filter-actions,
+            .confirmation-period-actions {
+                width: 100%;
+            }
+
+            .section-body form.mb-4 .confirmation-filter-actions > *,
+            .confirmation-period-actions > * {
+                flex: 0 0 auto !important;
+                width: auto !important;
+            }
+
+            .table-responsive .table.table-mobile-cards tbody td[data-label="Tipo de confirmação"],
+            .table-responsive .table.table-mobile-cards tbody td[data-label="Contato com o paciente"],
+            .table-responsive .table.table-mobile-cards tbody td[data-label="Ações"] {
+                padding-top: 24px !important;
+                padding-bottom: 24px !important;
+            }
+
+            .table-responsive .table.table-mobile-cards tbody td[data-label="Tipo de confirmação"]::before,
+            .table-responsive .table.table-mobile-cards tbody td[data-label="Contato com o paciente"]::before,
+            .table-responsive .table.table-mobile-cards tbody td[data-label="Ações"]::before {
+                margin-bottom: 14px;
+            }
+
+            .confirmation-template-wrap,
+            .confirmation-whatsapp-wrap,
+            .confirmation-actions {
+                margin-top: 10px;
+            }
+        }
+
         @media (max-width: 767.98px) {
             .confirmation-contact-stack {
                 min-width: 0;
@@ -158,6 +235,30 @@
             .confirmation-contact-stack .btn {
                 width: 100%;
                 min-width: 0;
+            }
+
+            .confirmation-filter-actions,
+            .confirmation-period-actions {
+                justify-content: flex-start;
+                width: 100%;
+            }
+
+            .confirmation-filter-actions .btn,
+            .confirmation-period-actions .btn,
+            .confirmation-whatsapp-wrap .btn {
+                width: auto !important;
+                max-width: 100%;
+                padding-left: 14px !important;
+                padding-right: 14px !important;
+                flex: 0 0 auto;
+            }
+
+            .confirmation-template-wrap {
+                max-width: 280px;
+            }
+
+            .confirmation-whatsapp-wrap {
+                max-width: 210px;
             }
         }
     </style>
@@ -199,7 +300,7 @@
                     </div>
                     <div class="row mt-2">
                         <div class="col-lg-4 col-md-6">
-                            <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                            <div class="confirmation-filter-actions">
                                 @if(request()->filled('period'))
                                     <input type="hidden" name="period" value="{{ request('period') }}">
                                 @endif
@@ -210,7 +311,7 @@
                     </div>
                 </form>
 
-                <div class="mb-3 d-flex flex-wrap justify-content-end" style="gap: 8px;">
+                <div class="mb-3 confirmation-period-actions">
                     <a href="{{ route('admin.agendamentos.confirmations', array_merge(request()->except('page', 'period'), ['period' => 'dia'])) }}" class="btn btn-outline-primary btn-sm">Dia</a>
                     <a href="{{ route('admin.agendamentos.confirmations', array_merge(request()->except('page', 'period'), ['period' => 'semana'])) }}" class="btn btn-outline-primary btn-sm">Semana</a>
                     <a href="{{ route('admin.agendamentos.confirmations', array_merge(request()->except('page', 'period'), ['period' => 'mes'])) }}" class="btn btn-outline-primary btn-sm">Mês</a>
@@ -218,7 +319,7 @@
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped table-mobile-cards">
                         <thead>
                             <tr>
                                 <th class="text-center">Paciente</th>
@@ -234,11 +335,11 @@
                         <tbody>
                             @forelse($appointments as $appointment)
                                 <tr>
-                                    <td class="text-center align-middle">{{ $appointment->nome }}</td>
-                                    <td class="text-center align-middle">{{ $appointment->data_agendamento->format('d/m/Y') }} às {{ $appointment->horario }}</td>
-                                    <td class="text-center align-middle">{{ $appointment->servico }}</td>
-                                    <td class="text-center align-middle">
-                                        <div class="confirmation-contact-block mx-auto" style="max-width: 320px;">
+                                    <td class="text-center align-middle table-mobile-full" data-label="Paciente">{{ $appointment->nome }}</td>
+                                    <td class="text-center align-middle" data-label="Data">{{ $appointment->data_agendamento->format('d/m/Y') }} às {{ $appointment->horario }}</td>
+                                    <td class="text-center align-middle" data-label="Serviço">{{ $appointment->servico }}</td>
+                                    <td class="text-center align-middle table-mobile-full" data-label="Tipo de confirmação">
+                                        <div class="confirmation-contact-block confirmation-template-wrap">
                                             <select class="form-control form-control-sm js-message-template" data-target="message-link-{{ $appointment->id }}" data-name="{{ $appointment->nome }}" data-service="{{ $appointment->servico }}" data-date="{{ $appointment->data_agendamento->format('d/m/Y') }}" data-time="{{ $appointment->horario }}" data-phone="{{ preg_replace('/\D+/', '', $appointment->telefone) }}">
                                                 @foreach($messageTemplates as $templateKey => $templateText)
                                                     <option value="{{ $templateText }}">{{ str($templateKey)->replace('_', ' ')->title() }}</option>
@@ -246,13 +347,13 @@
                                             </select>
                                         </div>
                                     </td>
-                                    <td class="text-center align-middle">
-                                        <div class="confirmation-contact-block text-center mx-auto" style="max-width: 220px;">
+                                    <td class="text-center align-middle table-mobile-full" data-label="Contato com o paciente">
+                                        <div class="confirmation-contact-block text-center confirmation-whatsapp-wrap">
                                             <a id="message-link-{{ $appointment->id }}" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success d-inline-flex align-items-center justify-content-center js-whatsapp-message">Enviar por WhatsApp</a>
                                         </div>
                                     </td>
                                     @if(! $isClinicManager)
-                                        <td class="text-center align-middle action-button-cell">
+                                        <td class="text-center align-middle action-button-cell table-mobile-full" data-label="Ações">
                                             <div class="confirmation-actions action-button-group">
                                                 <form action="{{ route('admin.agendamentos.confirm', $appointment) }}" method="POST" class="mb-0 d-inline-block">
                                                 @csrf
