@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.2",
         "ext-gd": "*",
+        "ext-pdo_mysql": "*",
         "ext-zip": "*",
         "barryvdh/laravel-dompdf": "^3.1",
         "efipay/sdk-php-apis-efi": "^1.17",
