@@ -1,6 +1,34 @@
 @extends('admin.layouts.master')
 @section('content')
 <style>
+    .waitlist-stat-col {
+        flex: 0 0 auto;
+        width: auto;
+        max-width: 100%;
+    }
+
+    .waitlist-summary-card {
+        width: fit-content;
+        min-width: 190px;
+        max-width: 100%;
+        margin-right: auto;
+    }
+
+    .waitlist-summary-card .card-icon {
+        margin: 14px 14px 0;
+    }
+
+    .waitlist-summary-card .card-wrap {
+        padding: 14px 14px 16px;
+    }
+
+    .waitlist-summary-card .card-header h4 {
+        font-size: 11px;
+        line-height: 1.25;
+        white-space: normal;
+        margin-bottom: 0;
+    }
+
     .waitlist-actions {
         display: inline-flex;
         flex-wrap: nowrap;
@@ -63,7 +91,18 @@
         gap: 8px;
     }
 
+    .waitlist-list-header {
+        gap: 12px;
+    }
+
     @media (max-width: 767.98px) {
+        .waitlist-stat-col,
+        .waitlist-summary-card {
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+        }
+
         .waitlist-actions {
             flex-wrap: wrap;
             justify-content: center;
@@ -79,6 +118,11 @@
 <section class="section">
     <div class="section-header">
         <h1>Lista de Espera</h1>
+        <div class="section-header-breadcrumb">
+            <div class="breadcrumb-item active"><a href="{{ route('admin.dashboard') }}">Dashboard</a></div>
+            <div class="breadcrumb-item"><a href="{{ route('admin.agendamentos.index') }}">Agendamentos</a></div>
+            <div class="breadcrumb-item">Fila de Espera</div>
+        </div>
     </div>
 
     <div class="section-body">
@@ -86,8 +130,20 @@
             <div class="alert alert-success">{{ session('success') }}</div>
         @endif
 
+        <div class="row mb-4">
+            <div class="col-xl-auto col-lg-auto col-md-5 col-12 waitlist-stat-col">
+                <div class="card card-statistic-1 mb-0 waitlist-summary-card">
+                    <div class="card-icon bg-primary"><i class="fas fa-user-clock"></i></div>
+                    <div class="card-wrap">
+                        <div class="card-header"><h4>Pacientes na Fila</h4></div>
+                        <div class="card-body">{{ $waitlist->count() }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex flex-wrap align-items-center justify-content-between waitlist-list-header">
                 <h4>Pacientes aguardando encaixe</h4>
             </div>
             <div class="card-body">

@@ -59,6 +59,72 @@ class AgendamentoController extends Controller
         ));
     }
 
+    public function delayedAppointments(Request $request)
+    {
+        $user = Auth::user();
+        $search = trim($request->string('q')->toString());
+        $selectedDate = $request->filled('date') ? (string) $request->input('date') : '';
+        $period = in_array($request->input('period'), ['dia', 'semana', 'mes'], true)
+            ? $request->input('period')
+            : '';
+
+        $query = Agendamento::with(['professional', 'patient'])
+            ->where(function ($q) {
+                $q->whereIn('status', ['pendente', 'confirmado'])
+                    ->orWhereNull('status');
+            });
+
+        // Apply search filter
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nome', 'like', "%{$search}%")
+                    ->orWhereHas('patient', function ($q) use ($search) {
+                        $q->where('nome', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Apply date filter
+        if ($selectedDate) {
+            $query->whereDate('data_agendamento', $selectedDate);
+        } elseif ($period === 'dia') {
+            $query->whereDate('data_agendamento', now()->toDateString());
+        } elseif ($period === 'semana') {
+            $query->whereBetween('data_agendamento', [now()->startOfWeek(), now()->endOfWeek()]);
+        } elseif ($period === 'mes') {
+            $query->whereMonth('data_agendamento', now()->month)
+                ->whereYear('data_agendamento', now()->year);
+        }
+
+        $delayedAppointments = $query
+            ->orderBy('data_agendamento')
+            ->orderBy('horario')
+            ->get()
+            ->filter(fn (Agendamento $item) => $this->appointmentHasPassedEndTime($item))
+            ->map(function ($item) {
+                $item->profissional_fila = $item->professional?->nome ?: ($item->medico ?: 'Não informado');
+                $endTime = $this->appointmentEndDateTime($item);
+                $item->horario_final_exibicao = optional($endTime)->format('H:i');
+                $item->cpf_exibicao = $item->patient?->cpf ?: ($item->cpf ?: null);
+                return $item;
+            })
+            ->values();
+
+        $totalDelayedAppointments = $delayedAppointments->count();
+        $professionals = Schema::hasTable('profissionais')
+            ? Professional::query()->where('ativo', true)->orderBy('nome')->get(['id', 'nome'])
+            : collect();
+
+        return view('admin.agendamentos.delayed', compact(
+            'delayedAppointments',
+            'period',
+            'search',
+            'selectedDate',
+            'totalDelayedAppointments',
+            'professionals'
+        ));
+    }
+
     public function calendarEvents(Request $request): JsonResponse
     {
         [$agendamentos] = $this->filteredAppointments($request, true);
@@ -684,7 +750,7 @@ class AgendamentoController extends Controller
         $rangeBStart = Carbon::createFromFormat('H:i', substr($startB, 0, 5));
         $rangeBEnd = $rangeBStart->copy()->addMinutes($durationB);
 
-        return ! $rangeAEnd->lt($rangeBStart) && ! $rangeBEnd->lt($rangeAStart);
+        return $rangeAStart->lt($rangeBEnd) && $rangeBStart->lt($rangeAEnd);
     }
 
     private function decorateAppointment(Agendamento $agendamento, array $professionals, $professionalById, $professionalByName): Agendamento
@@ -1056,4 +1122,3 @@ class AgendamentoController extends Controller
         return true;
     }
 }
-

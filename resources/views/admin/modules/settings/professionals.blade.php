@@ -512,6 +512,39 @@
             grid-template-columns: 1fr;
         }
     }
+    .settings-toolbar {
+        gap: 12px;
+    }
+
+    .settings-toolbar-form {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .settings-toolbar-search {
+        min-width: 260px;
+    }
+
+    @media (max-width: 767.98px) {
+        .settings-toolbar,
+        .settings-toolbar-form {
+            width: 100%;
+            align-items: stretch !important;
+        }
+
+        .settings-toolbar-form > *,
+        .settings-toolbar-form .btn,
+        .settings-toolbar-search {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .professional-form > .btn.btn-primary {
+            width: 100%;
+        }
+    }
 </style>
 @php
     $buildProfessionalScheduleLabels = function ($schedule) use ($weekDays) {
@@ -839,9 +872,9 @@
         </div>
 
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center flex-wrap" style="gap: 12px;">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap settings-toolbar">
                 <h4 class="mb-0">Equipe cadastrada</h4>
-                <form action="{{ route('admin.settings.professionals') }}" method="GET" class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                <form action="{{ route('admin.settings.professionals') }}" method="GET" class="settings-toolbar-form">
                     <input type="text" class="form-control" name="professional_user_search" value="{{ $professionalUserSearch ?? '' }}" placeholder="Pesquisar usuário vinculado" style="min-width: 260px;">
                     <button type="submit" class="btn btn-primary btn-sm">Pesquisar</button>
                     @if(!empty($professionalUserSearch))

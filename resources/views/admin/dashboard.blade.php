@@ -671,7 +671,7 @@
           <div class="card dashboard-metric-card" style="animation-delay:.26s;">
             <div class="card-body">
               <div class="metric-icon"><i class="fas fa-exclamation-triangle"></i></div>
-              <h4>Agendamentos em Atraso</h4>
+              <h4>Atendimentos em Atraso</h4>
               <div class="metric-value">{{ $agendamentosEmAtraso ?? 0 }}</div>
               <div class="metric-footnote">
                 {{ ($isProfessionalDashboard ?? false) ? 'Atendimentos do seu perfil cujo horário final já passou.' : 'Atendimentos ativos cujo horário final já foi ultrapassado.' }}
@@ -683,20 +683,18 @@
     </div>
 
     <div class="row dashboard-secondary-row">
-      @unless($isProfessionalDashboard ?? false)
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-          <a href="{{ $dashboardLinks['complementar'] ?? route('admin.patients.index') }}" class="dashboard-metric-link">
-            <div class="card dashboard-metric-card" style="animation-delay:.26s;">
-              <div class="card-body">
-                <div class="metric-icon"><i class="far fa-user"></i></div>
-                <h4>Total de Pacientes</h4>
-                <div class="metric-value">{{ $totalPacientes }}</div>
-                <div class="metric-footnote">Base total de pacientes cadastrados no sistema.</div>
-              </div>
+      <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+        <a href="{{ $dashboardLinks['complementar'] ?? route('admin.patients.index') }}" class="dashboard-metric-link">
+          <div class="card dashboard-metric-card" style="animation-delay:.26s;">
+            <div class="card-body">
+              <div class="metric-icon"><i class="far fa-user"></i></div>
+              <h4>Total de Pacientes</h4>
+              <div class="metric-value">{{ $totalPacientes }}</div>
+              <div class="metric-footnote">Base total de pacientes cadastrados no sistema.</div>
             </div>
-          </a>
-        </div>
-      @endunless
+          </div>
+        </a>
+      </div>
       <div class="col-lg-3 col-md-6 col-sm-6 col-12">
         <a href="{{ $dashboardLinks['finalizados'] ?? route('admin.patients.history') }}" class="dashboard-metric-link">
           <div class="card dashboard-metric-card" style="animation-delay:.33s;">

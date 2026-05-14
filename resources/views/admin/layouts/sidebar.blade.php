@@ -451,13 +451,16 @@
       $dashboardRoute = ($loggedUser?->nivel === 'admin' || $loggedUser?->canAccessRouteName('admin.dashboard'))
             ? route('admin.dashboard')
             : route('cliente.dashboard');
-        $isProfessionalAccount = $loggedUser?->normalizedRole() === 'profissional';
+      $isProfessionalAccount = $loggedUser?->normalizedRole() === 'profissional';
       $isPatientTabOnCreate = request()->routeIs('admin.agendamentos.create') && request()->query('tab') === 'paciente';
       $isProfessionalCalendarRoute = $isProfessionalAccount && request()->routeIs('admin.agendamentos.calendar');
+      $isDoctorCompletedRoute = $isProfessionalAccount
+        && request()->routeIs('admin.agendamentos.completed')
+        && request()->query('source') === 'doctor';
       $isDashboardMenuOpen = request()->routeIs('admin.dashboard') || request()->routeIs('admin.account.*') || request()->routeIs('admin.tutorial');
       $isPatientsMenuOpen = request()->routeIs('admin.patients.*') || $isPatientTabOnCreate;
-      $isAgendamentosMenuOpen = request()->routeIs('admin.agendamentos.*') && ! $isPatientTabOnCreate && ! $isProfessionalCalendarRoute;
-      $isDoctorMenuOpen = request()->routeIs('admin.doctor.*') || $isProfessionalCalendarRoute;
+      $isAgendamentosMenuOpen = request()->routeIs('admin.agendamentos.*') && ! $isPatientTabOnCreate && ! $isProfessionalCalendarRoute && ! $isDoctorCompletedRoute;
+      $isDoctorMenuOpen = request()->routeIs('admin.doctor.*') || $isProfessionalCalendarRoute || $isDoctorCompletedRoute;
       $isCadastrosMenuOpen = request()->routeIs('admin.settings.*');
     @endphp
 
@@ -508,6 +511,9 @@
                     <li class="{{ request()->routeIs('admin.agendamentos.create') && ! $isPatientTabOnCreate ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.create') }}">Novo Agendamento</a></li>
                   @endif
                   <li class="{{ request()->routeIs('admin.agendamentos.confirmations') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.confirmations') }}">Confirmações</a></li>
+                  @if($loggedUser?->normalizedRole() === 'recepcionista')
+                    <li class="{{ request()->routeIs('admin.agendamentos.delayed-appointments') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.delayed-appointments') }}">Atendimentos em Atraso</a></li>
+                  @endif
                   @if($loggedUser?->normalizedRole() !== 'profissional')
                     <li class="{{ request()->routeIs('admin.agendamentos.completed') && ! $isProfessionalCalendarRoute ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.completed') }}">Agendamentos Finalizados</a></li>
                   @endif
@@ -526,7 +532,7 @@
                   <li class="{{ request()->routeIs('admin.doctor.queue') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.doctor.queue') }}">Fila de Espera</a></li>
                   <li class="{{ request()->routeIs('admin.doctor.pending-finalization') ? 'active' : '' }}"><a class="nav-link painelms submenu-nowrap" href="{{ route('admin.doctor.pending-finalization') }}">Atendimentos em Atraso</a></li>
                   @if($loggedUser?->normalizedRole() === 'profissional')
-                    <li class="{{ request()->routeIs('admin.agendamentos.completed') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.completed') }}">Agendamentos Finalizados</a></li>
+                    <li class="{{ $isDoctorCompletedRoute ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.completed', ['source' => 'doctor']) }}">Agendamentos Finalizados</a></li>
                   @endif
                 </ul>
               </li>

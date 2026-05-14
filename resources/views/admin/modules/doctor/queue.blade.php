@@ -1,10 +1,17 @@
 @extends('admin.layouts.master')
 @section('content')
 <style>
+    .queue-stat-col {
+        flex: 0 0 auto;
+        width: auto;
+        max-width: 100%;
+    }
+
     .queue-summary-card {
         width: fit-content;
         min-width: 190px;
         max-width: 100%;
+        margin-right: auto;
     }
 
     .queue-summary-card .card-icon {
@@ -173,6 +180,23 @@
         gap: 8px;
     }
 
+    .queue-filter-shortcuts,
+    .queue-filter-actions,
+    .queue-list-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .queue-filter-shortcuts .btn,
+    .queue-filter-actions .btn {
+        width: auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     .queue-details-close {
         border: 0;
         background: transparent;
@@ -205,6 +229,13 @@
     }
 
     @media (max-width: 767.98px) {
+        .queue-stat-col,
+        .queue-summary-card {
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+        }
+
         .queue-actions {
             flex-wrap: wrap;
             justify-content: center;
@@ -214,6 +245,12 @@
         .queue-actions form,
         .queue-actions .btn {
             width: 100%;
+        }
+
+        .queue-filter-shortcuts,
+        .queue-filter-actions {
+            width: 100%;
+            align-items: stretch;
         }
 
         .queue-actions-cell {
@@ -238,6 +275,11 @@
 <section class="section">
     <div class="section-header">
         <h1>{{ $pageTitle ?? 'Fila de Espera' }}</h1>
+        <div class="section-header-breadcrumb">
+            <div class="breadcrumb-item active"><a href="{{ route('admin.dashboard') }}">Dashboard</a></div>
+            <div class="breadcrumb-item"><a href="{{ route('admin.agendamentos.index') }}">Agendamentos</a></div>
+            <div class="breadcrumb-item">{{ $pageTitle ?? 'Fila de Espera' }}</div>
+        </div>
     </div>
 
     <div class="section-body">
@@ -251,7 +293,7 @@
 
         @if(($baseRoute ?? '') === 'admin.doctor.pending-finalization')
             <div class="row mb-4">
-                <div class="col-xl-auto col-lg-auto col-md-5 col-12">
+                <div class="col-xl-auto col-lg-auto col-md-5 col-12 queue-stat-col">
                     <div class="card card-statistic-1 mb-0 queue-summary-card">
                         <div class="card-icon bg-warning"><i class="fas fa-exclamation-triangle"></i></div>
                         <div class="card-wrap">
@@ -263,7 +305,7 @@
             </div>
         @else
             <div class="row mb-4">
-                <div class="col-xl-auto col-lg-auto col-md-5 col-12">
+                <div class="col-xl-auto col-lg-auto col-md-5 col-12 queue-stat-col">
                     <div class="card card-statistic-1 mb-0 queue-summary-card">
                         <div class="card-icon bg-primary"><i class="fas fa-user-clock"></i></div>
                         <div class="card-wrap">
@@ -280,7 +322,7 @@
                 <h4>Filtros da fila</h4>
             </div>
             <div class="card-body">
-                <div class="mb-3 d-flex flex-wrap" style="gap: 8px;">
+                <div class="mb-3 queue-filter-shortcuts">
                     <a href="{{ route($baseRoute ?? 'admin.doctor.queue', array_merge(request()->except('page', 'date'), ['period' => 'dia'])) }}" class="btn {{ $period === 'dia' && empty($selectedDate) ? 'btn-primary' : 'btn-outline-primary' }}">Dia</a>
                     <a href="{{ route($baseRoute ?? 'admin.doctor.queue', array_merge(request()->except('page', 'date'), ['period' => 'semana'])) }}" class="btn {{ $period === 'semana' && empty($selectedDate) ? 'btn-primary' : 'btn-outline-primary' }}">Semana</a>
                     <a href="{{ route($baseRoute ?? 'admin.doctor.queue', array_merge(request()->except('page', 'date'), ['period' => 'mes'])) }}" class="btn {{ $period === 'mes' && empty($selectedDate) ? 'btn-primary' : 'btn-outline-primary' }}">Mês</a>
@@ -321,7 +363,7 @@
                     @if(($baseRoute ?? '') === 'admin.doctor.pending-finalization')
                         <div class="row mt-3">
                             <div class="col-md-4">
-                                <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                                <div class="queue-filter-actions">
                                     <button type="submit" class="btn btn-primary">Pesquisar</button>
                                     <a href="{{ route($baseRoute ?? 'admin.doctor.queue') }}" class="btn btn-light">Limpar</a>
                                 </div>
@@ -329,9 +371,11 @@
                         </div>
                     @else
                         <div class="row mt-3 align-items-end">
-                            <div class="col-md-{{ ($professionalOptions ?? collect())->isNotEmpty() ? '2' : '5' }} d-flex flex-wrap align-items-center" style="gap: 8px;">
-                                <button type="submit" class="btn btn-primary">Pesquisar</button>
-                                <a href="{{ route($baseRoute ?? 'admin.doctor.queue') }}" class="btn btn-light">Limpar</a>
+                            <div class="col-md-{{ ($professionalOptions ?? collect())->isNotEmpty() ? '2' : '5' }}">
+                                <div class="queue-filter-actions">
+                                    <button type="submit" class="btn btn-primary">Pesquisar</button>
+                                    <a href="{{ route($baseRoute ?? 'admin.doctor.queue') }}" class="btn btn-light">Limpar</a>
+                                </div>
                             </div>
                         </div>
                     @endif
@@ -340,7 +384,7 @@
         </div>
 
         <div class="card">
-            <div class="card-header">
+            <div class="card-header queue-list-header">
                 <h4>{{ $cardTitle ?? 'Pacientes na fila' }}</h4>
             </div>
             <div class="card-body">

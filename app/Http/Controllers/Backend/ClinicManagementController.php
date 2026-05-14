@@ -599,6 +599,10 @@ class ClinicManagementController extends Controller
             ->orderBy('servico')
             ->pluck('servico');
 
+        $moduleRoute = $authenticatedProfessional
+            ? route('admin.agendamentos.completed', ['source' => 'doctor'])
+            : route('admin.agendamentos.completed');
+
         return view('admin.modules.patients.history', [
             'history' => $history,
             'period' => $period,
@@ -611,7 +615,7 @@ class ClinicManagementController extends Controller
             'authenticatedProfessional' => $authenticatedProfessional,
             'moduleTitle' => 'Agendamentos Finalizados',
             'moduleCardTitle' => 'Lista de agendamentos finalizados',
-            'moduleRoute' => route('admin.agendamentos.completed'),
+            'moduleRoute' => $moduleRoute,
             'moduleCounterLabel' => 'Agendamentos Finalizados',
         ]);
     }

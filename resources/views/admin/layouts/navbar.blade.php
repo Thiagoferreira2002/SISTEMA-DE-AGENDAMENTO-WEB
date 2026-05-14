@@ -670,6 +670,12 @@
           .main-navbar-cms .dropdown-list-content {
             max-height: 380px;
             background: #ffffff;
+            overflow-y: auto;
+            overflow-x: hidden;
+          }
+
+          .main-navbar-cms .dropdown-list-content::after {
+            display: none;
           }
 
           .main-navbar-cms .dropdown-item {
@@ -838,7 +844,6 @@
               <span class="navbar-sidebar-toggle-subtitle">Expandir ou recolher</span>
             </span>
           </a>
-          <a href="#" data-toggle="search" class="nav-link nav-link-lg d-sm-none"><i class="fas fa-search"></i></a>
         </div>
         <ul class="navbar-nav navbar-right align-items-center" style="gap:18px;">
           @php
@@ -930,4 +935,3 @@
           </li>
         </ul>
       </nav>
-

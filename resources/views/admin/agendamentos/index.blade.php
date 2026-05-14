@@ -93,9 +93,11 @@
         .agenda-patient-cell {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             gap: 10px;
             min-width: 170px;
+            width: 100%;
+            text-align: left;
         }
 
         .agenda-service-cell {
@@ -118,6 +120,14 @@
             object-fit: cover;
             border: 2px solid rgba(23, 111, 190, 0.12);
             flex: 0 0 auto;
+        }
+
+        .agenda-patient-cell span {
+            flex: 1 1 auto;
+            min-width: 0;
+            text-align: left;
+            word-break: break-word;
+            line-height: 1.4;
         }
 
         .agenda-modal-photo {

@@ -38,9 +38,11 @@
         .confirmation-patient-cell {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             gap: 10px;
             min-width: 170px;
+            width: 100%;
+            text-align: left;
         }
 
         .confirmation-patient-cell img {
@@ -53,8 +55,11 @@
         }
 
         .confirmation-patient-cell span {
+            flex: 1 1 auto;
+            min-width: 0;
             text-align: left;
             word-break: break-word;
+            line-height: 1.4;
         }
 
         .confirmation-contact-stack {

@@ -15,6 +15,9 @@ Route::middleware('auth', 'admin')->group(function () {
     Route::get('admin/agendamentos/calendario', [AgendamentoController::class, 'calendar'])
         ->name('admin.agendamentos.calendar');
 
+    Route::get('admin/agendamentos/atendimentos-em-atraso', [AgendamentoController::class, 'delayedAppointments'])
+        ->name('admin.agendamentos.delayed-appointments');
+
     // CRUD de agendamentos
     Route::resource('admin/agendamentos', AgendamentoController::class)->except(['show'])->names([
         'index' => 'admin.agendamentos.index',

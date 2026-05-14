@@ -28,7 +28,7 @@ class AdminController extends Controller
            'pendentes' => route('admin.agendamentos.confirmations'),
            'confirmados' => route('admin.agendamentos.index'),
            'complementar' => route('admin.patients.index'),
-           'atrasados' => route('admin.doctor.pending-finalization'),
+           'atrasados' => route('admin.agendamentos.delayed-appointments'),
            'finalizados' => route('admin.agendamentos.completed'),
        ];
 
@@ -60,15 +60,14 @@ class AdminController extends Controller
                $this->applyProfessionalAppointmentScope($completedAppointmentsQuery, $professional, $user);
                $this->applyProfessionalAppointmentScope($upcomingAppointmentsQuery, $professional, $user);
                $dashboardLinks['confirmados'] = route('admin.doctor.queue');
-               $dashboardLinks['complementar'] = route('admin.agendamentos.completed');
-               $dashboardLinks['finalizados'] = route('admin.agendamentos.completed');
-               $totalPacientes = null;
+               $dashboardLinks['finalizados'] = route('admin.agendamentos.completed', ['source' => 'doctor']);
+               $totalPacientes = Patient::count();
            } else {
                $appointmentsQuery->whereRaw('1 = 0');
                $activeAppointmentsQuery->whereRaw('1 = 0');
                $completedAppointmentsQuery->whereRaw('1 = 0');
                $upcomingAppointmentsQuery->whereRaw('1 = 0');
-               $totalPacientes = null;
+               $totalPacientes = 0;
            }
        } elseif ($user && $user->normalizedRole() === 'recepcionista') {
            $dashboardSubtitle = 'Acompanhe a agenda ativa, as confirmações pendentes e o fluxo operacional da recepção.';

@@ -1,6 +1,28 @@
 @extends('admin.layouts.master')
 @section('content')
 <style>
+    .procedure-form-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .settings-toolbar {
+        gap: 12px;
+    }
+
+    .settings-toolbar-form {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 12px;
+    }
+
+    .settings-toolbar-field {
+        min-width: 220px;
+    }
+
     .procedure-edit-modal {
         z-index: 10060;
     }
@@ -28,6 +50,21 @@
     }
 
     @media (max-width: 767.98px) {
+        .procedure-form-actions,
+        .settings-toolbar,
+        .settings-toolbar-form {
+            width: 100%;
+            align-items: stretch !important;
+        }
+
+        .procedure-form-actions .btn,
+        .settings-toolbar-form > *,
+        .settings-toolbar-form .btn,
+        .settings-toolbar-field {
+            width: 100%;
+            min-width: 0;
+        }
+
         .settings-actions {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -50,6 +87,11 @@
 <section class="section">
     <div class="section-header">
         <h1>Procedimentos</h1>
+        <div class="section-header-breadcrumb">
+            <div class="breadcrumb-item active"><a href="{{ route('admin.dashboard') }}">Dashboard</a></div>
+            <div class="breadcrumb-item"><a href="{{ route('admin.settings.users') }}">Cadastros Base</a></div>
+            <div class="breadcrumb-item">Procedimentos</div>
+        </div>
     </div>
 
     <div class="section-body">
@@ -90,16 +132,18 @@
                         <div class="col-md-4 col-lg-3"><div class="form-group"><label>Nome *</label><input type="text" class="form-control @error('nome') is-invalid @enderror" name="nome" value="{{ old('nome') }}" required>@error('nome')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div></div>
                         <div class="col-md-2 col-lg-2"><div class="form-group"><label>Duração *</label><select class="form-control @error('duracao_minutos') is-invalid @enderror" name="duracao_minutos" required><option value="">Selecione</option>@foreach($durationOptions as $durationOption)<option value="{{ $durationOption }}" {{ (string) old('duracao_minutos') === (string) $durationOption ? 'selected' : '' }}>{{ $durationOption < 60 ? $durationOption . ' min' : ($durationOption % 60 === 0 ? ($durationOption / 60) . 'h' : floor($durationOption / 60) . 'h ' . ($durationOption % 60) . 'min') }}</option>@endforeach</select>@error('duracao_minutos')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div></div>
                     </div>
-                    <button type="submit" class="btn btn-primary">Cadastrar procedimento</button>
+                    <div class="procedure-form-actions">
+                        <button type="submit" class="btn btn-primary">Cadastrar procedimento</button>
+                    </div>
                 </form>
             </div>
         </div>
 
         <div class="card">
-            <div class="card-header d-flex flex-wrap justify-content-between align-items-center" style="gap: 12px;">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center settings-toolbar">
                 <h4 class="mb-0">Serviços e duração padrão</h4>
-                <form action="{{ route('admin.settings.procedures') }}" method="GET" class="d-flex flex-wrap align-items-end" style="gap: 12px;">
-                    <div>
+                <form action="{{ route('admin.settings.procedures') }}" method="GET" class="settings-toolbar-form">
+                    <div class="settings-toolbar-field">
                         <label class="mb-1">Profissional</label>
                         <select class="form-control" name="professional_filter" onchange="this.form.submit()">
                             <option value="">Todos os profissionais</option>

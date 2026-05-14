@@ -190,6 +190,59 @@
       padding-top: 10px !important;
     }
 
+    .layout-global-success {
+      position: fixed;
+      top: 112px;
+      right: 16px;
+      z-index: 2500;
+      width: min(420px, calc(100vw - 32px));
+      margin: 0;
+      border: 0;
+      border-left: 4px solid #1fa971;
+      border-radius: 14px;
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.22);
+    }
+
+    .layout-global-success .close {
+      opacity: .7;
+    }
+
+    .layout-global-success .close:hover,
+    .layout-global-success .close:focus {
+      opacity: 1;
+    }
+
+    .main-content > .layout-global-success {
+      display: none !important;
+    }
+
+    #toast-container,
+    .flasher-container {
+      z-index: 2000 !important;
+    }
+
+    #toast-container.toast-top-right,
+    #toast-container.toast-top-center,
+    #toast-container.toast-top-left,
+    .flasher-container {
+      top: 84px !important;
+    }
+
+    @media (max-width: 767.98px) {
+      .layout-global-success {
+        top: 98px;
+        right: 12px;
+        width: calc(100vw - 24px);
+      }
+
+      #toast-container.toast-top-right,
+      #toast-container.toast-top-center,
+      #toast-container.toast-top-left,
+      .flasher-container {
+        top: 92px !important;
+      }
+    }
+
     .main-content {
       min-width: 0;
       padding-top: var(--main-content-offset);
@@ -1474,6 +1527,15 @@
       <a href="#" id="sidebar-toggle-fixed" data-toggle="sidebar" class="sidebar-toggle-fixed" data-state="closed" aria-label="Abrir lateral" aria-pressed="false">Abrir lateral</a>
       <button type="button" class="mobile-sidebar-backdrop" id="mobile-sidebar-backdrop" aria-label="Fechar lateral"></button>
 
+      @if($successMessage && !str_contains($successMessage, 'O registro jÃ¡ estÃ¡ em Agendamentos Finalizados.'))
+        <div class="alert alert-success alert-dismissible fade show layout-global-success" role="alert">
+          {{ $successMessage }}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Fechar">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      @endif
+
       <!-- START NAVABAR - MAYKONSILVEIRA.COM.BR -->
       @include('admin.layouts.navbar')
 
@@ -1486,6 +1548,15 @@
 
       <!-- START MAIN CONTENT - MAYKONSILVEIRA.COM.BR -->
       <div class="main-content">
+
+        @if($successMessage && !str_contains($successMessage, 'O registro já está em Agendamentos Finalizados.'))
+          <div class="alert alert-success alert-dismissible fade show layout-global-success" role="alert">
+            {{ $successMessage }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Fechar">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        @endif
 
         @if(session('layout_warning') || session('layout_error'))
           <div class="section layout-alert-section">
@@ -1655,6 +1726,18 @@
 
       if (window.jQuery && jQuery.fn && typeof jQuery.fn.tagsinput === 'function' && document.querySelector('.inputtags')) {
         jQuery('.inputtags').tagsinput('items');
+      }
+
+      if (window.toastr) {
+        toastr.options = Object.assign({}, toastr.options, {
+          positionClass: 'toast-top-right',
+          closeButton: true,
+          progressBar: true,
+          newestOnTop: true,
+          timeOut: 4500,
+          extendedTimeOut: 1200,
+          preventDuplicates: true,
+        });
       }
     });
   </script>
