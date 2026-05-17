@@ -399,6 +399,12 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="col-xl-2 col-lg-3 col-md-3">
+                            <div class="form-group mb-md-0">
+                                <label for="start_date">Data inicial</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ $startDate ?? '' }}">
+                            </div>
+                        </div>
                         @if(empty($authenticatedProfessional))
                             <div class="col-lg-3 col-md-4">
                                 <div class="form-group mb-md-0">

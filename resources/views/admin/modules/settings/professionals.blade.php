@@ -299,6 +299,9 @@
         flex-wrap: nowrap;
         align-items: center;
         gap: 6px;
+        justify-content: flex-start;
+        width: auto;
+        max-width: 100%;
         white-space: nowrap;
     }
 
@@ -311,6 +314,29 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        width: auto;
+        min-width: 0;
+        max-width: 100%;
+        min-height: 28px;
+        padding: 4px 6px;
+        font-size: 10px;
+        line-height: 1.1;
+        border-radius: 10px;
+        white-space: nowrap;
+    }
+
+    .professional-subspecialty-cell,
+    .professional-availability-cell {
+        text-align: center;
+    }
+
+    .professional-actions-cell {
+        min-width: 190px;
+        white-space: nowrap;
+    }
+
+    .professionals-table {
+        min-width: 1280px;
     }
 
     .professional-tags-list {
@@ -496,16 +522,72 @@
         }
 
         .professional-actions {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            display: inline-flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-start;
             gap: 8px;
-            width: 100%;
+            width: auto;
+            max-width: 100%;
         }
 
         .professional-actions > *,
         .professional-actions form,
         .professional-actions .btn {
-            width: 100%;
+            width: auto !important;
+            min-width: 0;
+            max-width: 100%;
+            flex: 0 0 auto;
+        }
+
+        .professional-actions .btn {
+            min-height: 26px !important;
+            padding: 3px 8px !important;
+            font-size: 9.5px !important;
+            line-height: 1 !important;
+            border-radius: 9px !important;
+            white-space: nowrap;
+        }
+
+        .professional-subspecialty-cell,
+        .professional-availability-cell {
+            text-align: left;
+        }
+
+        .professional-availability-cell::before {
+            text-align: center;
+        }
+
+        .professional-subspecialty-cell .text-center,
+        .professional-availability-cell .text-center {
+            text-align: left !important;
+        }
+
+        .professional-subspecialty-cell .btn,
+        .professional-availability-cell .btn {
+            width: auto !important;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .action-button-cell .professional-actions {
+            display: inline-flex !important;
+            width: auto !important;
+            max-width: 100%;
+        }
+
+        .professional-actions-cell {
+            min-width: 220px !important;
+            white-space: normal !important;
+        }
+
+        .professional-availability-cell {
+            text-align: center;
+        }
+
+        .professional-availability-cell .professional-availability-trigger {
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .professional-period-grid {
@@ -941,14 +1023,14 @@
                                     <td data-label="Cor da agenda">
                                         <span class="badge" style="background: {{ $professional->agenda_color }}; color: #fff;">{{ $professional->agenda_color }}</span>
                                     </td>
-                                    <td data-label="Disponibilidade">
+                                    <td class="professional-availability-cell" data-label="Disponibilidade">
                                         @if(($professional->display_schedules ?? collect())->isNotEmpty())
                                             <button type="button" class="btn btn-sm btn-outline-primary professional-availability-trigger" data-toggle="modal" data-target="#availability-professional-modal-{{ $professional->id }}">Exibir horários</button>
                                         @else
                                             <span class="text-muted">Sem agenda definida</span>
                                         @endif
                                     </td>
-                                    <td class="table-mobile-full action-button-cell" data-label="Ações">
+                                    <td class="table-mobile-full action-button-cell professional-actions-cell" data-label="Ações">
                                         <div class="professional-actions">
                                             <button type="button" class="btn btn-sm btn-secondary" data-toggle="modal" data-target="#view-professional-modal-{{ $professional->id }}">Ver</button>
                                             <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#edit-professional-modal-{{ $professional->id }}">Editar</button>

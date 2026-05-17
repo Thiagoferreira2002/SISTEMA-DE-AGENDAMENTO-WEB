@@ -49,6 +49,18 @@
         white-space: nowrap;
     }
 
+    .users-role-cell {
+        text-align: center;
+    }
+
+    .users-role-text {
+        font-weight: 600;
+    }
+
+    .users-permission-cell {
+        text-align: center;
+    }
+
     .users-role-filter {
         min-width: 150px !important;
         height: 38px;
@@ -201,25 +213,82 @@
 
     @media (max-width: 767.98px) {
         .users-actions {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            display: inline-flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-start;
             gap: 8px;
-            width: 100%;
+            width: auto;
+            max-width: 100%;
         }
 
         .users-actions > *,
         .users-actions form,
         .users-actions .btn {
-            width: 100%;
+            width: auto !important;
+            min-width: 0;
+            max-width: 100%;
+            flex: 0 0 auto;
+        }
+
+        .users-actions .btn {
+            min-height: 26px !important;
+            padding: 3px 8px !important;
+            font-size: 9.5px !important;
+            line-height: 1 !important;
+            border-radius: 9px !important;
+            white-space: nowrap;
+        }
+
+        .users-actions .btn.btn-secondary,
+        .users-actions .btn.btn-info,
+        .users-actions .btn.btn-warning,
+        .users-actions .btn.btn-success,
+        .users-actions .btn.btn-danger {
+            min-height: 26px;
+            padding: 3px 8px;
+            font-size: 9.5px;
+            line-height: 1;
         }
 
         .users-permissions-table .permission-nowrap {
             flex-wrap: wrap;
-            justify-content: center;
+            justify-content: flex-start;
         }
 
         .users-permissions-table td:last-child {
-            min-width: 220px;
+            min-width: 0;
+        }
+
+        .users-role-cell {
+            text-align: left;
+        }
+
+        .users-role-cell .d-flex {
+            justify-content: flex-start !important;
+        }
+
+        .users-role-text {
+            text-align: left;
+        }
+
+        .users-permission-cell {
+            text-align: center;
+        }
+
+        .users-permission-cell::before {
+            text-align: center;
+        }
+
+        .users-permission-cell .permission-nowrap,
+        .users-permission-cell .text-center.permission-nowrap {
+            justify-content: center;
+        }
+
+        .action-button-cell .users-actions {
+            display: inline-flex !important;
+            width: auto !important;
+            max-width: 100%;
         }
 
         .user-edit-modal .modal-dialog {
@@ -433,16 +502,16 @@
                                         </div>
                                     </td>
                                     <td data-label="CPF"><span class="cpf-nowrap">{{ $authenticatedUser?->isClinicManager() && $user->isPrimaryAdmin() ? 'Protegido' : $formatCpf($user->cpf) }}</span></td>
-                                    <td data-label="Papel">
+                                    <td class="users-role-cell" data-label="Papel">
                                         @if($user->isPrimaryAdmin())
                                             <div class="d-flex justify-content-center">
                                                 <span class="badge badge-dark">Admin</span>
                                             </div>
                                         @else
-                                            <div class="text-center font-weight-600">{{ $roleLabels[$user->normalizedRole()] ?? ucfirst($user->normalizedRole()) }}</div>
+                                            <div class="users-role-text">{{ $roleLabels[$user->normalizedRole()] ?? ucfirst($user->normalizedRole()) }}</div>
                                         @endif
                                     </td>
-                                    <td data-label="Permissões">
+                                    <td class="users-permission-cell" data-label="Permissões">
                                         @if($user->isPrimaryAdmin())
                                             <div class="text-center permission-nowrap">
                                                 <span class="text-muted">Acesso total fixo</span>

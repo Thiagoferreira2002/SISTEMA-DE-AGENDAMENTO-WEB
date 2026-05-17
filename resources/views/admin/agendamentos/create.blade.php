@@ -1,4 +1,4 @@
-@extends('admin.layouts.master')
+﻿@extends('admin.layouts.master')
 @section('content')
 <style>
     .appointment-planner-shell {
@@ -88,9 +88,10 @@
 
     .appointment-day-overview {
         border: 1px solid rgba(30, 144, 255, 0.18);
-        border-radius: 16px;
-        background: rgba(248, 251, 255, 0.95);
-        padding: 18px;
+        border-radius: 20px;
+        background: linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(237, 245, 255, 0.96));
+        padding: 20px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
     }
 
     html[data-theme="dark"] .appointment-day-overview,
@@ -102,16 +103,63 @@
     }
 
     .appointment-day-overview-title {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: .04em;
+        letter-spacing: .08em;
         color: #4d6d8a;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
     }
 
     html[data-theme="dark"] .appointment-day-overview-title {
         color: #a9c5df;
+    }
+
+    .appointment-day-overview-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .appointment-overview-panel {
+        min-width: 0;
+        padding: 14px;
+        border-radius: 16px;
+        background: rgba(255,255,255,.78);
+        border: 1px solid rgba(23, 111, 190, 0.12);
+    }
+
+    .appointment-overview-heading {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #264e73;
+    }
+
+    .appointment-overview-heading i {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(23, 111, 190, 0.1);
+    }
+
+    .appointment-overview-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .appointment-overview-empty {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #5f7388;
     }
 
     .appointment-chip-list {
@@ -138,6 +186,10 @@
     html[data-theme="dark"] .appointment-chip.occupied { background: rgba(255, 107, 129, 0.16); color: #ffb4c1; }
     html[data-theme="dark"] .appointment-chip.interval { background: rgba(173, 181, 189, 0.12); color: #d3dde6; }
     html[data-theme="dark"] .appointment-chip.neutral { background: rgba(118, 187, 255, 0.16); color: #bfe0ff; }
+    html[data-theme="dark"] .appointment-overview-panel { background: rgba(13, 25, 39, 0.55); border-color: rgba(143, 197, 255, 0.14); }
+    html[data-theme="dark"] .appointment-overview-heading { color: #d7eaff; }
+    html[data-theme="dark"] .appointment-overview-heading i { background: rgba(143, 197, 255, 0.14); }
+    html[data-theme="dark"] .appointment-overview-empty { color: #a9c5df; }
 
     .appointment-planner-shell select[data-native-select="true"] {
         appearance: auto;
@@ -293,6 +345,10 @@
 
         .appointment-day-overview {
             padding: 14px;
+        }
+
+        .appointment-day-overview-grid {
+            grid-template-columns: 1fr;
         }
 
         .appointment-chip {
@@ -637,6 +693,7 @@
         var endTimeGuidance = document.getElementById('end-time-guidance');
         var appointmentForm = document.querySelector('form[action="{{ route('admin.agendamentos.store') }}"]');
         var submitButton = appointmentForm ? appointmentForm.querySelector('button[type="submit"]') : null;
+        var appointmentLockedFields = appointmentForm ? Array.from(appointmentForm.querySelectorAll('#nome, #email, #telefone, #professional_id, #procedure_id, #data_agendamento, #horario, #horario_final, #motivo_consulta')) : [];
         var timeSlotStep = 5;
         var currentEndTimeGuidanceMessage = 'Selecione um horário de término válido.';
 
@@ -678,10 +735,30 @@
             document.getElementById('nome').value = patient.nome || '';
             document.getElementById('email').value = patient.email || '';
             document.getElementById('telefone').value = patient.telefone || '';
+
+            if (patient && patient.id) {
+                setAppointmentFieldsLocked(false);
+            }
         }
 
         function clearPatientFields() {
             fillPatientFields({ id: '', nome: '', email: '', telefone: '' });
+            setAppointmentFieldsLocked(true);
+        }
+
+        function setAppointmentFieldsLocked(locked) {
+            appointmentLockedFields.forEach(function(field) {
+                if (!field) {
+                    return;
+                }
+
+                field.disabled = locked;
+            });
+
+            if (locked && appointmentDayOverview) {
+                appointmentDayOverview.style.display = 'none';
+                appointmentDayOverview.innerHTML = '';
+            }
         }
 
         function findPatientByCpf() {
@@ -712,6 +789,7 @@
             }
 
             fillPatientFields(patient);
+            setAppointmentFieldsLocked(false);
             setPatientSearchFeedback('Paciente localizado: ' + (patient.nome || 'Paciente sem nome') + '.', 'success');
             updateSubmitState();
             return patient;
@@ -967,6 +1045,18 @@
             refreshEnhancedSelect(selectElement);
         }
 
+        function firstEnabledTimeOptionValue(selectElement) {
+            if (!selectElement) {
+                return '';
+            }
+
+            var option = Array.from(selectElement.options).find(function(item) {
+                return item.value && !item.disabled;
+            });
+
+            return option ? option.value : '';
+        }
+
         function clinicOpeningMinutes() {
             return clinicHours && clinicHours.opening_time ? minutesFromTime(clinicHours.opening_time) : 0;
         }
@@ -992,6 +1082,10 @@
             }
 
             return professionalSelect.value || '';
+        }
+
+        function getPatientIdField() {
+            return document.getElementById('patient_id');
         }
 
         function selectedProfessionalRecord() {
@@ -1087,9 +1181,9 @@
             }
 
             var professional = selectedProfessionalRecord();
+            var patientIdField = getPatientIdField();
             var selectedDate = appointmentDateInput ? appointmentDateInput.value : '';
             var hasAvailability = availabilityWindowsForSelectedDate().length > 0;
-            var patientIdField = document.getElementById('patient_id');
             var hasPatient = !!(patientIdField && patientIdField.value);
             var shouldDisable = !hasPatient || !professional || !selectedDate || !hasAvailability;
 
@@ -1105,6 +1199,7 @@
             var windows = availabilityWindowsForSelectedDate();
             var occupied = occupiedIntervalsForSelection();
             var restrictedInterval = clinicRestrictedInterval();
+            var patientIdField = getPatientIdField();
 
             if (!selectedDate) {
                 appointmentDayOverview.style.display = 'none';
@@ -1116,7 +1211,7 @@
                 ? windows.map(function(windowRange) {
                     return '<span class="appointment-chip available">Disponível: ' + timeFromMinutes(windowRange.start) + ' às ' + timeFromMinutes(windowRange.end) + '</span>';
                 }).join('')
-                : '<span class="appointment-chip neutral">Sem disponibilidade configurada para esta data.</span>';
+                : '<span class="appointment-overview-empty">Sem disponibilidade configurada para esta data.</span>';
 
             var occupiedHtml = occupied.length
                 ? occupied.map(function(interval) {
@@ -1128,12 +1223,51 @@
                 ? '<span class="appointment-chip interval">Intervalo da clínica: ' + timeFromMinutes(restrictedInterval.start) + ' às ' + timeFromMinutes(restrictedInterval.end) + '</span>'
                 : '<span class="appointment-chip neutral">Sem intervalo configurado.</span>';
 
+            if (!occupied.length && !(patientIdField && patientIdField.value)) {
+                occupiedHtml = '<span class="appointment-chip neutral">Busque um paciente por CPF para prosseguir com o agendamento.</span>';
+            }
+
             appointmentDayOverview.style.display = 'block';
             appointmentDayOverview.innerHTML = '' +
                 '<div class="appointment-day-overview-title">Resumo da agenda do dia</div>' +
                 '<div class="appointment-chip-list mb-3">' + availableHtml + '</div>' +
                 '<div class="appointment-chip-list mb-3">' + occupiedHtml + '</div>' +
                 '<div class="appointment-chip-list">' + intervalHtml + '</div>';
+
+            enhanceAppointmentDayOverviewLayout();
+        }
+
+        function enhanceAppointmentDayOverviewLayout() {
+            if (!appointmentDayOverview || !appointmentDayOverview.innerHTML) {
+                return;
+            }
+
+            var chipLists = appointmentDayOverview.querySelectorAll('.appointment-chip-list');
+
+            if (chipLists.length !== 3) {
+                return;
+            }
+
+            var availableHtml = chipLists[0].innerHTML;
+            var occupiedHtml = chipLists[1].innerHTML;
+            var intervalHtml = chipLists[2].innerHTML;
+
+            appointmentDayOverview.innerHTML = '' +
+                '<div class="appointment-day-overview-title">Resumo da agenda do dia</div>' +
+                '<div class="appointment-day-overview-grid">' +
+                    '<div class="appointment-overview-panel">' +
+                        '<div class="appointment-overview-heading"><i class="fas fa-clock"></i><span>Disponibilidade</span></div>' +
+                        '<div class="appointment-overview-list">' + availableHtml + '</div>' +
+                    '</div>' +
+                    '<div class="appointment-overview-panel">' +
+                        '<div class="appointment-overview-heading"><i class="fas fa-user-check"></i><span>Agenda ocupada</span></div>' +
+                        '<div class="appointment-overview-list">' + occupiedHtml + '</div>' +
+                    '</div>' +
+                    '<div class="appointment-overview-panel">' +
+                        '<div class="appointment-overview-heading"><i class="fas fa-coffee"></i><span>Intervalo da Clínica</span></div>' +
+                        '<div class="appointment-overview-list">' + intervalHtml + '</div>' +
+                    '</div>' +
+                '</div>';
         }
 
         function updateProfessionalAvailabilityFeedback() {
@@ -1288,6 +1422,11 @@
                 };
             });
 
+            if (!startTimeInput.value) {
+                startTimeInput.value = firstEnabledTimeOptionValue(startTimeInput);
+                refreshEnhancedSelect(startTimeInput);
+            }
+
             var selectedStartMinutes = minutesFromTime(startTimeInput.value || initialStartTime);
             var endMinimum = selectedStartMinutes !== null ? selectedStartMinutes + timeSlotStep : startMinimum;
             var restrictedInterval = clinicRestrictedInterval();
@@ -1336,16 +1475,22 @@
             endTimeInput.setCustomValidity('');
 
             if (selectedStartMinutes === null) {
+                endTimeInput.value = '';
                 setEndTimeGuidance(defaultEndGuidance, 'muted');
             } else if (!availableEndOptions.length) {
+                endTimeInput.value = '';
                 var noAvailabilityMessage = 'Nao ha horario de termino disponivel para este inicio. Ajuste o horario inicial para terminar antes do intervalo da clinica ou escolha um horario apos ele.';
                 setEndTimeGuidance(noAvailabilityMessage, 'danger');
                 endTimeInput.setCustomValidity(noAvailabilityMessage);
             } else if (restrictedInterval && selectedStartMinutes < restrictedInterval.start) {
+                updateEndTimeFromProcedure();
                 setEndTimeGuidance('Este atendimento pode terminar exatamente as ' + timeFromMinutes(restrictedInterval.start) + ', mas nao pode avancar para dentro do intervalo da clinica.', 'muted');
             } else {
+                updateEndTimeFromProcedure();
                 setEndTimeGuidance(defaultEndGuidance, 'muted');
             }
+
+            refreshEnhancedSelect(endTimeInput);
 
             initialStartTime = '';
             initialEndTime = '';
@@ -1388,10 +1533,20 @@
             var endRemainderMinutes = endMinutes % 60;
             var endValue = String(endHours).padStart(2, '0') + ':' + String(endRemainderMinutes).padStart(2, '0');
 
-            endTimeInput.value = endValue;
+            var matchingEndOption = Array.from(endTimeInput.options).find(function(option) {
+                return option.value === endValue && !option.disabled;
+            });
+
+            if (matchingEndOption) {
+                endTimeInput.value = endValue;
+            } else {
+                endTimeInput.value = firstEnabledTimeOptionValue(endTimeInput);
+            }
+
             refreshEnhancedSelect(endTimeInput);
             if (durationInput) durationInput.value = String(duration);
             if (durationPreview) durationPreview.textContent = duration + ' min';
+            updateDurationFromTimeRange();
         }
 
         function updateDurationFromTimeRange() {
@@ -1478,6 +1633,8 @@
                     patientIdField.value = '';
                 }
 
+                clearPatientFields();
+
                 if (submitButton) {
                     submitButton.disabled = true;
                 }
@@ -1491,6 +1648,7 @@
                     patientIdField.value = '';
                 }
 
+                clearPatientFields();
                 setPatientSearchFeedback('', 'muted');
                 if (submitButton) {
                     submitButton.disabled = true;
@@ -1555,6 +1713,7 @@
         updateEndTimeFromProcedure();
         updateProfessionalAvailabilityFeedback();
         validateAppointmentTimeField();
+        setAppointmentFieldsLocked(!(document.getElementById('patient_id') && document.getElementById('patient_id').value));
         if (document.getElementById('patient_id') && document.getElementById('patient_id').value) {
             setPatientSearchFeedback('Paciente já selecionado para este agendamento.', 'success');
         }
@@ -1814,3 +1973,4 @@
     });
 </script>
 @endsection
+

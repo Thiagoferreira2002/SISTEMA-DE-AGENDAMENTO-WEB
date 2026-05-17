@@ -405,6 +405,70 @@
       justify-content: center;
     }
 
+    .table-responsive .action-button-group .btn,
+    .table-responsive .action-button-group form .btn,
+    .table-responsive .action-button-cell .btn,
+    .table-responsive .patients-actions .btn,
+    .settings-actions .btn,
+    .users-actions .btn,
+    .professional-actions .btn,
+    .patients-actions .btn,
+    .patient-history-actions .btn,
+    .queue-actions .btn,
+    .agenda-actions .btn,
+    .confirmation-actions .btn,
+    .waitlist-actions .btn {
+      min-height: 30px !important;
+      padding: 5px 7px !important;
+      font-size: 10.75px !important;
+      line-height: 1.15 !important;
+      border-radius: 10px !important;
+    }
+
+    .settings-actions,
+    .professional-actions {
+      display: inline-flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 6px;
+      width: auto;
+      max-width: 100%;
+      white-space: normal;
+    }
+
+    .queue-actions,
+    .waitlist-actions {
+      display: inline-flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 6px;
+      width: auto;
+      max-width: 100%;
+      white-space: nowrap;
+    }
+
+    .settings-actions > *,
+    .settings-actions form,
+    .professional-actions > *,
+    .professional-actions form {
+      width: auto;
+      max-width: 100%;
+      margin: 0;
+      flex: 0 0 auto;
+    }
+
+    .queue-actions > *,
+    .queue-actions form,
+    .waitlist-actions > *,
+    .waitlist-actions form {
+      width: auto;
+      max-width: 100%;
+      margin: 0;
+      flex: 0 0 auto;
+    }
+
     @media (max-width: 767.98px) {
       .table-mobile-label {
         display: none;
@@ -505,31 +569,106 @@
       }
 
       .action-button-group {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        display: flex;
+        flex-wrap: wrap;
         align-items: stretch;
-        justify-content: stretch;
+        justify-content: flex-start;
         gap: 8px;
         width: 100%;
-        max-width: 320px;
-        margin: 0 auto;
+        max-width: 100%;
+        margin: 0;
+      }
+
+      .settings-actions,
+      .users-actions,
+      .professional-actions,
+      .queue-actions,
+      .waitlist-actions {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+        gap: 8px;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+      }
+
+      .patient-history-actions,
+      .agenda-actions,
+      .confirmation-actions {
+        display: flex !important;
+        flex-wrap: wrap;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 8px;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+      }
+
+      .settings-actions > *,
+      .users-actions > *,
+      .professional-actions > *,
+      .queue-actions > *,
+      .waitlist-actions > *,
+      .settings-actions form,
+      .users-actions form,
+      .professional-actions form,
+      .queue-actions form,
+      .waitlist-actions form,
+      .settings-actions .btn,
+      .users-actions .btn,
+      .professional-actions .btn,
+      .queue-actions .btn,
+      .waitlist-actions .btn {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       .action-button-group > *,
+      .patient-history-actions > *,
+      .agenda-actions > *,
+      .confirmation-actions > *,
       .action-button-group form,
+      .patient-history-actions form,
+      .agenda-actions form,
+      .confirmation-actions form,
+      .patient-history-actions .btn,
+      .agenda-actions .btn,
+      .confirmation-actions .btn,
       .action-button-group .btn {
-        width: 100%;
+        width: auto;
+        min-width: fit-content;
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       .action-button-cell {
         min-width: 0 !important;
         white-space: normal !important;
-        padding-top: 14px !important;
-        padding-bottom: 14px !important;
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+        overflow: visible;
       }
 
-      .action-button-cell .action-button-group {
+      .action-button-cell .settings-actions,
+      .action-button-cell .users-actions,
+      .action-button-cell .professional-actions,
+      .action-button-cell .queue-actions,
+      .action-button-cell .waitlist-actions {
         width: 100%;
+        max-width: 100%;
+      }
+
+      .action-button-cell .action-button-group,
+      .action-button-cell .patient-history-actions,
+      .action-button-cell .agenda-actions,
+      .action-button-cell .confirmation-actions {
+        width: auto;
+        max-width: 100%;
+        justify-content: flex-start;
       }
 
       .table-responsive .action-button-group .btn,
@@ -545,41 +684,41 @@
       .agenda-actions .btn,
       .confirmation-actions .btn,
       .waitlist-actions .btn {
-        min-height: 30px !important;
-        padding: 5px 7px !important;
-        font-size: 10.75px !important;
-        line-height: 1.15 !important;
-        border-radius: 10px !important;
+        min-height: 28px !important;
+        padding: 4px 6px !important;
+        font-size: 10px !important;
+        line-height: 1.1 !important;
+        border-radius: 9px !important;
       }
 
       .table-responsive .table .btn-sm,
       .table-responsive .btn-sm {
-        min-height: 30px !important;
-        padding: 5px 7px !important;
-        font-size: 10.75px !important;
-      }
-
-      .action-button-group > *:first-child:nth-last-child(1),
-      .action-button-group form:first-child:nth-last-child(1) {
-        grid-column: 1 / -1;
-      }
-
-      .action-button-group > *:nth-child(odd):last-child {
-        grid-column: 1 / -1;
+        min-height: 28px !important;
+        padding: 4px 6px !important;
+        font-size: 10px !important;
       }
 
       .action-button-group form {
-        display: block;
+        display: inline-flex;
       }
 
       .action-button-group .btn {
         justify-content: center;
+        white-space: normal;
+        word-break: break-word;
       }
 
       @media (max-width: 420px) {
-        .action-button-group {
-          grid-template-columns: 1fr;
-          max-width: 260px;
+        .action-button-group,
+        .settings-actions,
+        .users-actions,
+        .professional-actions,
+        .patient-history-actions,
+        .queue-actions,
+        .agenda-actions,
+        .confirmation-actions,
+        .waitlist-actions {
+          max-width: 100%;
         }
       }
     }

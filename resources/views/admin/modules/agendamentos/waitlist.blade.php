@@ -34,6 +34,9 @@
         flex-wrap: nowrap;
         align-items: center;
         gap: 6px;
+        justify-content: flex-start;
+        width: auto;
+        max-width: 100%;
         white-space: nowrap;
     }
 
@@ -45,6 +48,20 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        width: auto;
+        min-width: 0;
+        max-width: 100%;
+        min-height: 28px;
+        padding: 4px 6px;
+        font-size: 10px;
+        line-height: 1.1;
+        border-radius: 9px;
+        white-space: nowrap;
+    }
+
+    .waitlist-actions-cell {
+        min-width: 160px;
+        white-space: nowrap;
     }
 
     .waitlist-patient-cell {
@@ -104,14 +121,21 @@
         }
 
         .waitlist-actions {
-            flex-wrap: wrap;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            width: 100%;
         }
 
         .waitlist-actions > *,
         .waitlist-actions form,
         .waitlist-actions .btn {
             width: 100%;
+        }
+
+        .waitlist-actions-cell {
+            min-width: 220px !important;
+            white-space: normal !important;
         }
     }
 </style>
@@ -197,7 +221,7 @@
                                             <span class="badge badge-{{ $item->prioridade >= 10 ? 'danger' : ($item->prioridade >= 5 ? 'warning' : 'secondary') }}">{{ $priorityLabel }}</span>
                                         </div>
                                     </td>
-                                    <td class="text-center align-middle action-button-cell table-mobile-full" data-label="Ação">
+                                    <td class="text-center align-middle action-button-cell waitlist-actions-cell table-mobile-full" data-label="Ação">
                                         <div class="waitlist-actions action-button-group">
                                             <form action="{{ route('admin.agendamentos.promote', $item) }}" method="POST" class="d-inline">
                                                 @csrf

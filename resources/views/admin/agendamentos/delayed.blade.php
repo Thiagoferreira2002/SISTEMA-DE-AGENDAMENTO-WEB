@@ -105,8 +105,16 @@
 
         .delayed-filter-shortcuts,
         .delayed-filter-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             width: 100%;
             align-items: stretch;
+            gap: 8px;
+        }
+
+        .delayed-filter-shortcuts .btn,
+        .delayed-filter-actions .btn {
+            width: 100%;
         }
     }
 </style>
@@ -177,7 +185,7 @@
                                     <select class="form-control" id="delayed-professional" name="professional_id">
                                         <option value="">Todos os profissionais</option>
                                         @foreach($professionals as $professional)
-                                            <option value="{{ $professional->id }}">{{ $professional->nome }}</option>
+                                            <option value="{{ $professional->id }}" {{ (string) ($selectedProfessionalId ?? '') === (string) $professional->id ? 'selected' : '' }}>{{ $professional->nome }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -218,6 +226,7 @@
                                     <th>Horário</th>
                                     <th>Fim</th>
                                     <th>Status</th>
+                                    <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -247,10 +256,21 @@
                                                 {{ ucfirst($appointment->status ?? 'pendente') }}
                                             </span>
                                         </td>
+                                        <td class="action-button-cell table-mobile-full" data-label="Ações">
+                                            <form method="POST" action="{{ route('admin.agendamentos.cancel-operational', $appointment) }}" class="mb-0 d-inline-block">
+                                                @csrf
+                                                <input type="hidden" name="q" value="{{ $search }}">
+                                                <input type="hidden" name="date" value="{{ $selectedDate }}">
+                                                <input type="hidden" name="period" value="{{ $period }}">
+                                                <input type="hidden" name="professional_id" value="{{ $selectedProfessionalId ?? '' }}">
+                                                <input type="hidden" name="return_to" value="{{ url()->full() }}">
+                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Deseja cancelar este atendimento?');">Cancelar atendimento</button>
+                                            </form>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted py-4">Nenhum atendimento atrasado encontrado.</td>
+                                        <td colspan="8" class="text-center text-muted py-4">Nenhum atendimento atrasado encontrado.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

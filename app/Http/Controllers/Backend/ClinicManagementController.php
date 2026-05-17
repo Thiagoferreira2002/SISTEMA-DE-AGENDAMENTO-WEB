@@ -304,6 +304,8 @@ class ClinicManagementController extends Controller
     {
         $globalSearch = trim($request->string('q')->toString());
         $cpfSearch = preg_replace('/\D+/', '', $globalSearch);
+        $serviceFilter = trim((string) $request->input('service', ''));
+        $selectedDate = trim((string) $request->input('date', ''));
         $period = in_array($request->input('period'), ['dia', 'semana', 'mes'], true)
             ? $request->input('period')
             : '';
@@ -349,11 +351,19 @@ class ClinicManagementController extends Controller
             $pendingBaseQuery->where($applySearchFilter);
         }
 
-        if ($period === 'dia') {
+        if ($serviceFilter !== '') {
+            $pendingBaseQuery->where('servico', $serviceFilter);
+        }
+
+        if ($selectedDate !== '') {
+            $pendingBaseQuery->whereDate('data_agendamento', $selectedDate);
+        }
+
+        if ($selectedDate === '' && $period === 'dia') {
             $pendingBaseQuery->whereDate('data_agendamento', now()->toDateString());
         }
 
-        if ($period === 'semana') {
+        if ($selectedDate === '' && $period === 'semana') {
             $dateWindow = [
                 now()->startOfWeek()->toDateString(),
                 now()->endOfWeek()->toDateString(),
@@ -362,7 +372,7 @@ class ClinicManagementController extends Controller
             $pendingBaseQuery->whereBetween('data_agendamento', $dateWindow);
         }
 
-        if ($period === 'mes') {
+        if ($selectedDate === '' && $period === 'mes') {
             $pendingBaseQuery->whereYear('data_agendamento', now()->year)
                 ->whereMonth('data_agendamento', now()->month);
         }
@@ -378,7 +388,30 @@ class ClinicManagementController extends Controller
             'pendentes' => $appointments->count(),
         ];
 
-        return view('admin.modules.agendamentos.confirmations', compact('appointments', 'summary'));
+        $serviceOptionsQuery = Agendamento::query()
+            ->where(function ($query) {
+                $query->where('status', 'pendente')
+                    ->orWhereNull('status');
+            })
+            ->whereNotNull('servico')
+            ->where('servico', '!=', '');
+
+        if ($authenticatedProfessional) {
+            $serviceOptionsQuery->where(function ($query) use ($authenticatedProfessional) {
+                $query->where('profissional_id', $authenticatedProfessional->id)
+                    ->orWhere('medico', $authenticatedProfessional->nome);
+            });
+        } elseif ($this->isProfessionalUser()) {
+            $serviceOptionsQuery->whereRaw('1 = 0');
+        }
+
+        $serviceOptions = $serviceOptionsQuery
+            ->select('servico')
+            ->distinct()
+            ->orderBy('servico')
+            ->pluck('servico');
+
+        return view('admin.modules.agendamentos.confirmations', compact('appointments', 'summary', 'serviceOptions', 'serviceFilter', 'selectedDate'));
     }
 
     private function isProfessionalUser(): bool
@@ -507,6 +540,8 @@ class ClinicManagementController extends Controller
         $cpfSearch = preg_replace('/\D/', '', $search);
         $professionalFilter = (string) $request->input('professional_id', '');
         $serviceFilter = trim((string) $request->input('service', ''));
+        $startDate = trim((string) $request->input('start_date', ''));
+        $endDate = '';
 
         $historyQuery = Agendamento::where('status', 'concluido');
 
@@ -539,6 +574,10 @@ class ClinicManagementController extends Controller
 
         if ($serviceFilter !== '') {
             $historyQuery->where('servico', $serviceFilter);
+        }
+
+        if ($startDate !== '') {
+            $historyQuery->whereDate('data_agendamento', '>=', $startDate);
         }
 
         if ($period === 'dia') {
@@ -612,6 +651,8 @@ class ClinicManagementController extends Controller
             'professionalOptions' => $professionalOptions,
             'serviceFilter' => $serviceFilter,
             'serviceOptions' => $serviceOptions,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
             'authenticatedProfessional' => $authenticatedProfessional,
             'moduleTitle' => 'Agendamentos Finalizados',
             'moduleCardTitle' => 'Lista de agendamentos finalizados',
@@ -833,6 +874,28 @@ class ClinicManagementController extends Controller
 
         return redirect($redirectTo)
             ->with('success', 'Atendimento finalizado com sucesso. O registro já está em Agendamentos Finalizados.');
+    }
+
+    public function cancelOperationalAppointment(Request $request, Agendamento $agendamento): RedirectResponse
+    {
+        $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
+        $redirectTo = $request->input('return_to', route('admin.doctor.queue', $request->only(['q', 'date', 'period', 'professional_id'])));
+
+        if ($agendamento->status === 'concluido') {
+            return redirect($redirectTo)
+                ->with('warning', 'NÃ£o Ã© possÃ­vel cancelar um atendimento jÃ¡ finalizado.');
+        }
+
+        if ($agendamento->status === 'cancelado') {
+            return redirect($redirectTo)
+                ->with('warning', 'Este atendimento jÃ¡ foi cancelado.');
+        }
+
+        $agendamento->update(['status' => 'cancelado']);
+        $this->recordActivity('updated', $agendamento, 'Atendimento cancelado a partir do fluxo operacional.', ['status' => 'cancelado']);
+
+        return redirect($redirectTo)
+            ->with('success', 'Atendimento cancelado com sucesso.');
     }
 
     public function medicalRecords(): View

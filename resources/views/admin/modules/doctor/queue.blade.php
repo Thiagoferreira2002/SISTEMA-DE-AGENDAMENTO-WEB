@@ -34,6 +34,9 @@
         flex-wrap: nowrap;
         align-items: center;
         gap: 6px;
+        justify-content: flex-start;
+        width: auto;
+        max-width: 100%;
         white-space: nowrap;
     }
 
@@ -45,6 +48,20 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        width: auto;
+        min-width: 0;
+        max-width: 100%;
+        min-height: 28px;
+        padding: 4px 6px;
+        font-size: 10px;
+        line-height: 1.1;
+        border-radius: 9px;
+        white-space: nowrap;
+    }
+
+    .queue-actions-cell {
+        min-width: 235px;
+        white-space: nowrap;
     }
 
     .queue-status-badge {
@@ -457,8 +474,18 @@
                                                 <input type="hidden" name="q" value="{{ $search }}">
                                                 <input type="hidden" name="date" value="{{ $selectedDate }}">
                                                 <input type="hidden" name="period" value="{{ $period }}">
+                                                <input type="hidden" name="professional_id" value="{{ $selectedProfessionalId ?? '' }}">
                                                 <input type="hidden" name="return_to" value="{{ url()->full() }}">
                                                 <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Deseja finalizar este atendimento?');">Finalizar atendimento</button>
+                                            </form>
+                                            <form method="POST" action="{{ route('admin.agendamentos.cancel-operational', $item) }}" class="mb-0">
+                                                @csrf
+                                                <input type="hidden" name="q" value="{{ $search }}">
+                                                <input type="hidden" name="date" value="{{ $selectedDate }}">
+                                                <input type="hidden" name="period" value="{{ $period }}">
+                                                <input type="hidden" name="professional_id" value="{{ $selectedProfessionalId ?? '' }}">
+                                                <input type="hidden" name="return_to" value="{{ url()->full() }}">
+                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Deseja cancelar este atendimento?');">Cancelar atendimento</button>
                                             </form>
                                         </div>
                                     </td>

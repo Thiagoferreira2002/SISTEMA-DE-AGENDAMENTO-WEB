@@ -43,16 +43,20 @@ class AgendamentoController extends Controller
     public function calendar(Request $request)
     {
         $professionalOptions = $this->professionalOptions();
+        $procedureOptions = $this->procedureOptions();
         $hideProfessionalFilter = $this->isProfessionalUser();
         $selectedProfessionalId = $request->string('professional_id')->toString();
+        $selectedProcedureId = $request->string('procedure_id')->toString();
         $selectedCalendarDate = $request->string('calendar_date')->toString();
         $returnUrl = $this->resolveReturnUrl($request);
         $clinicHours = $this->clinicHoursConfig();
 
         return view('admin.agendamentos.calendar', compact(
             'professionalOptions',
+            'procedureOptions',
             'hideProfessionalFilter',
             'selectedProfessionalId',
+            'selectedProcedureId',
             'selectedCalendarDate',
             'clinicHours',
             'returnUrl'
@@ -64,6 +68,7 @@ class AgendamentoController extends Controller
         $user = Auth::user();
         $search = trim($request->string('q')->toString());
         $selectedDate = $request->filled('date') ? (string) $request->input('date') : '';
+        $selectedProfessionalId = $request->filled('professional_id') ? (string) $request->input('professional_id') : '';
         $period = in_array($request->input('period'), ['dia', 'semana', 'mes'], true)
             ? $request->input('period')
             : '';
@@ -82,6 +87,19 @@ class AgendamentoController extends Controller
                         $q->where('nome', 'like', "%{$search}%");
                     });
             });
+        }
+
+        if ($selectedProfessionalId !== '') {
+            $selectedProfessional = Schema::hasTable('profissionais')
+                ? Professional::query()->where('ativo', true)->find((int) $selectedProfessionalId)
+                : null;
+
+            if ($selectedProfessional) {
+                $query->where(function ($q) use ($selectedProfessional) {
+                    $q->where('profissional_id', $selectedProfessional->id)
+                        ->orWhere('medico', $selectedProfessional->nome);
+                });
+            }
         }
 
         // Apply date filter
@@ -120,6 +138,7 @@ class AgendamentoController extends Controller
             'period',
             'search',
             'selectedDate',
+            'selectedProfessionalId',
             'totalDelayedAppointments',
             'professionals'
         ));
@@ -176,6 +195,7 @@ class AgendamentoController extends Controller
         $agendamentos = $this->restrictAppointmentsForAuthenticatedProfessional($agendamentos);
 
         $selectedProfessionalId = $request->string('professional_id')->toString();
+        $selectedProcedureId = $request->string('procedure_id')->toString();
         $selectedDoctors = collect((array) $request->input('medicos', []))
             ->filter(fn ($value) => trim((string) $value) !== '')
             ->map(fn ($value) => trim((string) $value))
@@ -193,6 +213,14 @@ class AgendamentoController extends Controller
             $agendamentos = $agendamentos->filter(function (Agendamento $agendamento) use ($selectedCalendarDate) {
                 return $agendamento->data_agendamento
                     && $agendamento->data_agendamento->format('Y-m-d') === $selectedCalendarDate;
+            })->values();
+        }
+
+        if ($selectedProcedureId !== '') {
+            $agendamentos = $agendamentos->filter(function (Agendamento $agendamento) use ($selectedProcedureId) {
+                $appointmentProcedureId = $agendamento->procedure_id ?? $agendamento->procedimento_id;
+
+                return (string) $appointmentProcedureId === $selectedProcedureId;
             })->values();
         }
 
@@ -406,7 +434,7 @@ class AgendamentoController extends Controller
         abort_unless($this->canEditAppointment($agendamento), 403);
 
         $request->validate(array_merge($this->rules(), [
-            'status' => 'required|in:pendente,confirmado,cancelado,concluido',
+            'status' => 'required|in:pendente,confirmado,concluido',
             'horario_final' => 'required|date_format:H:i|after:horario',
         ]), $this->validationMessages(), $this->validationAttributes());
 
@@ -598,6 +626,22 @@ class AgendamentoController extends Controller
             ]);
         }
 
+        $patientConflict = $patient
+            ? $this->patientOverlappingAppointment($patient, $date, $request->horario, $duration, $ignoreId)
+            : null;
+
+        if ($patientConflict) {
+            $conflictProfessional = $patientConflict->professional?->nome ?: $patientConflict->medico ?: 'outro profissional';
+            $conflictStart = substr((string) $patientConflict->horario, 0, 5);
+            $conflictEnd = Carbon::createFromFormat('H:i', $conflictStart)
+                ->addMinutes((int) ($patientConflict->duracao_minutos ?: 30))
+                ->format('H:i');
+
+            throw ValidationException::withMessages([
+                'horario' => 'Este paciente ja possui agendamento com ' . $conflictProfessional . ' das ' . $conflictStart . ' as ' . $conflictEnd . ' neste mesmo periodo.',
+            ]);
+        }
+
         $existingPatient = $agendamento?->patient;
         $existingProcedure = $agendamento?->procedure;
         $existingProfessional = $agendamento?->professional;
@@ -751,6 +795,19 @@ class AgendamentoController extends Controller
         $rangeBEnd = $rangeBStart->copy()->addMinutes($durationB);
 
         return $rangeAStart->lt($rangeBEnd) && $rangeBStart->lt($rangeAEnd);
+    }
+
+    private function patientOverlappingAppointment(Patient $patient, Carbon $date, string $startTime, int $duration, ?int $ignoreId = null): ?Agendamento
+    {
+        return Agendamento::query()
+            ->with('professional:id,nome')
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->where('paciente_id', $patient->id)
+            ->whereDate('data_agendamento', $date->format('Y-m-d'))
+            ->whereIn('status', ['pendente', 'confirmado'])
+            ->orderBy('horario')
+            ->get()
+            ->first(fn ($item) => $this->hasTimeOverlap($startTime, $duration, $item->horario, $item->duracao_minutos ?: 30));
     }
 
     private function decorateAppointment(Agendamento $agendamento, array $professionals, $professionalById, $professionalByName): Agendamento

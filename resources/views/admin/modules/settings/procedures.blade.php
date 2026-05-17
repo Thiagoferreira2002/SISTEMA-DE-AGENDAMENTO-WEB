@@ -32,11 +32,35 @@
         flex-wrap: nowrap;
         align-items: center;
         gap: 6px;
+        justify-content: flex-start;
+        width: auto;
+        max-width: 100%;
         white-space: nowrap;
     }
 
     .settings-actions form {
         margin: 0;
+    }
+
+    .settings-actions .btn {
+        width: auto;
+        min-width: 0;
+        max-width: 100%;
+        min-height: 28px;
+        padding: 4px 6px;
+        font-size: 10px;
+        line-height: 1.1;
+        border-radius: 9px;
+        white-space: nowrap;
+    }
+
+    .procedure-actions-cell {
+        min-width: 240px;
+        white-space: nowrap;
+    }
+
+    .procedures-table {
+        min-width: 980px;
     }
 
     .procedure-edit-modal + .modal-backdrop,
@@ -66,16 +90,42 @@
         }
 
         .settings-actions {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            display: inline-flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-start;
             gap: 8px;
-            width: 100%;
+            width: auto;
+            max-width: 100%;
         }
 
         .settings-actions > *,
         .settings-actions form,
         .settings-actions .btn {
-            width: 100%;
+            width: auto !important;
+            min-width: 0;
+            max-width: 100%;
+            flex: 0 0 auto;
+        }
+
+        .settings-actions .btn {
+            min-height: 26px !important;
+            padding: 3px 8px !important;
+            font-size: 9.5px !important;
+            line-height: 1 !important;
+            border-radius: 9px !important;
+            white-space: nowrap;
+        }
+
+        .action-button-cell .settings-actions {
+            display: inline-flex !important;
+            width: auto !important;
+            max-width: 100%;
+        }
+
+        .procedure-actions-cell {
+            min-width: 220px !important;
+            white-space: normal !important;
         }
 
         .procedure-edit-modal .modal-dialog {
@@ -161,7 +211,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped table-mobile-cards">
+                    <table class="table table-striped table-mobile-cards procedures-table">
                         <thead>
                             <tr>
                                 <th>Profissional</th>
@@ -180,7 +230,7 @@
                                     </td>
                                     <td data-label="Duração">{{ $formatDuration($procedure->duracao_minutos) }}</td>
                                     <td data-label="Status"><span class="badge badge-{{ $procedure->ativo ? 'success' : 'danger' }}">{{ $procedure->ativo ? 'Ativo' : 'Inativo' }}</span></td>
-                                    <td class="table-mobile-full action-button-cell" data-label="Ação">
+                                    <td class="table-mobile-full action-button-cell procedure-actions-cell" data-label="Ação">
                                         <div class="settings-actions">
                                             <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#edit-procedure-modal-{{ $procedure->id }}">Editar</button>
                                             <form action="{{ route('admin.settings.procedures.status', $procedure) }}" method="POST" class="d-inline">

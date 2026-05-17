@@ -628,7 +628,24 @@
                                 <input type="text" class="form-control" id="q" name="q" value="{{ request('q') }}" placeholder="Digite o nome, CPF ou data do agendamento">
                             </div>
                         </div>
-                        <div class="col-lg-9 col-md-7"></div>
+                        <div class="col-lg-3 col-md-4">
+                            <div class="form-group">
+                                <label for="service">Serviço</label>
+                                <select class="form-control" id="service" name="service">
+                                    <option value="">Todos os serviços</option>
+                                    @foreach(($serviceOptions ?? collect()) as $serviceOption)
+                                        <option value="{{ $serviceOption }}" {{ (string) ($serviceFilter ?? '') === (string) $serviceOption ? 'selected' : '' }}>{{ $serviceOption }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-4">
+                            <div class="form-group">
+                                <label for="date">Data</label>
+                                <input type="date" class="form-control" id="date" name="date" value="{{ $selectedDate ?? '' }}">
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-3"></div>
                     </div>
                     <div class="row mt-2">
                         <div class="col-lg-4 col-md-6">
@@ -637,7 +654,7 @@
                                     <input type="hidden" name="period" value="{{ request('period') }}">
                                 @endif
                                 <button type="submit" class="btn btn-primary px-4">Aplicar filtros</button>
-                                <a href="{{ route('admin.agendamentos.confirmations', request()->except('q')) }}" class="btn btn-light px-4">Limpar</a>
+                                <a href="{{ route('admin.agendamentos.confirmations', request()->except('q', 'service', 'date')) }}" class="btn btn-light px-4">Limpar</a>
                             </div>
                         </div>
                     </div>

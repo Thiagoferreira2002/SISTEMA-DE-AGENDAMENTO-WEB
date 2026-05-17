@@ -292,7 +292,6 @@
                                             <select class="form-control" id="status" name="status">
                                                 <option value="pendente" {{ old('status', $agendamento->status) === 'pendente' ? 'selected' : '' }}>Pendente</option>
                                                 <option value="confirmado" {{ old('status', $agendamento->status) === 'confirmado' ? 'selected' : '' }}>Confirmado</option>
-                                                <option value="cancelado" {{ old('status', $agendamento->status) === 'cancelado' ? 'selected' : '' }}>Cancelado</option>
                                                 <option value="concluido" {{ old('status', $agendamento->status) === 'concluido' ? 'selected' : '' }}>Concluído</option>
                                             </select>
                                         </div>

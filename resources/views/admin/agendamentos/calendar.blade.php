@@ -30,6 +30,12 @@
         box-shadow: 0 0 0 3px rgba(23, 111, 190, 0.12) !important;
     }
 
+    .calendar-shell .form-control-sm.calendar-filter-required {
+        border-color: #dc3545 !important;
+        background: linear-gradient(180deg, rgba(255, 241, 243, 0.98), rgba(255, 233, 236, 0.98));
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.18) !important;
+    }
+
     .calendar-shell select.form-control-sm {
         appearance: none;
         -webkit-appearance: none;
@@ -66,15 +72,22 @@
                                 <div>
                                     <label for="calendar-professional-filter" class="sr-only">Filtrar profissional</label>
                                     <select id="calendar-professional-filter" class="form-control form-control-sm">
-                                        <option value="">Todos os profissionais</option>
+                                        <option value="" data-all-professionals="true">Todos os profissionais</option>
                                         @foreach(($professionalOptions ?? []) as $professionalOption)
                                             <option value="{{ $professionalOption['id'] }}" {{ (string) ($selectedProfessionalId ?? '') === (string) $professionalOption['id'] ? 'selected' : '' }}>
                                                 {{ $professionalOption['nome'] }}
                                             </option>
                                         @endforeach
                                     </select>
+                                    <small id="calendar-professional-help" class="text-danger d-none mt-1">Selecione aqui o profissional para usar Semana e Dia.</small>
                                 </div>
                             @endif
+                            <div>
+                                <label for="calendar-procedure-filter" class="sr-only">Filtrar procedimento</label>
+                                <select id="calendar-procedure-filter" class="form-control form-control-sm">
+                                    <option value="">Todos os procedimentos</option>
+                                </select>
+                            </div>
                             @if(!($hideProfessionalFilter ?? false))
                                 <a href="{{ route('admin.agendamentos.create', ['return_to' => $returnUrl]) }}" class="btn btn-primary btn-sm">Novo Agendamento</a>
                             @endif
@@ -84,6 +97,12 @@
                         @if(session('success'))
                             <div class="alert alert-success">{{ session('success') }}</div>
                         @endif
+
+                        <div class="calendar-legend">
+                            <span class="calendar-legend-item"><i class="calendar-legend-swatch" style="background:#28a745;"></i>Confirmado</span>
+                            <span class="calendar-legend-item"><i class="calendar-legend-swatch" style="background:#ffc107;"></i>Pendente</span>
+                            <span class="calendar-legend-item"><i class="calendar-legend-swatch" style="background:#5f6b7a;"></i>Finalizado</span>
+                        </div>
 
                         <div id="calendar"></div>
                     </div>
@@ -108,6 +127,8 @@
     var calendarOpenAppointmentId = @json(request('open_agendamento'));
     var calendarShouldShowDetails = @json((bool) request('show_details'));
     var selectedCalendarDate = @json($selectedCalendarDate ?? '');
+    var selectedProcedureId = @json($selectedProcedureId ?? '');
+    var calendarProcedureOptions = @json($procedureOptions ?? []);
     var appointmentShowBaseUrl = '{{ url('admin/agendamentos') }}';
     var appointmentEditBaseUrl = '{{ url('admin/agendamentos') }}';
     var appointmentReturnUrl = @json(url()->full());
@@ -134,10 +155,148 @@
 
             var calendarEl = window.jQuery('#calendar');
             var professionalFilter = document.getElementById('calendar-professional-filter');
+            var professionalHelp = document.getElementById('calendar-professional-help');
+            var procedureFilter = document.getElementById('calendar-procedure-filter');
             var dateFilter = document.getElementById('calendar-date-filter');
             var pendingAutoOpenId = calendarOpenAppointmentId ? String(calendarOpenAppointmentId) : '';
             var hasAutoOpenedAppointment = false;
             if (!calendarEl.length) return;
+
+            function normalizeStatusClass(statusLabel) {
+                var normalized = String(statusLabel || '')
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+
+                if (normalized === 'concluido') {
+                    return 'finalizado';
+                }
+
+                return normalized || 'pendente';
+            }
+
+            function refreshProcedureFilterOptions() {
+                if (!procedureFilter) {
+                    return;
+                }
+
+                var selectedProfessional = professionalFilter ? String(professionalFilter.value || '') : '';
+                var currentValue = String(procedureFilter.value || selectedProcedureId || '');
+                var procedureOptions = Array.isArray(calendarProcedureOptions) ? calendarProcedureOptions : [];
+                var filteredOptions = procedureOptions.filter(function(procedure) {
+                    if (!selectedProfessional) {
+                        return true;
+                    }
+
+                    return String(procedure.professional_id || '') === selectedProfessional;
+                });
+
+                procedureFilter.innerHTML = '';
+
+                var placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = selectedProfessional ? 'Todos os procedimentos do profissional' : 'Todos os procedimentos';
+                procedureFilter.appendChild(placeholder);
+
+                filteredOptions.forEach(function(procedure) {
+                    var option = document.createElement('option');
+                    option.value = procedure.id || '';
+                    option.textContent = procedure.nome || '';
+
+                    if (String(option.value) === currentValue) {
+                        option.selected = true;
+                    }
+
+                    procedureFilter.appendChild(option);
+                });
+
+                if (currentValue && !filteredOptions.some(function(procedure) {
+                    return String(procedure.id || '') === currentValue;
+                })) {
+                    procedureFilter.value = '';
+                }
+            }
+
+            function clearProfessionalWarning() {
+                if (professionalFilter) {
+                    professionalFilter.classList.remove('calendar-filter-required');
+                }
+
+                if (professionalHelp) {
+                    professionalHelp.classList.add('d-none');
+                }
+            }
+
+            function highlightProfessionalField() {
+                if (!professionalFilter) {
+                    return;
+                }
+
+                professionalFilter.classList.add('calendar-filter-required');
+
+                if (professionalHelp) {
+                    professionalHelp.classList.remove('d-none');
+                }
+
+                professionalFilter.focus();
+            }
+
+            function syncProfessionalFilterByView(viewName) {
+                if (!professionalFilter) {
+                    return;
+                }
+
+                var allProfessionalsOption = professionalFilter.querySelector('[data-all-professionals="true"]');
+
+                if (!allProfessionalsOption) {
+                    return;
+                }
+
+                if (viewName === 'month') {
+                    allProfessionalsOption.hidden = false;
+                    allProfessionalsOption.disabled = false;
+                    return;
+                }
+
+                allProfessionalsOption.hidden = true;
+                allProfessionalsOption.disabled = true;
+            }
+
+            function hasSelectedProfessional() {
+                return !professionalFilter || String(professionalFilter.value || '').trim() !== '';
+            }
+
+            function showProfessionalSelectionMessage() {
+                var message = 'Selecione um profissional para visualizar o calendário nos modos Semana e Dia.';
+
+                highlightProfessionalField();
+                if (window.Swal) {
+                    window.Swal.fire({
+                        icon: 'info',
+                        title: 'Selecione um profissional',
+                        text: message,
+                        confirmButtonText: 'Entendi',
+                        confirmButtonColor: '#176fbe'
+                    });
+
+                    return;
+                }
+
+                window.alert(message);
+            }
+
+            function ensureDetailedViewAccess(targetView) {
+                syncProfessionalFilterByView(targetView);
+                if ((targetView !== 'agendaWeek' && targetView !== 'agendaDay') || hasSelectedProfessional()) {
+                    return true;
+                }
+
+                showProfessionalSelectionMessage();
+                calendarEl.fullCalendar('changeView', 'month');
+                return false;
+            }
 
             function buildAppointmentDetailsHtml(event) {
                 return '<div class="agendamento-details text-left">' +
@@ -242,8 +401,66 @@
                 return firstName + ' • ' + shortProfessionalName(event.medico || '');
             }
 
+            function buildAgendaEventMarkup(event) {
+                var startTime = String(event.horario || '').trim();
+                var endTime = String(event.horario_final || '').trim();
+                var status = String(event.status || '').trim();
+                var service = String(event.servico || 'Consulta').trim();
+                var patientName = String(event.nome || 'Paciente').trim();
+                var doctor = shortProfessionalName(event.medico || '');
+                var timeLabel = startTime + (endTime ? ' - ' + endTime : '');
+
+                return '' +
+                    '<div class="calendar-agenda-event-card">' +
+                        '<div class="calendar-agenda-event-topline">' +
+                            '<div class="calendar-agenda-event-time">' + timeLabel + '</div>' +
+                            '<div class="calendar-agenda-event-patient">' + patientName + '</div>' +
+                            '<div class="calendar-agenda-event-status">' + status + '</div>' +
+                        '</div>' +
+                        '<div class="calendar-agenda-event-details">' +
+                            '<div class="calendar-agenda-event-meta calendar-agenda-event-meta-service">' +
+                                '<span class="calendar-agenda-event-label">Procedimento</span>' +
+                                '<span class="calendar-agenda-event-value">' + service + '</span>' +
+                            '</div>' +
+                            '<div class="calendar-agenda-event-meta">' +
+                                '<span class="calendar-agenda-event-label">Profissional</span>' +
+                                '<span class="calendar-agenda-event-value">' + doctor + '</span>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+            }
+
+            function buildWeekEventMarkup(event, showPatient) {
+                var startTime = String(event.horario || '').trim();
+                var endTime = String(event.horario_final || '').trim();
+                var timeLabel = startTime + (endTime ? ' - ' + endTime : '');
+                var patientName = String(event.nome || 'Paciente').trim();
+
+                return '' +
+                    '<div class="calendar-week-event-card">' +
+                        '<div class="calendar-week-event-time">' + timeLabel + '</div>' +
+                        (showPatient ? '<div class="calendar-week-event-name">' + patientName + '</div>' : '') +
+                    '</div>';
+            }
+
+            function buildMonthEventMarkup(event) {
+                var startTime = String(event.horario || '').trim();
+                var patientName = String(event.nome || 'Paciente').trim();
+                var status = String(event.status || '').trim();
+                var statusClass = normalizeStatusClass(status);
+
+                return '' +
+                    '<div class="calendar-month-event-layout">' +
+                        '<div class="calendar-month-event-row">' +
+                            '<div class="calendar-month-event-time">' + startTime + '</div>' +
+                            '<div class="calendar-month-event-name">' + patientName + '</div>' +
+                        '</div>' +
+                        '<div class="calendar-month-event-status"><span class="calendar-month-event-status-dot calendar-month-event-status-dot-' + statusClass + '"></span>' + status + '</div>' +
+                    '</div>';
+            }
+
             calendarEl.fullCalendar({
-                defaultView: 'agendaWeek',
+                defaultView: hasSelectedProfessional() ? 'agendaWeek' : 'month',
                 defaultDate: calendarFocusDate || undefined,
                 locale: 'pt-br',
                 lang: 'pt-br',
@@ -254,6 +471,7 @@
                 },
                 firstDay: 1,
                 height: 'auto',
+                contentHeight: 980,
                 allDaySlot: false,
                 slotDuration: '00:30:00',
                 minTime: clinicOpeningTime,
@@ -283,14 +501,17 @@
                     month: {
                         titleFormat: 'MMMM [de] YYYY',
                         columnHeaderFormat: 'ddd',
-                        eventLimit: 2
+                        eventLimit: 2,
+                        contentHeight: 'auto'
                     },
                     agendaWeek: {
-                        columnHeaderFormat: 'ddd D/M'
+                        columnHeaderFormat: 'ddd D/M',
+                        contentHeight: 1080
                     },
                     agendaDay: {
                         titleFormat: 'dddd, D [de] MMMM [de] YYYY',
-                        columnHeaderFormat: 'dddd D/M'
+                        columnHeaderFormat: 'dddd D/M',
+                        contentHeight: 1160
                     }
                 },
                 events: {
@@ -299,6 +520,7 @@
                     data: function() {
                         return {
                             professional_id: professionalFilter ? professionalFilter.value : '',
+                            procedure_id: procedureFilter ? procedureFilter.value : '',
                             calendar_date: dateFilter ? dateFilter.value : '',
                             open_agendamento: pendingAutoOpenId || ''
                         };
@@ -311,13 +533,35 @@
                     return openAppointmentModal(event);
                 },
                 eventRender: function(event, element) {
+                    var activeView = calendarEl.fullCalendar('getView').name;
+                    var eventMinutes = 0;
+                    var statusClass = normalizeStatusClass(event.status || '');
+                    var showWeekPatientName = activeView === 'agendaWeek' && professionalFilter && String(professionalFilter.value || '').trim() !== '';
+
+                    if (event.start && event.end && typeof event.end.diff === 'function') {
+                        eventMinutes = event.end.diff(event.start, 'minutes');
+                    }
                     element.attr('data-agendamento-id', event.agendamento_id);
+                    element.attr('data-status', statusClass);
+                    element.addClass('calendar-status-' + statusClass);
                     element.attr('title', (event.telefone || '') + ' • ' + (event.motivo || ''));
 
-                    if (calendarEl.fullCalendar('getView').name === 'month') {
+                    if (activeView === 'month') {
                         element.addClass('calendar-month-event-card');
-                        element.find('.fc-time').text((event.horario || '').trim());
-                        element.find('.fc-title').text(buildMonthEventTitle(event));
+                        element.find('.fc-content').html(buildMonthEventMarkup(event));
+                    } else if (activeView === 'agendaWeek') {
+                        element.addClass('calendar-agenda-event calendar-week-event');
+                        if (showWeekPatientName) {
+                            element.addClass('calendar-week-event-with-name');
+                        }
+
+                        element.find('.fc-content').html(buildWeekEventMarkup(event, showWeekPatientName));
+                    } else {
+                        element.addClass('calendar-agenda-event');
+                        if (eventMinutes > 0 && eventMinutes <= 30) {
+                            element.addClass('calendar-agenda-event-short');
+                        }
+                        element.find('.fc-content').html(buildAgendaEventMarkup(event));
                     }
 
                     if (event.is_finalized) {
@@ -335,6 +579,12 @@
                     }
                 },
                 eventAfterAllRender: function() {
+                    var currentView = calendarEl.fullCalendar('getView');
+
+                    if (currentView && (currentView.name === 'agendaWeek' || currentView.name === 'agendaDay')) {
+                        calendarEl.fullCalendar('scrollToTime', clinicOpeningTime);
+                    }
+
                     if (!pendingAutoOpenId || hasAutoOpenedAppointment === true || !calendarShouldShowDetails) {
                         return;
                     }
@@ -350,11 +600,35 @@
                     hasAutoOpenedAppointment = true;
                     showAppointmentInCalendar(pendingAutoOpenId);
                     openAppointmentModal(targetEvent[0]);
+                },
+                viewRender: function(view) {
+                    ensureDetailedViewAccess(view.name);
                 }
             });
 
             if (professionalFilter) {
                 professionalFilter.addEventListener('change', function() {
+                    clearProfessionalWarning();
+                    selectedProcedureId = '';
+                    refreshProcedureFilterOptions();
+
+                    if (hasSelectedProfessional()) {
+                        var currentView = calendarEl.fullCalendar('getView');
+
+                        if (currentView && currentView.name === 'month') {
+                            calendarEl.fullCalendar('changeView', 'agendaWeek');
+                        }
+                    }
+
+                    calendarEl.fullCalendar('refetchEvents');
+                });
+            }
+
+            if (procedureFilter) {
+                refreshProcedureFilterOptions();
+
+                procedureFilter.addEventListener('change', function() {
+                    selectedProcedureId = String(procedureFilter.value || '');
                     calendarEl.fullCalendar('refetchEvents');
                 });
             }
@@ -368,6 +642,16 @@
                     calendarEl.fullCalendar('refetchEvents');
                 });
             }
+
+            window.jQuery(document).on('click', '.fc-agendaWeek-button, .fc-agendaDay-button', function() {
+                window.setTimeout(function() {
+                    var currentView = calendarEl.fullCalendar('getView');
+
+                    if (currentView) {
+                        ensureDetailedViewAccess(currentView.name);
+                    }
+                }, 0);
+            });
         }
 
         if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.fullCalendar === 'function') {
@@ -391,12 +675,205 @@
 <style>
     .fc { font-family: inherit; }
     .card-header-action .form-control-sm { min-width: 190px; }
+    .calendar-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+    .calendar-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(23, 111, 190, 0.08);
+        color: #35536e;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .calendar-legend-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+    }
     .fc .fc-button-primary { background-color: #007bff; border-color: #007bff; }
     .fc .fc-button-primary:hover { background-color: #0056b3; border-color: #0056b3; }
     .fc .fc-button-primary.fc-button-active { background-color: #0056b3; border-color: #0056b3; }
     .fc .fc-event { cursor: pointer; border-radius: 4px; }
     .fc .fc-event:hover { opacity: 0.85; }
-    #calendar { min-height: 650px; }
+    .fc-time-grid,
+    .fc-time-grid-container,
+    .fc-view.fc-agendaWeek-view,
+    .fc-view.fc-agendaDay-view {
+        min-height: 980px;
+    }
+    .fc .calendar-agenda-event {
+        position: relative;
+        border: 1px solid #111111 !important;
+        border-radius: 14px !important;
+        box-shadow: 0 10px 22px rgba(15, 61, 107, 0.16);
+        padding: 0 !important;
+        overflow: hidden;
+    }
+    .fc .calendar-agenda-event .fc-content {
+        padding: 12px 13px;
+    }
+    .fc .calendar-agenda-event::after,
+    .fc-month-view .calendar-month-event-card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        opacity: .48;
+        animation: calendarStatusPulse 2.8s ease-in-out infinite;
+    }
+    .fc .calendar-status-confirmado::after,
+    .fc-month-view .calendar-status-confirmado::after {
+        box-shadow: inset 0 0 0 1px rgba(40, 167, 69, 0.55), 0 0 16px rgba(40, 167, 69, 0.22);
+    }
+    .fc .calendar-status-pendente::after,
+    .fc-month-view .calendar-status-pendente::after {
+        box-shadow: inset 0 0 0 1px rgba(255, 193, 7, 0.62), 0 0 18px rgba(255, 193, 7, 0.24);
+    }
+    .fc .calendar-status-finalizado::after,
+    .fc-month-view .calendar-status-finalizado::after {
+        box-shadow: inset 0 0 0 1px rgba(95, 107, 122, 0.62), 0 0 16px rgba(95, 107, 122, 0.24);
+    }
+    @keyframes calendarStatusPulse {
+        0%, 100% {
+            opacity: .34;
+            transform: scale(1);
+        }
+        50% {
+            opacity: .62;
+            transform: scale(1.008);
+        }
+    }
+    .calendar-agenda-event-card {
+        display: grid;
+        gap: 7px;
+        line-height: 1.35;
+    }
+    .calendar-agenda-event-topline {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .calendar-agenda-event-time {
+        display: inline-flex;
+        align-items: center;
+        flex: 0 0 auto;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.2);
+        font-size: 11.5px;
+        font-weight: 800;
+        letter-spacing: .02em;
+        line-height: 1.1;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+    }
+    .calendar-agenda-event-patient {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 14px;
+        font-weight: 800;
+        white-space: normal;
+        line-height: 1.3;
+        word-break: break-word;
+    }
+    .calendar-agenda-event-details {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, .92fr);
+        gap: 8px;
+        width: 100%;
+    }
+    .calendar-agenda-event-details > * {
+        min-width: 0;
+    }
+    .calendar-agenda-event-meta {
+        display: grid;
+        gap: 3px;
+        min-width: 0;
+        width: auto;
+        max-width: 100%;
+        padding: 7px 9px;
+        box-sizing: border-box;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+        overflow: hidden;
+    }
+    .calendar-agenda-event-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        opacity: .76;
+        line-height: 1.3;
+    }
+    .calendar-agenda-event-value {
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+    .calendar-agenda-event-meta-service .calendar-agenda-event-value {
+        font-size: 12.5px;
+    }
+    .calendar-agenda-event-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(12, 32, 53, 0.16);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+    .calendar-week-event .fc-content {
+        padding: 0 !important;
+    }
+    .calendar-week-event-card {
+        display: grid;
+        gap: 4px;
+        min-height: 100%;
+        align-content: start;
+        padding: 6px 8px;
+    }
+    .calendar-week-event-time {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        width: fit-content;
+        max-width: 100%;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.18);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .02em;
+        line-height: 1.2;
+        color: #ffffff;
+    }
+    .calendar-week-event-name {
+        align-self: center;
+        justify-self: center;
+        max-width: 100%;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1.2;
+        text-align: center;
+        word-break: break-word;
+    }
+    #calendar { min-height: 780px; }
     .fc-agendaWeek-view .fc-day-header,
     .fc-agendaWeek-view .fc-widget-header,
     .fc-agendaDay-view .fc-day-header,
@@ -441,6 +918,25 @@
         background: rgba(247, 251, 255, 0.98);
         color: #5a7186;
         font-weight: 700;
+        font-size: 12px;
+        letter-spacing: .01em;
+        white-space: nowrap;
+    }
+
+    .fc-agendaWeek-view .fc-time-grid .fc-slats .fc-minor td,
+    .fc-agendaDay-view .fc-time-grid .fc-slats .fc-minor td {
+        border-top-style: dashed;
+        opacity: .85;
+    }
+
+    .fc-agendaWeek-view .fc-slats td,
+    .fc-agendaDay-view .fc-slats td {
+        height: 3.4rem;
+    }
+
+    .fc-agendaWeek-view .fc-time-grid .fc-content-col,
+    .fc-agendaDay-view .fc-time-grid .fc-content-col {
+        background-image: linear-gradient(180deg, rgba(23, 111, 190, 0.03) 0%, rgba(23, 111, 190, 0.01) 100%);
     }
 
     .fc-month-view .fc-day,
@@ -468,31 +964,72 @@
 
     .fc-month-view .fc-day-grid-event,
     .fc-month-view .calendar-month-event-card {
+        position: relative;
         margin: 3px 4px 0;
         border-radius: 8px;
-        border: 0 !important;
+        border: 1px solid #111111 !important;
         box-shadow: 0 6px 14px rgba(15, 61, 107, 0.12);
     }
 
     .fc-month-view .calendar-month-event-card .fc-content {
         display: block;
-        padding: 4px 6px;
+        padding: 4px 6px 5px;
         line-height: 1.2;
     }
 
-    .fc-month-view .calendar-month-event-card .fc-time {
-        display: block;
-        font-size: 10px;
-        font-weight: 700;
-        margin-bottom: 2px;
+    .calendar-month-event-layout {
+        display: grid;
+        gap: 3px;
     }
 
-    .fc-month-view .calendar-month-event-card .fc-title {
-        display: block;
+    .calendar-month-event-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 6px;
+    }
+
+    .calendar-month-event-time {
+        font-size: 10px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .calendar-month-event-name {
         font-size: 10px;
         font-weight: 700;
+        text-align: center;
         white-space: normal;
         word-break: break-word;
+    }
+
+    .calendar-month-event-status {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        font-size: 9px;
+        font-weight: 700;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        opacity: .92;
+    }
+    .calendar-month-event-status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        display: inline-block;
+        flex: 0 0 auto;
+    }
+    .calendar-month-event-status-dot-confirmado {
+        background: #28a745;
+    }
+    .calendar-month-event-status-dot-pendente {
+        background: #ffc107;
+    }
+    .calendar-month-event-status-dot-finalizado {
+        background: #5f6b7a;
     }
 
     .fc-month-view .fc-more {
@@ -551,34 +1088,139 @@
         padding: 4px 8px;
     }
     .fc-agendaDay-view .fc-time-grid-event .fc-time {
-        min-width: 54px;
-        font-size: 15px;
+        min-width: 64px;
+        font-size: 16px;
         font-weight: 700;
         line-height: 1.2;
     }
     .fc-agendaDay-view .fc-time-grid-event .fc-title {
-        font-size: 15px;
-        line-height: 1.25;
+        font-size: 16px;
+        line-height: 1.35;
         white-space: normal;
     }
     .fc-agendaDay-view .fc-axis {
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 700;
+    }
+    .fc-agendaDay-view .calendar-agenda-event .fc-content {
+        display: block;
+        padding: 12px 14px;
+    }
+    .fc-agendaDay-view .calendar-agenda-event .calendar-agenda-event-card {
+        gap: 8px;
+    }
+    .fc-agendaDay-view .calendar-agenda-event .calendar-agenda-event-topline {
+        align-items: center;
+        gap: 10px;
+    }
+    .fc-agendaDay-view .calendar-agenda-event .calendar-agenda-event-time,
+    .fc-agendaDay-view .calendar-agenda-event .calendar-agenda-event-status {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+    .fc-agendaDay-view .calendar-agenda-event .calendar-agenda-event-patient {
+        text-align: center;
+        font-size: 15px;
+        line-height: 1.35;
+    }
+    .fc-agendaDay-view .calendar-agenda-event .calendar-agenda-event-details {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+    .fc-agendaDay-view .calendar-agenda-event .calendar-agenda-event-meta {
+        align-items: center;
+        justify-items: center;
+        gap: 10px;
+        padding: 8px 11px;
+        text-align: center;
+        overflow: hidden;
+    }
+    .fc-agendaDay-view .calendar-agenda-event .calendar-agenda-event-label {
+        font-size: 9.5px;
+    }
+    .fc-agendaDay-view .calendar-agenda-event .calendar-agenda-event-value {
+        max-width: 100%;
+        font-size: 12.5px;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+        text-align: center;
+    }
+    .fc-agendaDay-view .calendar-agenda-event .calendar-agenda-event-meta-service .calendar-agenda-event-value {
+        font-size: 13px;
+    }
+    .fc-agendaDay-view .calendar-agenda-event-short .fc-content {
+        padding: 6px 8px;
+    }
+    .fc-agendaDay-view .calendar-agenda-event-short .calendar-agenda-event-card {
+        gap: 4px;
+    }
+    .fc-agendaDay-view .calendar-agenda-event-short .calendar-agenda-event-details {
+        display: none;
+    }
+    .fc-agendaDay-view .calendar-agenda-event-short .calendar-agenda-event-time,
+    .fc-agendaDay-view .calendar-agenda-event-short .calendar-agenda-event-status {
+        padding: 3px 8px;
+        font-size: 10px;
+    }
+    .fc-agendaDay-view .calendar-agenda-event-short .calendar-agenda-event-patient {
+        font-size: 12px;
+        line-height: 1.2;
     }
     .fc-time-grid-event {
         margin-right: 4px;
-        min-height: 38px;
     }
     .fc-time-grid-event .fc-content {
-        padding: 3px 6px;
+        padding: 6px 8px;
     }
     .fc-time-grid .fc-event-container {
         margin-right: 2px;
     }
 
+    .fc-agendaWeek-view .fc-time-grid-event .fc-content {
+        padding: 0;
+    }
+
+    .fc-agendaWeek-view .calendar-week-event {
+        border-radius: 16px !important;
+        box-shadow: 0 12px 22px rgba(15, 61, 107, 0.14);
+    }
+
+    .fc-agendaWeek-view .calendar-week-event-time {
+        font-size: 11.5px;
+    }
+
+    .fc-agendaWeek-view .calendar-week-event-with-name .calendar-week-event-card {
+        align-content: start;
+        gap: 8px;
+        padding: 8px 10px 10px;
+    }
+
+    .fc-agendaWeek-view .calendar-week-event-with-name .calendar-week-event-name {
+        font-size: 12.5px;
+    }
+
     html[data-theme="dark"] .calendar-shell .card-header,
     html[data-theme="dark"] .calendar-shell .card-body {
         background: transparent !important;
+    }
+
+    html[data-theme="dark"] .calendar-legend-item {
+        background: rgba(143, 197, 255, 0.12);
+        color: #d7eaff;
+    }
+
+    html[data-theme="dark"] .calendar-agenda-event-time {
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+    }
+
+    html[data-theme="dark"] .calendar-agenda-event-meta {
+        background: rgba(8, 19, 31, 0.18);
+        box-shadow: inset 0 0 0 1px rgba(167, 212, 255, 0.12);
+    }
+
+    html[data-theme="dark"] .calendar-agenda-event-status {
+        background: rgba(8, 19, 31, 0.26);
     }
 
     html[data-theme="dark"] .calendar-shell .form-control-sm {
@@ -863,7 +1505,43 @@
         }
 
         #calendar {
-            min-height: 540px;
+            min-height: 620px;
+        }
+
+        .fc-time-grid,
+        .fc-time-grid-container,
+        .fc-view.fc-agendaWeek-view,
+        .fc-view.fc-agendaDay-view {
+            min-height: 700px;
+        }
+
+        .fc-time-grid-event,
+        .fc-agendaWeek-view .fc-time-grid-event {
+            min-height: 0;
+        }
+
+        .calendar-agenda-event-patient,
+        .fc-agendaDay-view .fc-time-grid-event .fc-title {
+            font-size: 13px;
+        }
+
+        .calendar-agenda-event-time,
+        .calendar-agenda-event-status,
+        .calendar-agenda-event-value {
+            font-size: 10px;
+        }
+
+        .calendar-agenda-event-label {
+            font-size: 8.5px;
+        }
+
+        .calendar-agenda-event-meta {
+            padding: 6px 7px;
+        }
+
+        .calendar-agenda-event-details {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 6px;
         }
 
         .fc-toolbar {

@@ -70,6 +70,9 @@ Route::post('admin/agendamentos/{agendamento}/pendente', [ClinicManagementContro
 Route::post('admin/agendamentos/{agendamento}/cancelar', [ClinicManagementController::class, 'cancelAppointment'])
 ->name('admin.agendamentos.cancel');
 
+Route::post('admin/agendamentos/{agendamento}/cancelar-atendimento', [ClinicManagementController::class, 'cancelOperationalAppointment'])
+->name('admin.agendamentos.cancel-operational');
+
 Route::get('admin/patients/historico', [ClinicManagementController::class, 'patientHistory'])
 ->name('admin.patients.history');
 
