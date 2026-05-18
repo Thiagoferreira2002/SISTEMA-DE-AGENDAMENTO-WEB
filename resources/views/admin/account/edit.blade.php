@@ -14,11 +14,17 @@
     }
 
     .account-hero {
-        border: 0;
+        border: 1px solid #d2dbe6 !important;
         border-radius: 22px;
         background: linear-gradient(135deg, #0d3358 0%, #155c99 52%, #1e90ff 100%);
         color: #ffffff;
         overflow: hidden;
+        box-shadow: inset 0 0 0 1px #d2dbe6;
+    }
+
+    html[data-theme="dark"] .account-hero {
+        border-color: #000000 !important;
+        box-shadow: inset 0 0 0 1px #000000;
     }
 
     .account-hero .card-body {
@@ -35,15 +41,15 @@
     }
 
     .account-form-card {
-        border: 1px solid rgba(30, 144, 255, 0.16);
+        border: 1px solid #d2dbe6 !important;
         border-radius: 20px;
-        box-shadow: 0 14px 30px rgba(18, 58, 99, 0.06);
+        box-shadow: inset 0 0 0 1px #d2dbe6, 0 14px 30px rgba(18, 58, 99, 0.06);
     }
 
     html[data-theme="dark"] .account-form-card {
         background: linear-gradient(180deg, rgba(22,40,59,.98), rgba(19,33,49,.98));
-        border-color: rgba(143, 197, 255, 0.18);
-        box-shadow: 0 18px 34px rgba(2, 8, 15, 0.28);
+        border-color: #000000 !important;
+        box-shadow: inset 0 0 0 1px #000000, 0 18px 34px rgba(2, 8, 15, 0.28);
     }
 
     .account-form-card .card-body {
@@ -70,7 +76,7 @@
     }
 
     .account-access-card {
-        border: 1px solid rgba(13, 51, 88, 0.08);
+        border: 1px solid #d2dbe6;
         border-radius: 16px;
         background: #f8fbff;
         padding: 16px 16px 8px;
@@ -79,7 +85,7 @@
 
     html[data-theme="dark"] .account-access-card {
         background: rgba(22, 40, 59, 0.92);
-        border-color: rgba(143, 197, 255, 0.16);
+        border-color: #000000;
     }
 
     .account-access-card ul {

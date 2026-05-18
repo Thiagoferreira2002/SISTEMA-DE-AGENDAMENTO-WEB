@@ -37,11 +37,13 @@
   .dashboard-hero {
     position: relative;
     overflow: hidden;
-    border: 0;
+    border: 1px solid #d2dbe6 !important;
     border-radius: 22px;
     background: linear-gradient(135deg, rgba(30, 144, 255, 0.78) 0%, #1E90FF 100%);
     color: #ffffff;
-    box-shadow: 0 18px 40px rgba(30, 144, 255, 0.16);
+    box-shadow:
+      inset 0 0 0 1px #d2dbe6,
+      0 18px 40px rgba(30, 144, 255, 0.16);
     animation: dashboardFadeIn .7s ease-out both;
   }
 
@@ -68,7 +70,8 @@
     gap: 8px;
     padding: 8px 14px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.14);
+    background: #1E90FF;
+    color: #ffffff;
     font-size: 12px;
     letter-spacing: .08em;
     text-transform: uppercase;
@@ -83,22 +86,48 @@
   .dashboard-hero p {
     max-width: 720px;
     margin-bottom: 0;
-    color: rgba(255, 255, 255, 0.88);
+    color: #000000;
+  }
+
+  html[data-theme="dark"] .dashboard-hero p {
+    color: #ffffff;
+  }
+
+  html[data-theme="light"] .dashboard-kicker,
+  body:not([data-theme="dark"]) .dashboard-kicker {
+    background: #1E90FF;
+    color: #ffffff;
   }
 
   .dashboard-metric-card,
   .dashboard-list-card {
-    border: 0;
+    border: 1px solid #d2dbe6 !important;
     border-radius: 18px;
-    box-shadow: 0 14px 28px rgba(30, 144, 255, 0.08);
+    box-shadow:
+      inset 0 0 0 1px #d2dbe6,
+      0 14px 28px rgba(30, 144, 255, 0.08);
     animation: dashboardRise .55s ease-out both;
+  }
+
+  html[data-theme="dark"] .dashboard-hero {
+    border-color: #000000 !important;
+    box-shadow:
+      inset 0 0 0 1px #000000,
+      0 18px 40px rgba(30, 144, 255, 0.16);
+  }
+
+  html[data-theme="dark"] .dashboard-metric-card,
+  html[data-theme="dark"] .dashboard-list-card {
+    border-color: #000000 !important;
+    box-shadow:
+      inset 0 0 0 1px #000000,
+      0 14px 28px rgba(30, 144, 255, 0.08);
   }
 
   .dashboard-metric-card {
     overflow: hidden;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(244, 249, 255, 0.98) 100%);
     border-top: 4px solid var(--dashboard-accent-deep);
-    border: 1px solid var(--dashboard-soft-border);
     height: 100%;
   }
 
@@ -129,24 +158,39 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    position: relative;
   }
 
   .dashboard-metric-card .metric-icon {
-    width: 56px;
-    height: 56px;
+    width: 44px;
+    height: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 16px;
+    border-radius: 14px;
     margin-bottom: 16px;
-    background: rgba(30, 144, 255, 0.16);
-    color: var(--dashboard-dark);
-    font-size: 22px;
+    margin-left: auto;
+    background: linear-gradient(135deg, #0d3358 0%, #176fbe 100%);
+    color: #ffffff;
+    font-size: 18px;
+    line-height: 1;
+    text-align: center;
+    box-shadow: 0 10px 20px rgba(13, 51, 88, 0.18);
   }
 
   html[data-theme="dark"] .dashboard-metric-card .metric-icon {
-    background: rgba(118, 187, 255, 0.16);
+    background: linear-gradient(135deg, #0d3358 0%, #176fbe 100%);
     color: #eef5fc;
+  }
+
+  .dashboard-metric-card .metric-icon i,
+  .dashboard-metric-card .metric-icon svg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    margin: 0 auto;
   }
 
   .dashboard-metric-card h4 {
@@ -188,19 +232,23 @@
 
   .dashboard-list-card .card-header {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+    align-items: center;
+    justify-content: center;
     gap: 12px;
     padding: 20px 24px 0;
     background: linear-gradient(180deg, rgba(30, 144, 255, 0.12) 0%, rgba(30, 144, 255, 0) 100%);
     border-bottom: 0;
+    position: relative;
   }
 
   .dashboard-list-card .card-header-action {
-    margin-left: auto;
+    margin-left: 0;
     width: auto !important;
     flex: 0 0 auto;
-    align-self: flex-start;
+    align-self: center;
+    position: absolute;
+    right: 24px;
+    top: 20px;
   }
 
   .dashboard-list-card .card-header-action .btn {
@@ -214,7 +262,6 @@
   .dashboard-list-card {
     background: rgba(255, 255, 255, 0.98);
     border-top: 4px solid var(--dashboard-accent);
-    border: 1px solid var(--dashboard-soft-border);
   }
 
   html[data-theme="dark"] .dashboard-list-card {
@@ -225,6 +272,9 @@
   .dashboard-list-card .card-header h4 {
     color: var(--dashboard-dark);
     font-weight: 700;
+    flex: 1 1 auto;
+    text-align: center;
+    margin-bottom: 0;
   }
 
   .dashboard-list-card .card-body {
@@ -233,20 +283,31 @@
 
   .dashboard-table thead th {
     border-top: 0;
-    color: #4d6d8a;
+    color: #ffffff;
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: .04em;
-    background: rgba(30, 144, 255, 0.12);
+    background: #1E90FF;
+    border-bottom: 0;
+    text-align: center;
   }
 
   .dashboard-table tbody tr {
-    transition: transform .2s ease, box-shadow .2s ease;
+    transition: transform .2s ease, box-shadow .2s ease, background-color .2s ease;
   }
 
   .dashboard-table tbody tr:hover {
     transform: translateY(-1px);
     box-shadow: inset 0 0 0 9999px rgba(30, 144, 255, 0.1);
+  }
+
+  .dashboard-appointment-row {
+    cursor: pointer;
+  }
+
+  .dashboard-appointment-row:focus-visible {
+    outline: 2px solid #1E90FF;
+    outline-offset: -2px;
   }
 
   .dashboard-table-responsive {
@@ -259,10 +320,12 @@
 
   .dashboard-table td {
     vertical-align: middle;
+    text-align: center;
   }
 
   .dashboard-table td:nth-child(1) {
     min-width: 230px;
+    text-align: left;
   }
 
   .dashboard-table td:nth-child(2) {
@@ -291,13 +354,13 @@
   }
 
   .dashboard-status.confirmado {
-    background: rgba(30, 144, 255, 0.14);
-    color: #155a9d;
+    background: rgba(46, 204, 113, 0.18);
+    color: #198754;
   }
 
   .dashboard-status.pendente {
-    background: rgba(30, 144, 255, 0.14);
-    color: #155a9d;
+    background: rgba(255, 193, 7, 0.2);
+    color: #a56a00;
   }
 
   .dashboard-status.cancelado {
@@ -308,6 +371,7 @@
   .dashboard-patient-cell {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 10px;
     min-width: 0;
   }
@@ -323,6 +387,7 @@
 
   .dashboard-patient-copy {
     min-width: 0;
+    text-align: left;
   }
 
   .dashboard-patient-copy strong {
@@ -735,7 +800,11 @@
                 </thead>
                 <tbody>
                   @forelse($proximosAgendamentos as $agendamento)
-                    <tr>
+                    <tr
+                      class="dashboard-appointment-row"
+                      data-href="{{ route('admin.agendamentos.show', ['agendamento' => $agendamento, 'return_to' => url()->full()]) }}"
+                      tabindex="0"
+                    >
                       <td class="dashboard-mobile-full" data-label="Paciente">
                         <span class="dashboard-mobile-label">Paciente</span>
                         <div class="dashboard-patient-cell">
@@ -783,4 +852,24 @@
     </div>
   </div>
 </section>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.dashboard-appointment-row[data-href]').forEach(function (row) {
+      row.addEventListener('click', function () {
+        const targetUrl = row.dataset.href;
+
+        if (targetUrl) {
+          window.location.href = targetUrl;
+        }
+      });
+
+      row.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          row.click();
+        }
+      });
+    });
+  });
+</script>
 @endsection

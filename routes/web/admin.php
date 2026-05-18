@@ -100,6 +100,15 @@ Route::get('admin/doctor/prescricoes', [ClinicManagementController::class, 'pres
 Route::get('admin/doctor/laudos', [ClinicManagementController::class, 'reports'])
 ->name('admin.doctor.reports');
 
+Route::get('admin/doctor/ausencias', [ClinicManagementController::class, 'doctorAbsences'])
+->name('admin.doctor.absences');
+
+Route::post('admin/doctor/ausencias', [ClinicManagementController::class, 'storeDoctorAbsence'])
+->name('admin.doctor.absences.store');
+
+Route::delete('admin/doctor/ausencias/{absence}', [ClinicManagementController::class, 'destroyDoctorAbsence'])
+->name('admin.doctor.absences.destroy');
+
 Route::get('admin/settings', [ClinicManagementController::class, 'settingsIndex'])
 ->name('admin.settings.index');
 

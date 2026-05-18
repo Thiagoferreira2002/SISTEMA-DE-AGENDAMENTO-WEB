@@ -8,6 +8,7 @@ use App\Models\ClinicHour;
 use App\Models\Patient;
 use App\Models\Procedure;
 use App\Models\Professional;
+use App\Models\ProfessionalAbsence;
 use App\Traits\RecordsActivity;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -32,11 +33,13 @@ class AgendamentoController extends Controller
         [$agendamentos] = $this->filteredAppointments($request);
         $professionals = $this->professionalOptions();
         $totalAgendamentos = $agendamentos->count();
+        $hideProfessionalFilter = $this->isProfessionalUser();
 
         return view('admin.agendamentos.index', compact(
             'agendamentos',
             'professionals',
-            'totalAgendamentos'
+            'totalAgendamentos',
+            'hideProfessionalFilter'
         ));
     }
 
@@ -46,6 +49,12 @@ class AgendamentoController extends Controller
         $procedureOptions = $this->procedureOptions();
         $hideProfessionalFilter = $this->isProfessionalUser();
         $selectedProfessionalId = $request->string('professional_id')->toString();
+        $authenticatedProfessional = $this->authenticatedProfessional();
+
+        if ($selectedProfessionalId === '' && $hideProfessionalFilter && $authenticatedProfessional) {
+            $selectedProfessionalId = (string) $authenticatedProfessional->id;
+        }
+
         $selectedProcedureId = $request->string('procedure_id')->toString();
         $selectedCalendarDate = $request->string('calendar_date')->toString();
         $returnUrl = $this->resolveReturnUrl($request);
@@ -774,6 +783,25 @@ class AgendamentoController extends Controller
             return false;
         }
 
+        $absenceConflicts = ProfessionalAbsence::query()
+            ->where('profissional_id', $professional->id)
+            ->whereDate('data_ausencia', $date->format('Y-m-d'))
+            ->get();
+
+        if ($absenceConflicts->contains(function (ProfessionalAbsence $absence) use ($startTime, $duration) {
+            $absenceDuration = Carbon::createFromFormat('H:i:s', (string) $absence->hora_inicial)
+                ->diffInMinutes(Carbon::createFromFormat('H:i:s', (string) $absence->hora_final));
+
+            return $this->hasTimeOverlap(
+                $startTime,
+                $duration,
+                substr((string) $absence->hora_inicial, 0, 5),
+                $absenceDuration
+            );
+        })) {
+            return false;
+        }
+
         $conflicts = Agendamento::query()
             ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
             ->whereDate('data_agendamento', $date->format('Y-m-d'))
@@ -853,7 +881,10 @@ class AgendamentoController extends Controller
             ];
         }
 
-        $records = Professional::with('schedules')->where('ativo', true)->orderBy('nome')->get();
+        $records = Professional::with([
+            'schedules',
+            'absences' => fn ($query) => $query->whereDate('data_ausencia', '>=', now()->toDateString()),
+        ])->where('ativo', true)->orderBy('nome')->get();
 
         if ($records->isNotEmpty()) {
             $dayLabels = [1 => 'Seg', 2 => 'Ter', 3 => 'Qua', 4 => 'Qui', 5 => 'Sex', 6 => 'Sáb', 7 => 'Dom'];
@@ -880,6 +911,12 @@ class AgendamentoController extends Controller
                     'registro' => $professional->registro_completo,
                     'cor' => $professional->agenda_color,
                     'disponibilidade' => $availability,
+                    'absences' => $professional->absences->map(fn ($absence) => [
+                        'date' => $absence->data_ausencia?->format('Y-m-d'),
+                        'start_time' => substr((string) $absence->hora_inicial, 0, 5),
+                        'end_time' => substr((string) $absence->hora_final, 0, 5),
+                        'reason' => $absence->motivo,
+                    ])->values()->all(),
                 ];
             })->all();
         }
@@ -936,7 +973,10 @@ class AgendamentoController extends Controller
         })->map(function ($professional) {
             $clinicHours = $this->clinicHoursConfig();
             $record = $this->hasTables(['profissionais', 'agendas_profissionais']) && $professional['id']
-                ? Professional::with('schedules')->find($professional['id'])
+                ? Professional::with([
+                    'schedules',
+                    'absences' => fn ($query) => $query->whereDate('data_ausencia', '>=', now()->toDateString()),
+                ])->find($professional['id'])
                 : null;
 
             return [
@@ -959,6 +999,12 @@ class AgendamentoController extends Controller
                         'end_time' => $effectiveSchedule['end_time'],
                     ];
                 })->filter()->values()->all() ?? [],
+                'absences' => $record?->absences?->map(fn ($absence) => [
+                    'date' => $absence->data_ausencia?->format('Y-m-d'),
+                    'start_time' => substr((string) $absence->hora_inicial, 0, 5),
+                    'end_time' => substr((string) $absence->hora_final, 0, 5),
+                    'reason' => $absence->motivo,
+                ])->values()->all() ?? [],
             ];
         })->values()->all();
     }

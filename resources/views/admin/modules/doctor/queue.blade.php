@@ -1,6 +1,18 @@
 @extends('admin.layouts.master')
 @section('content')
 <style>
+    .section-body > .card,
+    .section-body > .row > .col-12 > .card {
+        border: 1px solid #d2dbe6 !important;
+        box-shadow: inset 0 0 0 1px #d2dbe6;
+    }
+
+    html[data-theme="dark"] .section-body > .card,
+    html[data-theme="dark"] .section-body > .row > .col-12 > .card {
+        border-color: #000000 !important;
+        box-shadow: inset 0 0 0 1px #000000;
+    }
+
     .queue-stat-col {
         flex: 0 0 auto;
         width: auto;
@@ -12,6 +24,13 @@
         min-width: 190px;
         max-width: 100%;
         margin-right: auto;
+        border: 1px solid #d2dbe6 !important;
+        box-shadow: inset 0 0 0 1px #d2dbe6;
+    }
+
+    html[data-theme="dark"] .queue-summary-card {
+        border-color: #000000 !important;
+        box-shadow: inset 0 0 0 1px #000000;
     }
 
     .queue-summary-card .card-icon {

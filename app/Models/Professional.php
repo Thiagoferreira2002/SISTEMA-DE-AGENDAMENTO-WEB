@@ -33,6 +33,13 @@ class Professional extends Model
         return $this->hasMany(ProfessionalSchedule::class, 'profissional_id')->orderBy('day_of_week')->orderBy('start_time');
     }
 
+    public function absences()
+    {
+        return $this->hasMany(ProfessionalAbsence::class, 'profissional_id')
+            ->orderBy('data_ausencia')
+            ->orderBy('hora_inicial');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

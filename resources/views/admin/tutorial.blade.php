@@ -77,6 +77,38 @@
 @endphp
 
 <style>
+    .tutorial-shell {
+        --tutorial-accent: #1E90FF;
+        --tutorial-dark: #123a63;
+        padding: 28px;
+        border-radius: 28px;
+        background:
+            radial-gradient(circle at top right, rgba(30, 144, 255, 0.18), transparent 26%),
+            linear-gradient(180deg, rgba(30, 144, 255, 0.08) 0%, rgba(244, 249, 255, 0.94) 42%, rgba(238, 245, 255, 0.98) 100%);
+    }
+
+    html[data-theme="dark"] .tutorial-shell {
+        --tutorial-dark: #eef5fc;
+        background:
+            radial-gradient(circle at top right, rgba(118, 187, 255, 0.18), transparent 28%),
+            linear-gradient(180deg, rgba(18, 35, 54, 0.98) 0%, rgba(16, 29, 42, 0.98) 100%);
+        box-shadow: inset 0 0 0 1px rgba(143, 197, 255, 0.08);
+    }
+
+    .tutorial-shell .section-header {
+        align-items: stretch;
+        margin-bottom: 0;
+    }
+
+    .tutorial-shell .section-header h1 {
+        color: var(--tutorial-dark);
+        font-weight: 800;
+    }
+
+    .tutorial-shell .section-body {
+        margin-top: 1.5rem;
+    }
+
     .tutorial-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(265px, 1fr));
@@ -84,10 +116,10 @@
     }
 
     .tutorial-card {
-        border: 1px solid #e5eef8;
+        border: 1px solid #d2dbe6 !important;
         border-radius: 18px;
         background: linear-gradient(180deg, var(--surface-primary) 0%, var(--surface-secondary) 100%);
-        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+        box-shadow: inset 0 0 0 1px #d2dbe6, 0 12px 28px rgba(15, 23, 42, 0.06);
         padding: 22px;
         height: 100%;
         display: flex;
@@ -173,11 +205,12 @@
     }
 
     .tutorial-highlight {
+        border: 1px solid #d2dbe6 !important;
         border-radius: 20px;
         padding: 24px;
-        background: linear-gradient(135deg, #0d3358 0%, #176fbe 100%);
+        background: linear-gradient(135deg, rgba(30, 144, 255, 0.78) 0%, #1E90FF 100%);
         color: #ffffff;
-        box-shadow: 0 18px 36px rgba(13, 51, 88, 0.18);
+        box-shadow: inset 0 0 0 1px #d2dbe6, 0 18px 36px rgba(13, 51, 88, 0.18);
     }
 
     .tutorial-highlight p:last-child {
@@ -193,7 +226,7 @@
     .tutorial-step {
         border-radius: 16px;
         background: var(--surface-primary);
-        border: 1px solid var(--border-soft);
+        border: 1px solid #d2dbe6;
         padding: 18px;
     }
 
@@ -210,21 +243,6 @@
         margin-bottom: 10px;
     }
 
-    .tutorial-details-card {
-        border: 1px solid var(--border-soft);
-        border-radius: 18px;
-        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
-        overflow: hidden;
-    }
-
-    .tutorial-details-card .card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        flex-wrap: wrap;
-    }
-
     .tutorial-submodule-list {
         display: grid;
         gap: 14px;
@@ -232,7 +250,7 @@
 
     .tutorial-submodule-item {
         border-radius: 14px;
-        border: 1px solid var(--border-soft);
+        border: 1px solid #d2dbe6;
         background: var(--surface-secondary);
         padding: 16px 18px;
         overflow: hidden;
@@ -267,6 +285,141 @@
         flex: 0 0 auto;
     }
 
+    .tutorial-shell .btn-outline-primary.tutorial-submodule-link {
+        border-color: #2f4f6f;
+        color: #ffffff;
+        background: #4d6a86;
+    }
+
+    .tutorial-shell .btn-outline-primary.tutorial-submodule-link:hover,
+    .tutorial-shell .btn-outline-primary.tutorial-submodule-link:focus {
+        border-color: #24384d;
+        background: #2f4f6f;
+        color: #ffffff;
+        box-shadow: none;
+    }
+
+    .tutorial-modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(13, 51, 88, 0.56);
+        z-index: 2000;
+    }
+
+    .tutorial-modal.is-open {
+        display: flex;
+    }
+
+    .tutorial-modal-dialog {
+        width: min(860px, 100%);
+        max-height: calc(100vh - 48px);
+        overflow: auto;
+    }
+
+    .tutorial-modal .modal-content {
+        border: 1px solid #d2dbe6;
+        border-radius: 20px;
+        box-shadow: inset 0 0 0 1px #d2dbe6, 0 18px 36px rgba(15, 23, 42, 0.18);
+        overflow: hidden;
+    }
+
+    .tutorial-modal .modal-header {
+        background: linear-gradient(135deg, rgba(30, 144, 255, 0.78) 0%, #1E90FF 100%);
+        color: #ffffff;
+        border-bottom: 0;
+    }
+
+    .tutorial-modal .modal-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 700;
+    }
+
+    .tutorial-modal .modal-title .tutorial-card-icon {
+        margin-bottom: 0;
+    }
+
+    .tutorial-modal .close {
+        border: 0;
+        background: transparent;
+        color: #ffffff;
+        opacity: 1;
+        text-shadow: none;
+    }
+
+    .tutorial-modal .modal-body {
+        padding: 24px;
+    }
+
+    .tutorial-modal-summary {
+        margin-bottom: 18px;
+        color: var(--text-secondary);
+    }
+
+    .tutorial-shell .card {
+        border: 1px solid #d2dbe6 !important;
+        border-radius: 18px;
+        box-shadow: inset 0 0 0 1px #d2dbe6, 0 14px 28px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    html[data-theme="dark"] .tutorial-card,
+    html[data-theme="dark"] .tutorial-highlight,
+    html[data-theme="dark"] .tutorial-step,
+    html[data-theme="dark"] .tutorial-submodule-item,
+    html[data-theme="dark"] .tutorial-modal .modal-content,
+    html[data-theme="dark"] .tutorial-shell .card {
+        border-color: #000000 !important;
+    }
+
+    html[data-theme="dark"] .tutorial-card,
+    html[data-theme="dark"] .tutorial-highlight,
+    html[data-theme="dark"] .tutorial-modal .modal-content,
+    html[data-theme="dark"] .tutorial-shell .card {
+        box-shadow: inset 0 0 0 1px #000000, 0 14px 28px rgba(15, 23, 42, 0.06);
+    }
+
+    .tutorial-shell .card > .card-header {
+        background: linear-gradient(180deg, rgba(30, 144, 255, 0.12) 0%, rgba(30, 144, 255, 0) 100%);
+        border-bottom: 0;
+    }
+
+    .tutorial-shell .table thead th {
+        color: #123a63;
+        background: rgba(30, 144, 255, 0.12);
+        border-bottom: 0;
+    }
+
+    html[data-theme="dark"] .tutorial-shell .table thead th {
+        color: #a9c5df;
+        background: rgba(30, 144, 255, 0.12);
+    }
+
+    html[data-theme="dark"] .tutorial-highlight p,
+    html[data-theme="dark"] .tutorial-highlight h3,
+    html[data-theme="dark"] .tutorial-shell .card-header h4,
+    html[data-theme="dark"] .tutorial-card h4,
+    html[data-theme="dark"] .tutorial-modal-summary,
+    html[data-theme="dark"] .tutorial-modal .modal-body,
+    html[data-theme="dark"] .tutorial-submodule-item h6,
+    html[data-theme="dark"] .tutorial-step h5,
+    html[data-theme="dark"] .tutorial-step p,
+    html[data-theme="dark"] .tutorial-submodule-item p,
+    html[data-theme="dark"] .tutorial-card p,
+    html[data-theme="dark"] .tutorial-shell .card-body,
+    html[data-theme="dark"] .tutorial-shell .table tbody td {
+        color: #eef5fc;
+    }
+
+    html[data-theme="dark"] .tutorial-modal .modal-content {
+        background: linear-gradient(180deg, rgba(22, 40, 59, 0.98) 0%, rgba(19, 33, 49, 0.98) 100%);
+    }
+
     @media (max-width: 767.98px) {
         .tutorial-card h4 {
             font-size: 15px;
@@ -284,158 +437,161 @@
 </style>
 
 <section class="section">
-    <div class="section-header">
-        <h1>Tutorial do Sistema</h1>
-        <div class="section-header-breadcrumb">
-            <div class="breadcrumb-item active"><a href="{{ route('admin.dashboard') }}">Dashboard</a></div>
-            <div class="breadcrumb-item">Tutorial</div>
-        </div>
-    </div>
-
-    <div class="section-body">
-        <div class="tutorial-highlight mb-4">
-            <h3 class="mb-2">O que cada área faz</h3>
-            <p class="mb-2">Este guia resume a função de cada módulo do painel para facilitar o uso diário da clínica.</p>
-            <p>Use esta página como referência rápida para saber onde cadastrar, consultar, editar ou acompanhar cada etapa do atendimento.</p>
+    <div class="tutorial-shell">
+        <div class="section-header">
+            <h1>Tutorial do Sistema</h1>
+            <div class="section-header-breadcrumb">
+                <div class="breadcrumb-item active"><a href="{{ route('admin.dashboard') }}">Dashboard</a></div>
+                <div class="breadcrumb-item">Tutorial</div>
+            </div>
         </div>
 
-        <div class="tutorial-grid mb-4">
-            @foreach($tutorialSections as $section)
-                <button
-                    type="button"
-                    class="tutorial-card"
-                    data-toggle="collapse"
-                    data-target="#tutorial-{{ $section['id'] }}"
-                    data-parent="#tutorialAccordion"
-                    aria-expanded="{{ $loop->first ? 'true' : 'false' }}"
-                    aria-controls="tutorial-{{ $section['id'] }}"
-                >
-                    <span class="tutorial-card-badge">Clique para abrir os submódulos</span>
-                    <div class="tutorial-card-header">
-                        <span class="tutorial-card-icon"><i class="{{ $section['icon'] }}"></i></span>
-                        <h4 class="mb-0">{{ $section['title'] }}</h4>
-                    </div>
-                    <p>{{ $section['summary'] }}</p>
-                    <span class="tutorial-card-action">Ver tutorial detalhado</span>
-                </button>
-            @endforeach
-        </div>
+        <div class="section-body">
+            <div class="tutorial-highlight mb-4">
+                <h3 class="mb-2">O que cada área faz</h3>
+                <p class="mb-2">Este guia resume a função de cada módulo do painel para facilitar o uso diário da clínica.</p>
+                <p>Use esta página como referência rápida para saber onde cadastrar, consultar, editar ou acompanhar cada etapa do atendimento.</p>
+            </div>
 
-        <div class="mb-4" id="tutorialAccordion">
-            @foreach($tutorialSections as $section)
-                <div class="collapse {{ $loop->first ? 'show' : '' }}" id="tutorial-{{ $section['id'] }}" data-parent="#tutorialAccordion">
-                    <div class="card tutorial-details-card mb-3">
-                        <div class="card-header">
-                            <h4 class="mb-0">{{ $section['title'] }}: o que cada submódulo faz</h4>
-                            <span class="badge badge-primary">{{ count($section['modules']) }} submódulo(s)</span>
+            <div class="tutorial-grid mb-4">
+                @foreach($tutorialSections as $section)
+                    <button
+                        type="button"
+                        class="tutorial-card"
+                        data-tutorial-open="tutorial-modal-{{ $section['id'] }}"
+                    >
+                        <span class="tutorial-card-badge">Clique para abrir os submódulos</span>
+                        <div class="tutorial-card-header">
+                            <span class="tutorial-card-icon"><i class="{{ $section['icon'] }}"></i></span>
+                            <h4 class="mb-0">{{ $section['title'] }}</h4>
                         </div>
-                        <div class="card-body">
-                            <p class="text-muted mb-4">{{ $section['summary'] }}</p>
-                            <div class="tutorial-submodule-list">
-                                @foreach($section['modules'] as $module)
-                                    <div class="tutorial-submodule-item">
-                                        @php
-                                            $routeName = $module['route'] ?? null;
-                                            $routeParams = $module['params'] ?? [];
-                                            $canAccess = $routeName ? $loggedUser?->canAccessRouteName($routeName) : false;
-                                        @endphp
-                                        <div class="tutorial-submodule-head">
-                                            <h6>{{ $module['name'] }}</h6>
-                                            @if($routeName && $canAccess)
-                                                <a class="btn btn-outline-primary btn-sm tutorial-submodule-link" href="{{ route($routeName, $routeParams) }}" data-open-section="tutorial-{{ $section['id'] }}" onclick="event.stopPropagation();">
-                                                    Abrir módulo
-                                                </a>
-                                            @elseif($routeName)
-                                                <span class="badge badge-light">Sem acesso neste perfil</span>
-                                            @endif
+                        <p>{{ $section['summary'] }}</p>
+                        <span class="tutorial-card-action">Ver tutorial detalhado</span>
+                    </button>
+                @endforeach
+            </div>
+
+            @foreach($tutorialSections as $section)
+                <div class="tutorial-modal" id="tutorial-modal-{{ $section['id'] }}" aria-labelledby="tutorial-modal-label-{{ $section['id'] }}" aria-hidden="true">
+                    <div class="tutorial-modal-dialog" role="dialog" aria-modal="true">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="tutorial-modal-label-{{ $section['id'] }}">
+                                    <span class="tutorial-card-icon"><i class="{{ $section['icon'] }}"></i></span>
+                                    {{ $section['title'] }}
+                                </h5>
+                                <button type="button" class="close" data-tutorial-close aria-label="Fechar">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="tutorial-modal-summary">{{ $section['summary'] }}</p>
+                                <div class="tutorial-submodule-list">
+                                    @foreach($section['modules'] as $module)
+                                        <div class="tutorial-submodule-item">
+                                            @php
+                                                $routeName = $module['route'] ?? null;
+                                                $routeParams = $module['params'] ?? [];
+                                                $canAccess = $routeName ? $loggedUser?->canAccessRouteName($routeName) : false;
+                                            @endphp
+                                            <div class="tutorial-submodule-head">
+                                                <h6>{{ $module['name'] }}</h6>
+                                                @if($routeName && $canAccess)
+                                                    <a class="btn btn-outline-primary btn-sm tutorial-submodule-link" href="{{ route($routeName, $routeParams) }}">
+                                                        Abrir módulo
+                                                    </a>
+                                                @elseif($routeName)
+                                                    <span class="badge badge-light">Sem acesso neste perfil</span>
+                                                @endif
+                                            </div>
+                                            <p>{{ $module['description'] }}</p>
                                         </div>
-                                        <p>{{ $module['description'] }}</p>
-                                    </div>
-                                @endforeach
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             @endforeach
-        </div>
 
-        <div class="card mb-4">
-            <div class="card-header">
-                <h4>Fluxo básico de uso</h4>
-            </div>
-            <div class="card-body">
-                <div class="tutorial-steps">
-                    <div class="tutorial-step">
-                        <div class="tutorial-step-number">1</div>
-                        <h5>Cadastre o paciente</h5>
-                        <p>Antes de agendar, confirme se o paciente já existe pelo CPF. Se não existir, faça o cadastro na área de Pacientes.</p>
-                    </div>
-                    <div class="tutorial-step">
-                        <div class="tutorial-step-number">2</div>
-                        <h5>Escolha profissional e procedimento</h5>
-                        <p>No agendamento, selecione o profissional responsável e o procedimento para carregar a duração e a agenda correta.</p>
-                    </div>
-                    <div class="tutorial-step">
-                        <div class="tutorial-step-number">3</div>
-                        <h5>Defina data e horário</h5>
-                        <p>O sistema valida disponibilidade do profissional, horário da clínica e conflito com outros atendimentos.</p>
-                    </div>
-                    <div class="tutorial-step">
-                        <div class="tutorial-step-number">4</div>
-                        <h5>Acompanhe o atendimento</h5>
-                        <p>Depois do agendamento, acompanhe confirmações, fila de espera, atrasos e finalizações conforme o perfil de acesso.</p>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Fluxo básico de uso</h4>
+                </div>
+                <div class="card-body">
+                    <div class="tutorial-steps">
+                        <div class="tutorial-step">
+                            <div class="tutorial-step-number">1</div>
+                            <h5>Cadastre o paciente</h5>
+                            <p>Antes de agendar, confirme se o paciente já existe pelo CPF. Se não existir, faça o cadastro na área de Pacientes.</p>
+                        </div>
+                        <div class="tutorial-step">
+                            <div class="tutorial-step-number">2</div>
+                            <h5>Escolha profissional e procedimento</h5>
+                            <p>No agendamento, selecione o profissional responsável e o procedimento para carregar a duração e a agenda correta.</p>
+                        </div>
+                        <div class="tutorial-step">
+                            <div class="tutorial-step-number">3</div>
+                            <h5>Defina data e horário</h5>
+                            <p>O sistema valida disponibilidade do profissional, horário da clínica e conflito com outros atendimentos.</p>
+                        </div>
+                        <div class="tutorial-step">
+                            <div class="tutorial-step-number">4</div>
+                            <h5>Acompanhe o atendimento</h5>
+                            <p>Depois do agendamento, acompanhe confirmações, fila de espera, atrasos e finalizações conforme o perfil de acesso.</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h4>Quem usa cada área</h4>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped mb-0">
-                        <thead>
-                            <tr>
-                                <th>Área</th>
-                                <th>Uso principal</th>
-                                <th>Perfis comuns</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Painel</td>
-                                <td>Visão geral e atalhos</td>
-                                <td>Admin, Recepcionista, Gestor, Profissional</td>
-                            </tr>
-                            <tr>
-                                <td>Pacientes</td>
-                                <td>Cadastro e consulta de pacientes</td>
-                                <td>Admin, Recepcionista, Gestor</td>
-                            </tr>
-                            <tr>
-                                <td>Agendamentos</td>
-                                <td>Criação, edição e acompanhamento da agenda</td>
-                                <td>Admin, Recepcionista, Gestor</td>
-                            </tr>
-                            <tr>
-                                <td>Painel do Profissional</td>
-                                <td>Execução do atendimento e finalização</td>
-                                <td>Profissional, Admin</td>
-                            </tr>
-                            <tr>
-                                <td>Cadastros Base</td>
-                                <td>Configuração da clínica</td>
-                                <td>Admin, Gestor</td>
-                            </tr>
-                            <tr>
-                                <td>Minha Conta</td>
-                                <td>Atualização de dados do próprio usuário</td>
-                                <td>Todos os perfis</td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <div class="card">
+                <div class="card-header">
+                    <h4>Quem usa cada área</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Área</th>
+                                    <th>Uso principal</th>
+                                    <th>Perfis comuns</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Painel</td>
+                                    <td>Visão geral e atalhos</td>
+                                    <td>Admin, Recepcionista, Gestor, Profissional</td>
+                                </tr>
+                                <tr>
+                                    <td>Pacientes</td>
+                                    <td>Cadastro e consulta de pacientes</td>
+                                    <td>Admin, Recepcionista, Gestor</td>
+                                </tr>
+                                <tr>
+                                    <td>Agendamentos</td>
+                                    <td>Criação, edição e acompanhamento da agenda</td>
+                                    <td>Admin, Recepcionista, Gestor</td>
+                                </tr>
+                                <tr>
+                                    <td>Painel do Profissional</td>
+                                    <td>Execução do atendimento e finalização</td>
+                                    <td>Profissional, Admin</td>
+                                </tr>
+                                <tr>
+                                    <td>Cadastros Base</td>
+                                    <td>Configuração da clínica</td>
+                                    <td>Admin, Gestor</td>
+                                </tr>
+                                <tr>
+                                    <td>Minha Conta</td>
+                                    <td>Atualização de dados do próprio usuário</td>
+                                    <td>Todos os perfis</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -444,42 +600,56 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        var storageKey = 'adminTutorialOpenSection';
-        var accordion = document.getElementById('tutorialAccordion');
+        const tutorialModals = document.querySelectorAll('.tutorial-modal');
 
-        if (! accordion) {
-            return;
-        }
-
-        var openSectionId = window.sessionStorage.getItem(storageKey);
-
-        if (openSectionId) {
-            accordion.querySelectorAll('.collapse.show').forEach(function (panel) {
-                if (panel.id !== openSectionId) {
-                    panel.classList.remove('show');
-                }
-            });
-
-            var targetPanel = document.getElementById(openSectionId);
-
-            if (targetPanel) {
-                targetPanel.classList.add('show');
-
-                document.querySelectorAll('[data-target]').forEach(function (button) {
-                    button.setAttribute('aria-expanded', button.getAttribute('data-target') === '#' + openSectionId ? 'true' : 'false');
-                });
+        function closeTutorialModal(modal) {
+            if (! modal) {
+                return;
             }
+
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
         }
 
-        accordion.querySelectorAll('.collapse').forEach(function (panel) {
-            panel.addEventListener('shown.bs.collapse', function () {
-                window.sessionStorage.setItem(storageKey, panel.id);
+        function openTutorialModal(modal) {
+            if (! modal) {
+                return;
+            }
+
+            tutorialModals.forEach(closeTutorialModal);
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        document.querySelectorAll('[data-tutorial-open]').forEach(function (trigger) {
+            trigger.addEventListener('click', function () {
+                openTutorialModal(document.getElementById(trigger.getAttribute('data-tutorial-open')));
             });
         });
 
-        document.querySelectorAll('.tutorial-submodule-link[data-open-section]').forEach(function (link) {
-            link.addEventListener('click', function () {
-                window.sessionStorage.setItem(storageKey, link.getAttribute('data-open-section'));
+        tutorialModals.forEach(function (modal) {
+            modal.addEventListener('click', function (event) {
+                if (event.target === modal) {
+                    closeTutorialModal(modal);
+                }
+            });
+
+            modal.querySelectorAll('[data-tutorial-close]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    closeTutorialModal(modal);
+                });
+            });
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape') {
+                return;
+            }
+
+            tutorialModals.forEach(function (modal) {
+                if (modal.classList.contains('is-open')) {
+                    closeTutorialModal(modal);
+                }
             });
         });
     });

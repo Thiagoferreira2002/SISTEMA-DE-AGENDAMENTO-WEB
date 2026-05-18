@@ -528,6 +528,7 @@
                 <ul class="dropdown-menu" style="{{ $isDoctorMenuOpen ? 'display:block;' : '' }}">
                   @if($loggedUser?->normalizedRole() === 'profissional')
                     <li class="{{ request()->routeIs('admin.agendamentos.calendar') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.calendar') }}">Seu Calendário</a></li>
+                    <li class="{{ request()->routeIs('admin.doctor.absences*') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.doctor.absences') }}">Ausências</a></li>
                   @endif
                   <li class="{{ request()->routeIs('admin.doctor.queue') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.doctor.queue') }}">Fila de Espera</a></li>
                   <li class="{{ request()->routeIs('admin.doctor.pending-finalization') ? 'active' : '' }}"><a class="nav-link painelms submenu-nowrap" href="{{ route('admin.doctor.pending-finalization') }}">Atendimentos em Atraso</a></li>

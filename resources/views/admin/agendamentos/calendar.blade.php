@@ -2,23 +2,157 @@
 @section('content')
 <style>
     .calendar-shell {
-        border: 1px solid rgba(30, 144, 255, 0.14);
+        border: 1px solid #d2dbe6;
         border-radius: 22px;
         background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(244,249,255,.96));
-        box-shadow: 0 16px 34px rgba(18, 58, 99, 0.08);
+        box-shadow: inset 0 0 0 1px #d2dbe6, 0 16px 34px rgba(18, 58, 99, 0.08);
         overflow: hidden;
     }
 
     html[data-theme="dark"] .calendar-shell {
-        border-color: rgba(143, 197, 255, 0.16);
+        border-color: #000000;
         background: linear-gradient(180deg, rgba(22,40,59,.98), rgba(19,33,49,.98));
-        box-shadow: 0 22px 44px rgba(2, 8, 15, 0.34);
+        box-shadow: inset 0 0 0 1px #000000, 0 22px 44px rgba(2, 8, 15, 0.34);
     }
 
     .calendar-shell .form-control-sm {
         min-height: 40px;
         border-radius: 999px;
         transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+    }
+
+    .calendar-board {
+        display: flex;
+        align-items: flex-start;
+        gap: 18px;
+    }
+
+    .calendar-board > #calendar {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .calendar-clinic-sidebar {
+        flex: 0 0 188px;
+        position: sticky;
+        top: 14px;
+        z-index: 3;
+    }
+
+    .calendar-clinic-sidebar-card {
+        padding: 14px 14px 12px;
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(243, 249, 255, 0.98) 0%, rgba(232, 242, 252, 0.98) 100%);
+        border: 1px solid #d2dbe6;
+        box-shadow: inset 0 0 0 1px #d2dbe6, 0 12px 28px rgba(15, 61, 107, 0.08);
+    }
+
+    .calendar-clinic-sidebar-kicker {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: #6a879f;
+    }
+
+    .calendar-clinic-sidebar-range {
+        margin-top: 7px;
+        font-size: 18px;
+        font-weight: 800;
+        line-height: 1.1;
+        color: #1a4f7b;
+        white-space: nowrap;
+    }
+
+    .calendar-clinic-sidebar-break {
+        margin-top: 8px;
+        padding: 7px 10px;
+        border-radius: 12px;
+        background: rgba(23, 111, 190, 0.08);
+        color: #35536e;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.35;
+        white-space: nowrap;
+    }
+
+    .calendar-clinic-sidebar-break-muted {
+        background: rgba(95, 115, 136, 0.08);
+        color: #5f7388;
+    }
+
+    .calendar-clinic-sidebar-hours {
+        margin: 12px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 8px;
+    }
+
+    .calendar-clinic-sidebar-hour {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(23, 111, 190, 0.12);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+        color: #35536e;
+        font-size: 13px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+    }
+
+    .calendar-clinic-sidebar-hour.is-break {
+        background: linear-gradient(180deg, rgba(255, 243, 214, 0.96) 0%, rgba(255, 236, 193, 0.94) 100%);
+        border-color: rgba(223, 159, 32, 0.2);
+        color: #8a5a00;
+    }
+
+    .calendar-clinic-sidebar-hour.is-disabled {
+        cursor: default;
+        transform: none !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    .calendar-clinic-sidebar-hour.is-unavailable {
+        background: rgba(243, 246, 250, 0.9);
+        border-style: dashed;
+        color: #8aa0b5;
+    }
+
+    .calendar-clinic-sidebar-hour:hover,
+    .calendar-clinic-sidebar-hour:focus {
+        transform: translateX(2px);
+        border-color: rgba(23, 111, 190, 0.24);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 8px 16px rgba(15, 61, 107, 0.08);
+        outline: none;
+    }
+
+    .calendar-clinic-sidebar-hour.is-disabled:hover,
+    .calendar-clinic-sidebar-hour.is-disabled:focus {
+        border-color: rgba(23, 111, 190, 0.12);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+        outline: none;
+    }
+
+    .calendar-clinic-sidebar-hour.is-active {
+        background: linear-gradient(180deg, rgba(23, 111, 190, 0.12) 0%, rgba(23, 111, 190, 0.08) 100%);
+        border-color: rgba(23, 111, 190, 0.28);
+        color: #176fbe;
+        box-shadow: inset 0 0 0 1px rgba(23, 111, 190, 0.12), 0 10px 18px rgba(15, 61, 107, 0.08);
+    }
+
+    .calendar-sidebar-hour-highlight {
+        box-shadow: 0 0 0 3px rgba(23, 111, 190, 0.22), 0 0 22px rgba(23, 111, 190, 0.18) !important;
+        transform: translateY(-1px);
+        z-index: 6;
+    }
+    .calendar-sidebar-hour-hidden {
+        display: none !important;
     }
 
     .calendar-shell .form-control-sm:hover {
@@ -99,12 +233,15 @@
                         @endif
 
                         <div class="calendar-legend">
-                            <span class="calendar-legend-item"><i class="calendar-legend-swatch" style="background:#28a745;"></i>Confirmado</span>
-                            <span class="calendar-legend-item"><i class="calendar-legend-swatch" style="background:#ffc107;"></i>Pendente</span>
-                            <span class="calendar-legend-item"><i class="calendar-legend-swatch" style="background:#5f6b7a;"></i>Finalizado</span>
+                            <span class="calendar-legend-item"><i class="calendar-month-event-status-dot calendar-month-event-status-dot-confirmado"></i>Confirmado</span>
+                            <span class="calendar-legend-item"><i class="calendar-month-event-status-dot calendar-month-event-status-dot-pendente"></i>Pendente</span>
+                            <span class="calendar-legend-item"><i class="calendar-month-event-status-dot calendar-month-event-status-dot-finalizado"></i>Finalizado</span>
                         </div>
 
-                        <div id="calendar"></div>
+                        <div class="calendar-board">
+                            <aside id="calendar-clinic-sidebar" class="calendar-clinic-sidebar d-none" aria-label="Horários da clínica"></aside>
+                            <div id="calendar"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -121,14 +258,21 @@
     var fullCalendarScriptUrl = '{{ asset('backend/assets/modules/fullcalendar/fullcalendar.min.js') }}';
     var fullCalendarLocaleScriptUrl = '{{ asset('backend/assets/modules/fullcalendar/locale/pt-br.js') }}';
     var clinicOpeningTime = @json(($clinicHours['opening_time'] ?? '07:00') . ':00');
+    var calendarInitialScrollTime = @json(($clinicHours['opening_time'] ?? '07:00') . ':00');
     var clinicClosingTime = @json(($clinicHours['closing_time'] ?? '19:00') . ':00');
     var clinicClosingDisplayTime = @json(optional(\Carbon\Carbon::createFromFormat('H:i', $clinicHours['closing_time'] ?? '19:00')->addHour())->format('H:i:s'));
+    var clinicLunchStartTime = @json(!empty($clinicHours['lunch_start_time']) ? $clinicHours['lunch_start_time'] . ':00' : null);
+    var clinicLunchEndTime = @json(!empty($clinicHours['lunch_end_time']) ? $clinicHours['lunch_end_time'] . ':00' : null);
+    var calendarRequestedView = @json(request('calendar_view'));
     var calendarFocusDate = @json(request('focus_date') ?: ($selectedCalendarDate ?? null));
     var calendarOpenAppointmentId = @json(request('open_agendamento'));
     var calendarShouldShowDetails = @json((bool) request('show_details'));
     var selectedCalendarDate = @json($selectedCalendarDate ?? '');
     var selectedProcedureId = @json($selectedProcedureId ?? '');
+    var selectedCalendarProfessionalId = @json((string) ($selectedProfessionalId ?? ''));
     var calendarProcedureOptions = @json($procedureOptions ?? []);
+    var calendarProfessionalOptions = @json($professionalOptions ?? []);
+    var calendarViewStorageKey = 'admin.agendamentos.calendar.view';
     var appointmentShowBaseUrl = '{{ url('admin/agendamentos') }}';
     var appointmentEditBaseUrl = '{{ url('admin/agendamentos') }}';
     var appointmentReturnUrl = @json(url()->full());
@@ -154,12 +298,14 @@
             }
 
             var calendarEl = window.jQuery('#calendar');
+            var clinicSidebar = document.getElementById('calendar-clinic-sidebar');
             var professionalFilter = document.getElementById('calendar-professional-filter');
             var professionalHelp = document.getElementById('calendar-professional-help');
             var procedureFilter = document.getElementById('calendar-procedure-filter');
             var dateFilter = document.getElementById('calendar-date-filter');
             var pendingAutoOpenId = calendarOpenAppointmentId ? String(calendarOpenAppointmentId) : '';
             var hasAutoOpenedAppointment = false;
+            var calendarLayoutSyncInProgress = false;
             if (!calendarEl.length) return;
 
             function normalizeStatusClass(statusLabel) {
@@ -182,7 +328,9 @@
                     return;
                 }
 
-                var selectedProfessional = professionalFilter ? String(professionalFilter.value || '') : '';
+                var selectedProfessional = professionalFilter
+                    ? String(professionalFilter.value || '')
+                    : String(selectedCalendarProfessionalId || '');
                 var currentValue = String(procedureFilter.value || selectedProcedureId || '');
                 var procedureOptions = Array.isArray(calendarProcedureOptions) ? calendarProcedureOptions : [];
                 var filteredOptions = procedureOptions.filter(function(procedure) {
@@ -265,10 +413,18 @@
             }
 
             function hasSelectedProfessional() {
-                return !professionalFilter || String(professionalFilter.value || '').trim() !== '';
+                if (!professionalFilter) {
+                    return String(selectedCalendarProfessionalId || '').trim() !== '';
+                }
+
+                return String(professionalFilter.value || '').trim() !== '';
             }
 
             function showProfessionalSelectionMessage() {
+                if (!professionalFilter) {
+                    return;
+                }
+
                 var message = 'Selecione um profissional para visualizar o calendário nos modos Semana e Dia.';
 
                 highlightProfessionalField();
@@ -289,7 +445,7 @@
 
             function ensureDetailedViewAccess(targetView) {
                 syncProfessionalFilterByView(targetView);
-                if ((targetView !== 'agendaWeek' && targetView !== 'agendaDay') || hasSelectedProfessional()) {
+                if ((targetView !== 'compactWeek' && targetView !== 'compactDay') || hasSelectedProfessional()) {
                     return true;
                 }
 
@@ -394,6 +550,428 @@
                 return parts[0] + ' ' + parts[parts.length - 1].charAt(0) + '.';
             }
 
+            function formatTimeLabel(timeValue) {
+                return String(timeValue || '').slice(0, 5);
+            }
+
+            function timeToMinutes(timeValue) {
+                var normalized = formatTimeLabel(timeValue);
+                var parts = normalized.split(':');
+
+                if (parts.length < 2) {
+                    return 0;
+                }
+
+                return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
+            }
+
+            function viewDatesForSidebar(view) {
+                if (!view) {
+                    return [];
+                }
+
+                if (view.name === 'compactDay') {
+                    return [view.intervalStart ? view.intervalStart.clone() : view.start.clone()];
+                }
+
+                if (view.name === 'compactWeek') {
+                    var firstDate = view.intervalStart ? view.intervalStart.clone() : view.start.clone();
+
+                    return Array.from({ length: 7 }, function(_, index) {
+                        return firstDate.clone().add(index, 'days');
+                    });
+                }
+
+                return [];
+            }
+
+            function buildClinicHoursSidebarHtml(view) {
+                var opening = formatTimeLabel(clinicOpeningTime);
+                var closing = formatTimeLabel(clinicClosingTime);
+                var lunchStart = clinicLunchStartTime ? formatTimeLabel(clinicLunchStartTime) : '';
+                var lunchEnd = clinicLunchEndTime ? formatTimeLabel(clinicLunchEndTime) : '';
+                var openingMinutes = timeToMinutes(clinicOpeningTime);
+                var closingMinutes = timeToMinutes(clinicClosingTime);
+                var hourItems = [];
+
+                for (var minutes = openingMinutes; minutes <= closingMinutes; minutes += 60) {
+                    var hour = String(Math.floor(minutes / 60)).padStart(2, '0') + ':00';
+                    var hourAvailability = hourAvailabilityForView(minutes, view);
+                    var isLunchHour = hourAvailability.isBreak || (lunchStart && lunchEnd && minutes >= timeToMinutes(clinicLunchStartTime) && minutes < timeToMinutes(clinicLunchEndTime));
+                    var isClickableHour = hourAvailability.isAvailable && !isLunchHour;
+                    var hourClasses = 'calendar-clinic-sidebar-hour';
+
+                    if (isLunchHour) {
+                        hourClasses += ' is-break is-disabled';
+                    } else if (!hourAvailability.isAvailable) {
+                        hourClasses += ' is-disabled is-unavailable';
+                    }
+
+                    hourItems.push(
+                        '<li class="calendar-clinic-sidebar-hour' + (isLunchHour ? ' is-break' : '') + '" data-hour-start="' + hour + '" tabindex="0" role="button" aria-label="Ver agendamentos às ' + hour + '">' +
+                            '<span>' + hour + '</span>' +
+                        '</li>'
+                    );
+                    hourItems[hourItems.length - 1] =
+                        '<li class="' + hourClasses + '" data-hour-start="' + hour + '"' +
+                            (isClickableHour ? ' tabindex="0" role="button" aria-label="Ver agendamentos às ' + hour + '"' : ' aria-disabled="true"') + '>' +
+                            '<span>' + hour + '</span>' +
+                        '</li>';
+                }
+
+                return '' +
+                    '<div class="calendar-clinic-sidebar-card">' +
+                        '<div class="calendar-clinic-sidebar-kicker">Horário da clínica</div>' +
+                        '<div class="calendar-clinic-sidebar-range">' + opening + ' - ' + closing + '</div>' +
+                        (lunchStart && lunchEnd
+                            ? '<div class="calendar-clinic-sidebar-break">Intervalo ' + lunchStart + ' - ' + lunchEnd + '</div>'
+                            : '<div class="calendar-clinic-sidebar-break calendar-clinic-sidebar-break-muted">Sem intervalo cadastrado</div>') +
+                    '</div>' +
+                    '<ul class="calendar-clinic-sidebar-hours">' + hourItems.join('') + '</ul>';
+            }
+
+            function compactWeekAvailabilityMeta(eventCount) {
+                if (eventCount === 0) {
+                    return {
+                        label: 'Livre',
+                        className: 'is-open'
+                    };
+                }
+
+                if (eventCount <= 3) {
+                    return {
+                        label: 'Disponível',
+                        className: 'is-medium'
+                    };
+                }
+
+                return {
+                    label: 'Movimento alto',
+                    className: 'is-busy'
+                };
+            }
+
+            function buildCompactWeekEventCountMap() {
+                var eventCountByDate = {};
+                var events = calendarEl.fullCalendar('clientEvents') || [];
+
+                events.forEach(function(event) {
+                    if (!event.start || typeof event.start.format !== 'function') {
+                        return;
+                    }
+
+                    var dateKey = event.start.format('YYYY-MM-DD');
+                    eventCountByDate[dateKey] = (eventCountByDate[dateKey] || 0) + 1;
+                });
+
+                return eventCountByDate;
+            }
+
+            function buildCompactWeekOccupiedMinutesMap() {
+                var occupiedMinutesByDate = {};
+                var events = calendarEl.fullCalendar('clientEvents') || [];
+
+                events.forEach(function(event) {
+                    if (!event.start || !event.end || typeof event.start.format !== 'function' || typeof event.end.diff !== 'function') {
+                        return;
+                    }
+
+                    var dateKey = event.start.format('YYYY-MM-DD');
+                    occupiedMinutesByDate[dateKey] = (occupiedMinutesByDate[dateKey] || 0) + Math.max(0, event.end.diff(event.start, 'minutes'));
+                });
+
+                return occupiedMinutesByDate;
+            }
+
+            function selectedProfessionalSchedules() {
+                var selectedProfessionalId = professionalFilter
+                    ? String(professionalFilter.value || '').trim()
+                    : String(selectedCalendarProfessionalId || '').trim();
+
+                if (!selectedProfessionalId) {
+                    return [];
+                }
+
+                var professional = (Array.isArray(calendarProfessionalOptions) ? calendarProfessionalOptions : []).find(function(option) {
+                    return String(option.id || '') === selectedProfessionalId;
+                });
+
+                return professional && Array.isArray(professional.schedules) ? professional.schedules : [];
+            }
+
+            function scheduleIntervalsForView(view) {
+                var schedules = selectedProfessionalSchedules();
+                var visibleDates = viewDatesForSidebar(view);
+                var intervals = [];
+
+                visibleDates.forEach(function(dateMoment) {
+                    var isoDay = dateMoment.isoWeekday();
+
+                    schedules.forEach(function(schedule) {
+                        if (Number(schedule.day_of_week || 0) !== isoDay) {
+                            return;
+                        }
+
+                        var startMinutes = timeToMinutes(schedule.start_time || '');
+                        var endMinutes = timeToMinutes(schedule.end_time || '');
+
+                        if (endMinutes > startMinutes) {
+                            intervals.push({
+                                start: startMinutes,
+                                end: endMinutes,
+                                isBreak: false
+                            });
+                        }
+
+                        if (schedule.break_start_time && schedule.break_end_time) {
+                            var breakStartMinutes = timeToMinutes(schedule.break_start_time);
+                            var breakEndMinutes = timeToMinutes(schedule.break_end_time);
+
+                            if (breakEndMinutes > breakStartMinutes) {
+                                intervals.push({
+                                    start: breakStartMinutes,
+                                    end: breakEndMinutes,
+                                    isBreak: true
+                                });
+                            }
+                        }
+                    });
+                });
+
+                return intervals;
+            }
+
+            function hourAvailabilityForView(hourStartMinutes, view) {
+                var intervals = scheduleIntervalsForView(view);
+                var hourEndMinutes = hourStartMinutes + 60;
+                var hasWorkCoverage = false;
+                var isBreakHour = false;
+
+                intervals.forEach(function(interval) {
+                    if (interval.start < hourEndMinutes && interval.end > hourStartMinutes) {
+                        if (interval.isBreak) {
+                            isBreakHour = true;
+                            return;
+                        }
+
+                        hasWorkCoverage = true;
+                    }
+                });
+
+                return {
+                    isAvailable: hasWorkCoverage,
+                    isBreak: isBreakHour
+                };
+            }
+
+            function syncCalendarStateInUrl() {
+                if (!window.history || !window.history.replaceState || !window.URL) {
+                    return;
+                }
+
+                try {
+                    var nextUrl = new window.URL(window.location.href);
+                    var currentView = calendarEl.fullCalendar('getView');
+                    var currentViewName = currentView ? currentView.name : resolveInitialCalendarView();
+                    var currentDateValue = dateFilter ? String(dateFilter.value || '') : '';
+                    var currentProfessionalValue = professionalFilter
+                        ? String(professionalFilter.value || '')
+                        : String(selectedCalendarProfessionalId || '');
+                    var currentProcedureValue = procedureFilter ? String(procedureFilter.value || '') : '';
+
+                    if (currentViewName === 'month' || currentViewName === 'compactWeek' || currentViewName === 'compactDay') {
+                        nextUrl.searchParams.set('calendar_view', currentViewName);
+                    } else {
+                        nextUrl.searchParams.delete('calendar_view');
+                    }
+
+                    if (currentProfessionalValue) {
+                        nextUrl.searchParams.set('professional_id', currentProfessionalValue);
+                    } else {
+                        nextUrl.searchParams.delete('professional_id');
+                    }
+
+                    if (currentProcedureValue) {
+                        nextUrl.searchParams.set('procedure_id', currentProcedureValue);
+                    } else {
+                        nextUrl.searchParams.delete('procedure_id');
+                    }
+
+                    if (currentDateValue) {
+                        nextUrl.searchParams.set('calendar_date', currentDateValue);
+                    } else {
+                        nextUrl.searchParams.delete('calendar_date');
+                    }
+
+                    window.history.replaceState({}, '', nextUrl.toString());
+                } catch (error) {
+                    return;
+                }
+            }
+
+            function scheduleCoverageForDate(dateMoment) {
+                var isoDay = dateMoment.isoWeekday();
+                var schedules = selectedProfessionalSchedules().filter(function(schedule) {
+                    return Number(schedule.day_of_week || 0) === isoDay;
+                });
+
+                if (!schedules.length) {
+                    return null;
+                }
+
+                var totalMinutes = schedules.reduce(function(total, schedule) {
+                    var startMinutes = timeToMinutes(schedule.start_time || '');
+                    var endMinutes = timeToMinutes(schedule.end_time || '');
+                    var breakStartMinutes = schedule.break_start_time ? timeToMinutes(schedule.break_start_time) : null;
+                    var breakEndMinutes = schedule.break_end_time ? timeToMinutes(schedule.break_end_time) : null;
+                    var scheduleMinutes = Math.max(0, endMinutes - startMinutes);
+
+                    if (breakStartMinutes !== null && breakEndMinutes !== null && breakEndMinutes > breakStartMinutes) {
+                        scheduleMinutes -= Math.max(0, breakEndMinutes - breakStartMinutes);
+                    }
+
+                    return total + Math.max(0, scheduleMinutes);
+                }, 0);
+
+                return {
+                    schedules: schedules,
+                    totalMinutes: totalMinutes
+                };
+            }
+
+            function compactWeekAvailabilityMetaForDate(dateMoment, eventCount, occupiedMinutes) {
+                var coverage = scheduleCoverageForDate(dateMoment);
+
+                if (!coverage || coverage.totalMinutes <= 0) {
+                    return {
+                        label: 'Não atende',
+                        className: 'is-off',
+                        note: 'Não atende',
+                        emptyLabel: 'Indisponível',
+                        emptyText: 'Profissional sem atendimento neste dia'
+                    };
+                }
+
+                var freeMinutes = Math.max(0, coverage.totalMinutes - (occupiedMinutes || 0));
+                var occupancyRate = coverage.totalMinutes > 0 ? (occupiedMinutes || 0) / coverage.totalMinutes : 1;
+
+                if (eventCount === 0 || occupiedMinutes === 0) {
+                    return {
+                        label: 'Livre',
+                        className: 'is-open',
+                        note: 'Atende',
+                        emptyLabel: 'Disponível',
+                        emptyText: 'Dia com agenda aberta para atendimento'
+                    };
+                }
+
+                if (freeMinutes <= 0 || occupancyRate >= 0.98) {
+                    return {
+                        label: 'Lotado',
+                        className: 'is-off',
+                        note: 'Atende',
+                        emptyLabel: 'Lotado',
+                        emptyText: 'Sem horários livres na agenda deste dia'
+                    };
+                }
+
+                if (occupancyRate >= 0.7) {
+                    return {
+                        label: 'Poucas vagas',
+                        className: 'is-busy',
+                        note: 'Atende',
+                        emptyLabel: 'Poucas vagas',
+                        emptyText: 'Agenda quase cheia para este dia'
+                    };
+                }
+
+                return {
+                    label: 'Disponível',
+                    className: 'is-medium',
+                    note: 'Atende',
+                    emptyLabel: 'Disponível',
+                    emptyText: 'Ainda há horários disponíveis neste dia'
+                };
+            }
+
+            function enhanceCompactWeekAvailability() {
+                var currentView = calendarEl.fullCalendar('getView');
+
+                if (!currentView || (currentView.name !== 'compactWeek' && currentView.name !== 'compactDay')) {
+                    return;
+                }
+
+                var eventCountByDate = buildCompactWeekEventCountMap();
+                var occupiedMinutesByDate = buildCompactWeekOccupiedMinutesMap();
+                var viewClassName = currentView.name === 'compactDay' ? '.fc-compactDay-view' : '.fc-compactWeek-view';
+                var headerCells = calendarEl.find(viewClassName + ' .fc-day-header');
+                var contentCells = calendarEl.find(viewClassName + ' .fc-content-skeleton table tbody tr').first().children('td');
+                var startDate = currentView.intervalStart ? currentView.intervalStart.clone() : currentView.start.clone();
+                var localeData = window.moment && typeof window.moment.localeData === 'function'
+                    ? window.moment.localeData('pt-br')
+                    : null;
+
+                headerCells.each(function(index, cell) {
+                    var currentDate = startDate.clone().add(index, 'days');
+                    var dateKey = currentDate.format('YYYY-MM-DD');
+                    var eventCount = eventCountByDate[dateKey] || 0;
+                    var occupiedMinutes = occupiedMinutesByDate[dateKey] || 0;
+                    var meta = compactWeekAvailabilityMetaForDate(currentDate, eventCount, occupiedMinutes);
+                    var weekdayLabel = localeData
+                        ? localeData.weekdaysShort(currentDate).replace('.', '')
+                        : currentDate.format('ddd');
+                    var title = weekdayLabel + ' ' + currentDate.format('D/M');
+
+                    window.jQuery(cell).html(
+                        '<div class="calendar-compact-week-header">' +
+                            '<span class="calendar-compact-week-header-title">' + title + '</span>' +
+                            (meta.note ? '<span class="calendar-compact-week-header-note ' + meta.className + '">' + meta.note + '</span>' : '') +
+                        '</div>'
+                    );
+                });
+
+                contentCells.each(function(index, cell) {
+                    var container = window.jQuery(cell);
+
+                    container.find('.calendar-compact-week-day-empty').remove();
+                });
+            }
+
+            function syncClinicSidebar(viewName) {
+                if (!clinicSidebar) {
+                    return;
+                }
+
+                var wasHidden = clinicSidebar.classList.contains('d-none');
+
+                if (viewName === 'compactWeek' || viewName === 'compactDay') {
+                    clinicSidebar.innerHTML = buildClinicHoursSidebarHtml(calendarEl.fullCalendar('getView'));
+                    clinicSidebar.classList.remove('d-none');
+
+                    if (wasHidden && !calendarLayoutSyncInProgress) {
+                        calendarLayoutSyncInProgress = true;
+                        window.requestAnimationFrame(function() {
+                            calendarEl.fullCalendar('render');
+                            calendarLayoutSyncInProgress = false;
+                        });
+                    }
+
+                    return;
+                }
+
+                var wasVisible = !clinicSidebar.classList.contains('d-none');
+                clinicSidebar.classList.add('d-none');
+                clinicSidebar.innerHTML = '';
+
+                if (wasVisible && !calendarLayoutSyncInProgress) {
+                    calendarLayoutSyncInProgress = true;
+                    window.requestAnimationFrame(function() {
+                        calendarEl.fullCalendar('render');
+                        calendarLayoutSyncInProgress = false;
+                    });
+                }
+            }
+
             function buildMonthEventTitle(event) {
                 var patientName = String(event.nome || 'Agendamento').trim();
                 var firstName = patientName.split(/\s+/)[0] || patientName;
@@ -401,46 +979,181 @@
                 return firstName + ' • ' + shortProfessionalName(event.medico || '');
             }
 
-            function buildAgendaEventMarkup(event) {
+            function buildAgendaEventMarkup(event, options) {
+                options = options || {};
+
                 var startTime = String(event.horario || '').trim();
                 var endTime = String(event.horario_final || '').trim();
                 var status = String(event.status || '').trim();
+                var statusClass = normalizeStatusClass(status);
                 var service = String(event.servico || 'Consulta').trim();
                 var patientName = String(event.nome || 'Paciente').trim();
-                var doctor = shortProfessionalName(event.medico || '');
                 var timeLabel = startTime + (endTime ? ' - ' + endTime : '');
+                var showPatient = options.showPatient !== false;
+                var showStatus = options.showStatus !== false;
+                var showService = options.showService !== false;
+                var detailsMarkup = '';
+
+                if (showService) {
+                    detailsMarkup += '<div class="calendar-agenda-event-details">';
+
+                    if (showService) {
+                        detailsMarkup += '' +
+                            '<div class="calendar-agenda-event-meta calendar-agenda-event-meta-service">' +
+                                '<span class="calendar-agenda-event-label">Procedimento</span>' +
+                                '<span class="calendar-agenda-event-value">' + service + '</span>' +
+                            '</div>';
+                    }
+
+                    detailsMarkup += '</div>';
+                }
 
                 return '' +
                     '<div class="calendar-agenda-event-card">' +
                         '<div class="calendar-agenda-event-topline">' +
                             '<div class="calendar-agenda-event-time">' + timeLabel + '</div>' +
-                            '<div class="calendar-agenda-event-patient">' + patientName + '</div>' +
-                            '<div class="calendar-agenda-event-status">' + status + '</div>' +
+                            (showPatient ? '<div class="calendar-agenda-event-patient">' + patientName + '</div>' : '') +
+                            (showStatus ? '<div class="calendar-agenda-event-status"><span class="calendar-agenda-event-status-dot calendar-agenda-event-status-dot-' + statusClass + '"></span>' + status + '</div>' : '') +
                         '</div>' +
-                        '<div class="calendar-agenda-event-details">' +
-                            '<div class="calendar-agenda-event-meta calendar-agenda-event-meta-service">' +
-                                '<span class="calendar-agenda-event-label">Procedimento</span>' +
-                                '<span class="calendar-agenda-event-value">' + service + '</span>' +
-                            '</div>' +
-                            '<div class="calendar-agenda-event-meta">' +
-                                '<span class="calendar-agenda-event-label">Profissional</span>' +
-                                '<span class="calendar-agenda-event-value">' + doctor + '</span>' +
-                            '</div>' +
-                        '</div>' +
+                        detailsMarkup +
                     '</div>';
             }
 
-            function buildWeekEventMarkup(event, showPatient) {
-                var startTime = String(event.horario || '').trim();
-                var endTime = String(event.horario_final || '').trim();
-                var timeLabel = startTime + (endTime ? ' - ' + endTime : '');
-                var patientName = String(event.nome || 'Paciente').trim();
+            function readStoredCalendarView() {
+                var requestedView = String(calendarRequestedView || '').trim();
 
-                return '' +
-                    '<div class="calendar-week-event-card">' +
-                        '<div class="calendar-week-event-time">' + timeLabel + '</div>' +
-                        (showPatient ? '<div class="calendar-week-event-name">' + patientName + '</div>' : '') +
-                    '</div>';
+                if (requestedView === 'agendaWeek') {
+                    return 'compactWeek';
+                }
+
+                if (requestedView === 'agendaDay') {
+                    return 'compactDay';
+                }
+
+                if (requestedView === 'month' || requestedView === 'compactWeek' || requestedView === 'compactDay') {
+                    return requestedView;
+                }
+
+                try {
+                    var storedView = window.localStorage.getItem(calendarViewStorageKey);
+
+                    if (storedView === 'agendaWeek') {
+                        return 'compactWeek';
+                    }
+
+                    if (storedView === 'agendaDay') {
+                        return 'compactDay';
+                    }
+
+                    if (storedView === 'month' || storedView === 'compactWeek' || storedView === 'compactDay') {
+                        return storedView;
+                    }
+                } catch (error) {
+                    return null;
+                }
+
+                return null;
+            }
+
+            function persistCalendarView(viewName) {
+                try {
+                    if (viewName === 'month' || viewName === 'compactWeek' || viewName === 'compactDay') {
+                        window.localStorage.setItem(calendarViewStorageKey, viewName);
+                    }
+                } catch (error) {
+                }
+
+                syncCalendarStateInUrl();
+            }
+
+            function resolveInitialCalendarView() {
+                var storedView = readStoredCalendarView();
+
+                if (storedView === 'month') {
+                    return 'month';
+                }
+
+                if (storedView === 'compactWeek' || storedView === 'compactDay') {
+                    return hasSelectedProfessional() ? storedView : 'month';
+                }
+
+                return hasSelectedProfessional() ? 'compactWeek' : 'month';
+            }
+
+            function applyStoredCalendarView() {
+                var targetView = resolveInitialCalendarView();
+                var currentView = calendarEl.fullCalendar('getView');
+
+                if (!currentView || currentView.name === targetView) {
+                    return;
+                }
+
+                if ((targetView === 'compactWeek' || targetView === 'compactDay') && !hasSelectedProfessional()) {
+                    return;
+                }
+
+                calendarEl.fullCalendar('changeView', targetView);
+            }
+
+            function clearSidebarHourFilter() {
+                clinicSidebar.querySelectorAll('.calendar-clinic-sidebar-hour').forEach(function(item) {
+                    item.classList.remove('is-active');
+                });
+
+                window.jQuery('.calendar-sidebar-hour-highlight').removeClass('calendar-sidebar-hour-highlight');
+                window.jQuery('.calendar-sidebar-hour-hidden').removeClass('calendar-sidebar-hour-hidden');
+            }
+
+            function showAppointmentsForSidebarHour(hourLabel) {
+                var currentView = calendarEl.fullCalendar('getView');
+
+                if (!currentView || (currentView.name !== 'compactWeek' && currentView.name !== 'compactDay')) {
+                    return;
+                }
+
+                var activeSidebarHour = clinicSidebar.querySelector('.calendar-clinic-sidebar-hour.is-active');
+
+                if (activeSidebarHour && activeSidebarHour.getAttribute('data-hour-start') === hourLabel) {
+                    clearSidebarHourFilter();
+                    return;
+                }
+
+                var hourStartMinutes = timeToMinutes(hourLabel);
+                var hourEndMinutes = hourStartMinutes + 60;
+                var matchingEvents = (calendarEl.fullCalendar('clientEvents') || []).filter(function(event) {
+                    if (!event.start || !event.end || typeof event.start.hours !== 'function' || typeof event.end.hours !== 'function') {
+                        return false;
+                    }
+
+                    var eventStartMinutes = event.start.hours() * 60 + event.start.minutes();
+                    var eventEndMinutes = event.end.hours() * 60 + event.end.minutes();
+
+                    return eventStartMinutes < hourEndMinutes && eventEndMinutes > hourStartMinutes;
+                });
+
+                clinicSidebar.querySelectorAll('.calendar-clinic-sidebar-hour').forEach(function(item) {
+                    item.classList.toggle('is-active', item.getAttribute('data-hour-start') === hourLabel);
+                });
+
+                window.jQuery('.calendar-sidebar-hour-highlight').removeClass('calendar-sidebar-hour-highlight');
+                window.jQuery('.calendar-sidebar-hour-hidden').removeClass('calendar-sidebar-hour-hidden');
+
+                var matchingIds = matchingEvents.map(function(event) {
+                    return String(event.agendamento_id);
+                });
+
+                window.jQuery('[data-agendamento-id]').each(function(_, element) {
+                    var eventElement = window.jQuery(element);
+                    var appointmentId = String(eventElement.attr('data-agendamento-id') || '');
+                    var isMatch = matchingIds.indexOf(appointmentId) !== -1;
+
+                    eventElement.toggleClass('calendar-sidebar-hour-highlight', isMatch);
+                    eventElement.toggleClass('calendar-sidebar-hour-hidden', !isMatch);
+                });
+
+                matchingEvents.forEach(function(event) {
+                    window.jQuery('[data-agendamento-id="' + event.agendamento_id + '"]').addClass('calendar-sidebar-hour-highlight');
+                });
             }
 
             function buildMonthEventMarkup(event) {
@@ -460,23 +1173,25 @@
             }
 
             calendarEl.fullCalendar({
-                defaultView: hasSelectedProfessional() ? 'agendaWeek' : 'month',
+                defaultView: resolveInitialCalendarView(),
                 defaultDate: calendarFocusDate || undefined,
                 locale: 'pt-br',
                 lang: 'pt-br',
                 header: {
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'month,agendaWeek,agendaDay'
+                    right: 'month,compactWeek,compactDay'
                 },
                 firstDay: 1,
                 height: 'auto',
-                contentHeight: 980,
                 allDaySlot: false,
-                slotDuration: '00:30:00',
+                slotDuration: '00:05:00',
+                snapDuration: '00:05:00',
+                slotLabelInterval: '01:00:00',
                 minTime: clinicOpeningTime,
                 maxTime: clinicClosingDisplayTime || clinicClosingTime,
-                scrollTime: clinicOpeningTime,
+                scrollTime: calendarInitialScrollTime,
+                scrollTimeReset: false,
                 slotEventOverlap: false,
                 eventOverlap: false,
                 selectOverlap: false,
@@ -494,24 +1209,27 @@
                 buttonText: {
                     today: 'Hoje',
                     month: 'Mês',
-                    agendaWeek: 'Semana',
-                    agendaDay: 'Dia'
+                    compactWeek: 'Semana',
+                    compactDay: 'Dia'
                 },
                 views: {
                     month: {
                         titleFormat: 'MMMM [de] YYYY',
                         columnHeaderFormat: 'ddd',
-                        eventLimit: 2,
-                        contentHeight: 'auto'
+                        eventLimit: 2
                     },
-                    agendaWeek: {
+                    compactWeek: {
+                        type: 'basicWeek',
                         columnHeaderFormat: 'ddd D/M',
-                        contentHeight: 1080
+                        eventLimit: false,
+                        height: 'auto'
                     },
-                    agendaDay: {
+                    compactDay: {
+                        type: 'basicDay',
                         titleFormat: 'dddd, D [de] MMMM [de] YYYY',
                         columnHeaderFormat: 'dddd D/M',
-                        contentHeight: 1160
+                        eventLimit: false,
+                        height: 'auto'
                     }
                 },
                 events: {
@@ -519,7 +1237,7 @@
                     type: 'GET',
                     data: function() {
                         return {
-                            professional_id: professionalFilter ? professionalFilter.value : '',
+                            professional_id: professionalFilter ? professionalFilter.value : selectedCalendarProfessionalId,
                             procedure_id: procedureFilter ? procedureFilter.value : '',
                             calendar_date: dateFilter ? dateFilter.value : '',
                             open_agendamento: pendingAutoOpenId || ''
@@ -536,7 +1254,6 @@
                     var activeView = calendarEl.fullCalendar('getView').name;
                     var eventMinutes = 0;
                     var statusClass = normalizeStatusClass(event.status || '');
-                    var showWeekPatientName = activeView === 'agendaWeek' && professionalFilter && String(professionalFilter.value || '').trim() !== '';
 
                     if (event.start && event.end && typeof event.end.diff === 'function') {
                         eventMinutes = event.end.diff(event.start, 'minutes');
@@ -549,16 +1266,16 @@
                     if (activeView === 'month') {
                         element.addClass('calendar-month-event-card');
                         element.find('.fc-content').html(buildMonthEventMarkup(event));
-                    } else if (activeView === 'agendaWeek') {
-                        element.addClass('calendar-agenda-event calendar-week-event');
-                        if (showWeekPatientName) {
-                            element.addClass('calendar-week-event-with-name');
-                        }
-
-                        element.find('.fc-content').html(buildWeekEventMarkup(event, showWeekPatientName));
+                    } else if (activeView === 'compactWeek' || activeView === 'compactDay') {
+                        element.addClass('calendar-agenda-event calendar-agenda-event-week');
+                        element.find('.fc-content').html(buildAgendaEventMarkup(event, {
+                            showPatient: true,
+                            showStatus: true,
+                            showService: true
+                        }));
                     } else {
                         element.addClass('calendar-agenda-event');
-                        if (eventMinutes > 0 && eventMinutes <= 30) {
+                        if (eventMinutes > 0 && eventMinutes <= 120) {
                             element.addClass('calendar-agenda-event-short');
                         }
                         element.find('.fc-content').html(buildAgendaEventMarkup(event));
@@ -581,9 +1298,7 @@
                 eventAfterAllRender: function() {
                     var currentView = calendarEl.fullCalendar('getView');
 
-                    if (currentView && (currentView.name === 'agendaWeek' || currentView.name === 'agendaDay')) {
-                        calendarEl.fullCalendar('scrollToTime', clinicOpeningTime);
-                    }
+                    enhanceCompactWeekAvailability();
 
                     if (!pendingAutoOpenId || hasAutoOpenedAppointment === true || !calendarShouldShowDetails) {
                         return;
@@ -602,22 +1317,25 @@
                     openAppointmentModal(targetEvent[0]);
                 },
                 viewRender: function(view) {
+                    persistCalendarView(view.name);
+                    syncClinicSidebar(view.name);
                     ensureDetailedViewAccess(view.name);
                 }
             });
+
+            window.setTimeout(function() {
+                applyStoredCalendarView();
+            }, 0);
 
             if (professionalFilter) {
                 professionalFilter.addEventListener('change', function() {
                     clearProfessionalWarning();
                     selectedProcedureId = '';
                     refreshProcedureFilterOptions();
-
-                    if (hasSelectedProfessional()) {
-                        var currentView = calendarEl.fullCalendar('getView');
-
-                        if (currentView && currentView.name === 'month') {
-                            calendarEl.fullCalendar('changeView', 'agendaWeek');
-                        }
+                    syncCalendarStateInUrl();
+                    var currentView = calendarEl.fullCalendar('getView');
+                    if (currentView) {
+                        syncClinicSidebar(currentView.name);
                     }
 
                     calendarEl.fullCalendar('refetchEvents');
@@ -629,6 +1347,11 @@
 
                 procedureFilter.addEventListener('change', function() {
                     selectedProcedureId = String(procedureFilter.value || '');
+                    syncCalendarStateInUrl();
+                    var currentView = calendarEl.fullCalendar('getView');
+                    if (currentView) {
+                        syncClinicSidebar(currentView.name);
+                    }
                     calendarEl.fullCalendar('refetchEvents');
                 });
             }
@@ -639,11 +1362,16 @@
                         calendarEl.fullCalendar('gotoDate', dateFilter.value);
                     }
 
+                    syncCalendarStateInUrl();
+                    var currentView = calendarEl.fullCalendar('getView');
+                    if (currentView) {
+                        syncClinicSidebar(currentView.name);
+                    }
                     calendarEl.fullCalendar('refetchEvents');
                 });
             }
 
-            window.jQuery(document).on('click', '.fc-agendaWeek-button, .fc-agendaDay-button', function() {
+            window.jQuery(document).on('click', '.fc-compactWeek-button, .fc-compactDay-button', function() {
                 window.setTimeout(function() {
                     var currentView = calendarEl.fullCalendar('getView');
 
@@ -651,6 +1379,27 @@
                         ensureDetailedViewAccess(currentView.name);
                     }
                 }, 0);
+            });
+
+            clinicSidebar.addEventListener('click', function(event) {
+                var target = event.target.closest('.calendar-clinic-sidebar-hour[data-hour-start]');
+
+                if (!target || target.classList.contains('is-disabled')) {
+                    return;
+                }
+
+                showAppointmentsForSidebarHour(String(target.getAttribute('data-hour-start') || ''));
+            });
+
+            clinicSidebar.addEventListener('keydown', function(event) {
+                var target = event.target.closest('.calendar-clinic-sidebar-hour[data-hour-start]');
+
+                if (!target || target.classList.contains('is-disabled') || (event.key !== 'Enter' && event.key !== ' ')) {
+                    return;
+                }
+
+                event.preventDefault();
+                showAppointmentsForSidebarHour(String(target.getAttribute('data-hour-start') || ''));
             });
         }
 
@@ -692,6 +1441,12 @@
         font-size: 12px;
         font-weight: 700;
     }
+    .calendar-legend-item .calendar-month-event-status-dot {
+        width: 8px;
+        height: 8px;
+        margin-top: 0;
+        vertical-align: middle;
+    }
     .calendar-legend-swatch {
         width: 10px;
         height: 10px;
@@ -703,12 +1458,6 @@
     .fc .fc-button-primary.fc-button-active { background-color: #0056b3; border-color: #0056b3; }
     .fc .fc-event { cursor: pointer; border-radius: 4px; }
     .fc .fc-event:hover { opacity: 0.85; }
-    .fc-time-grid,
-    .fc-time-grid-container,
-    .fc-view.fc-agendaWeek-view,
-    .fc-view.fc-agendaDay-view {
-        min-height: 980px;
-    }
     .fc .calendar-agenda-event {
         position: relative;
         border: 1px solid #111111 !important;
@@ -754,22 +1503,25 @@
     }
     .calendar-agenda-event-card {
         display: grid;
-        gap: 7px;
-        line-height: 1.35;
+        gap: 4px;
+        line-height: 1.2;
+        height: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
     }
     .calendar-agenda-event-topline {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
     }
     .calendar-agenda-event-time {
         display: inline-flex;
         align-items: center;
         flex: 0 0 auto;
-        padding: 4px 8px;
+        padding: 2px 7px;
         border-radius: 999px;
         background: rgba(255, 255, 255, 0.2);
-        font-size: 11.5px;
+        font-size: 10px;
         font-weight: 800;
         letter-spacing: .02em;
         line-height: 1.1;
@@ -778,16 +1530,16 @@
     .calendar-agenda-event-patient {
         flex: 1 1 auto;
         min-width: 0;
-        font-size: 14px;
+        font-size: 12px;
         font-weight: 800;
         white-space: normal;
-        line-height: 1.3;
+        line-height: 1.15;
         word-break: break-word;
     }
     .calendar-agenda-event-details {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, .92fr);
-        gap: 8px;
+        gap: 6px;
         width: 100%;
     }
     .calendar-agenda-event-details > * {
@@ -799,7 +1551,7 @@
         min-width: 0;
         width: auto;
         max-width: 100%;
-        padding: 7px 9px;
+        padding: 5px 7px;
         box-sizing: border-box;
         border-radius: 10px;
         background: rgba(255, 255, 255, 0.12);
@@ -815,63 +1567,46 @@
         line-height: 1.3;
     }
     .calendar-agenda-event-value {
-        font-size: 12px;
+        font-size: 10.5px;
         font-weight: 700;
-        line-height: 1.35;
+        line-height: 1.15;
         word-break: break-word;
     }
     .calendar-agenda-event-meta-service .calendar-agenda-event-value {
-        font-size: 12.5px;
+        font-size: 11px;
     }
     .calendar-agenda-event-status {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        gap: 5px;
         flex: 0 0 auto;
-        padding: 4px 8px;
+        padding: 2px 7px;
         border-radius: 999px;
         background: rgba(12, 32, 53, 0.16);
-        font-size: 10px;
+        font-size: 9px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: .08em;
         line-height: 1.1;
         white-space: nowrap;
     }
-    .calendar-week-event .fc-content {
-        padding: 0 !important;
-    }
-    .calendar-week-event-card {
-        display: grid;
-        gap: 4px;
-        min-height: 100%;
-        align-content: start;
-        padding: 6px 8px;
-    }
-    .calendar-week-event-time {
-        display: inline-flex;
-        align-items: center;
-        justify-content: flex-start;
-        width: fit-content;
-        max-width: 100%;
-        padding: 3px 8px;
+    .calendar-agenda-event-status-dot {
+        width: 7px;
+        height: 7px;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.18);
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: .02em;
-        line-height: 1.2;
-        color: #ffffff;
+        display: inline-block;
+        flex: 0 0 auto;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
     }
-    .calendar-week-event-name {
-        align-self: center;
-        justify-self: center;
-        max-width: 100%;
-        font-size: 11px;
-        font-weight: 800;
-        line-height: 1.2;
-        text-align: center;
-        word-break: break-word;
+    .calendar-agenda-event-status-dot-confirmado {
+        background: #28a745;
+    }
+    .calendar-agenda-event-status-dot-pendente {
+        background: #ffc107;
+    }
+    .calendar-agenda-event-status-dot-finalizado {
+        background: #5f6b7a;
     }
     #calendar { min-height: 780px; }
     .fc-agendaWeek-view .fc-day-header,
@@ -913,30 +1648,28 @@
         box-shadow: inset -2px 0 0 rgba(23, 111, 190, 0.22);
     }
 
-    .fc-agendaWeek-view .fc-axis,
-    .fc-agendaDay-view .fc-axis {
-        background: rgba(247, 251, 255, 0.98);
-        color: #5a7186;
-        font-weight: 700;
-        font-size: 12px;
-        letter-spacing: .01em;
-        white-space: nowrap;
-    }
-
     .fc-agendaWeek-view .fc-time-grid .fc-slats .fc-minor td,
     .fc-agendaDay-view .fc-time-grid .fc-slats .fc-minor td {
-        border-top-style: dashed;
-        opacity: .85;
+        border-top-color: transparent !important;
+        opacity: .25;
     }
 
-    .fc-agendaWeek-view .fc-slats td,
-    .fc-agendaDay-view .fc-slats td {
-        height: 3.4rem;
+    .fc-agendaWeek-view .fc-axis,
+    .fc-agendaDay-view .fc-axis {
+        font-size: 12px;
+        font-weight: 700;
+        color: #5a7186;
+        white-space: nowrap;
+        position: relative;
+        z-index: 6;
+        background: rgba(247, 251, 255, 0.98);
+        padding-right: 10px;
+        text-align: right;
     }
 
-    .fc-agendaWeek-view .fc-time-grid .fc-content-col,
-    .fc-agendaDay-view .fc-time-grid .fc-content-col {
-        background-image: linear-gradient(180deg, rgba(23, 111, 190, 0.03) 0%, rgba(23, 111, 190, 0.01) 100%);
+    .fc-agendaWeek-view .fc-slats .fc-minor .fc-axis,
+    .fc-agendaDay-view .fc-slats .fc-minor .fc-axis {
+        opacity: 0;
     }
 
     .fc-month-view .fc-day,
@@ -1066,6 +1799,261 @@
         background: linear-gradient(180deg, rgba(23, 111, 190, 0.12) 0%, rgba(23, 111, 190, 0.06) 100%) !important;
     }
 
+    .fc-compactWeek-view .fc-day-header,
+    .fc-compactWeek-view .fc-widget-header,
+    .fc-compactDay-view .fc-day-header,
+    .fc-compactDay-view .fc-widget-header {
+        background: linear-gradient(180deg, rgba(244, 249, 255, 0.98) 0%, rgba(233, 242, 252, 0.98) 100%);
+        border-bottom: 1px solid rgba(23, 111, 190, 0.16) !important;
+        padding: 12px 8px;
+        font-weight: 700;
+        color: #35536e;
+        box-sizing: border-box;
+    }
+
+    .fc-compactWeek-view .fc-day-header,
+    .fc-compactDay-view .fc-day-header {
+        vertical-align: top;
+    }
+
+    .fc-compactWeek-view table,
+    .fc-compactWeek-view .fc-row,
+    .fc-compactWeek-view .fc-content-skeleton,
+    .fc-compactWeek-view .fc-day-grid-container,
+    .fc-compactDay-view table,
+    .fc-compactDay-view .fc-row,
+    .fc-compactDay-view .fc-content-skeleton,
+    .fc-compactDay-view .fc-day-grid-container {
+        width: 100% !important;
+        table-layout: fixed;
+        box-sizing: border-box;
+    }
+
+    .calendar-compact-week-header {
+        display: grid;
+        gap: 8px;
+        justify-items: center;
+        width: 100%;
+        min-height: 72px;
+        padding: 16px 10px;
+        box-sizing: border-box;
+    }
+
+    .calendar-compact-week-header-title {
+        font-weight: 700;
+    }
+
+    .calendar-compact-week-header-note {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 28px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+        border: 1px solid transparent;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    .calendar-compact-week-header-note.is-open,
+    .calendar-compact-week-header-note.is-medium,
+    .calendar-compact-week-header-note.is-busy {
+        background: linear-gradient(180deg, rgba(231, 246, 236, 0.98) 0%, rgba(219, 240, 226, 0.98) 100%);
+        border-color: rgba(54, 145, 87, 0.18);
+        color: #2f7d49;
+    }
+
+    .calendar-compact-week-header-note.is-off {
+        background: linear-gradient(180deg, rgba(244, 247, 250, 0.98) 0%, rgba(235, 240, 245, 0.98) 100%);
+        border-color: rgba(108, 127, 146, 0.22);
+        color: #617487;
+    }
+
+    .calendar-compact-week-availability {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 24px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .calendar-compact-week-availability.is-open {
+        background: rgba(40, 167, 69, 0.12);
+        border-color: rgba(40, 167, 69, 0.18);
+        color: #1f7c35;
+    }
+
+    .calendar-compact-week-availability.is-medium {
+        background: rgba(23, 111, 190, 0.1);
+        border-color: rgba(23, 111, 190, 0.16);
+        color: #176fbe;
+    }
+
+    .calendar-compact-week-availability.is-busy {
+        background: rgba(255, 193, 7, 0.16);
+        border-color: rgba(255, 193, 7, 0.22);
+        color: #9a6b00;
+    }
+
+    .calendar-compact-week-availability.is-off {
+        background: rgba(95, 107, 122, 0.14);
+        border-color: rgba(95, 107, 122, 0.2);
+        color: #526171;
+    }
+
+    .fc-compactWeek-view .fc-day-header:not(:last-child),
+    .fc-compactWeek-view .fc-widget-content:not(:last-child),
+    .fc-compactWeek-view .fc-bg td:not(:last-child),
+    .fc-compactWeek-view .fc-content-skeleton td:not(:last-child),
+    .fc-compactDay-view .fc-day-header:not(:last-child),
+    .fc-compactDay-view .fc-widget-content:not(:last-child),
+    .fc-compactDay-view .fc-bg td:not(:last-child),
+    .fc-compactDay-view .fc-content-skeleton td:not(:last-child) {
+        border-right: 1px solid rgba(23, 111, 190, 0.22) !important;
+    }
+
+    .fc-compactWeek-view .fc-day-header,
+    .fc-compactDay-view .fc-day-header {
+        padding: 0 !important;
+        vertical-align: top;
+        box-sizing: border-box;
+        overflow: hidden;
+        position: relative;
+        background-clip: padding-box !important;
+    }
+
+    .fc-compactWeek-view .fc-day,
+    .fc-compactWeek-view .fc-widget-content,
+    .fc-compactWeek-view .fc-bg td,
+    .fc-compactDay-view .fc-day,
+    .fc-compactDay-view .fc-widget-content,
+    .fc-compactDay-view .fc-bg td {
+        background: rgba(255, 255, 255, 0.98);
+        border-color: rgba(23, 111, 190, 0.18) !important;
+        vertical-align: top;
+        box-sizing: border-box;
+    }
+
+    .fc-compactWeek-view .fc-content-skeleton td,
+    .fc-compactDay-view .fc-content-skeleton td {
+        padding: 8px 8px 10px;
+        vertical-align: top;
+        box-sizing: border-box;
+    }
+
+    .calendar-compact-week-day-empty {
+        margin: 10px 6px 0;
+        padding: 14px 12px;
+        border-radius: 16px;
+        border: 1px dashed rgba(40, 167, 69, 0.26);
+        background: linear-gradient(180deg, rgba(244, 255, 247, 0.98) 0%, rgba(235, 251, 240, 0.98) 100%);
+        text-align: center;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .calendar-compact-week-day-empty-label {
+        display: block;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: #2f8f47;
+    }
+
+    .calendar-compact-week-day-empty-text {
+        display: block;
+        margin-top: 5px;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.35;
+        color: #35536e;
+    }
+
+    .calendar-compact-week-day-empty[data-state="off"] {
+        border-color: rgba(95, 107, 122, 0.2);
+        background: linear-gradient(180deg, rgba(247, 249, 251, 0.98) 0%, rgba(239, 243, 247, 0.98) 100%);
+    }
+
+    .fc-compactWeek-view .fc-day-grid-event,
+    .fc-compactWeek-view .calendar-agenda-event-week,
+    .fc-compactDay-view .fc-day-grid-event,
+    .fc-compactDay-view .calendar-agenda-event-week {
+        position: relative;
+        display: block;
+        margin: 8px 6px 0 !important;
+        border-radius: 16px;
+        border: 1px solid #111111 !important;
+        box-shadow: 0 12px 22px rgba(15, 61, 107, 0.14);
+    }
+
+    .fc-compactWeek-view .calendar-agenda-event-week .fc-content,
+    .fc-compactDay-view .calendar-agenda-event-week .fc-content {
+        display: block;
+        padding: 10px 11px;
+    }
+
+    .fc-compactWeek-view .calendar-agenda-event-week .calendar-agenda-event-card,
+    .fc-compactDay-view .calendar-agenda-event-week .calendar-agenda-event-card {
+        gap: 6px;
+    }
+
+    .fc-compactWeek-view .calendar-agenda-event-week .calendar-agenda-event-topline,
+    .fc-compactDay-view .calendar-agenda-event-week .calendar-agenda-event-topline {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .fc-compactWeek-view .calendar-agenda-event-week .calendar-agenda-event-time,
+    .fc-compactWeek-view .calendar-agenda-event-week .calendar-agenda-event-status,
+    .fc-compactDay-view .calendar-agenda-event-week .calendar-agenda-event-time,
+    .fc-compactDay-view .calendar-agenda-event-week .calendar-agenda-event-status {
+        padding: 3px 8px;
+        font-size: 10px;
+    }
+
+    .fc-compactWeek-view .calendar-agenda-event-week .calendar-agenda-event-patient,
+    .fc-compactDay-view .calendar-agenda-event-week .calendar-agenda-event-patient {
+        order: 3;
+        flex: 1 0 100%;
+        width: 100%;
+        font-size: 12.5px;
+        line-height: 1.2;
+        text-align: center;
+        white-space: normal;
+        word-break: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .fc-compactWeek-view .calendar-agenda-event-week .calendar-agenda-event-details,
+    .fc-compactDay-view .calendar-agenda-event-week .calendar-agenda-event-details {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 6px;
+    }
+
+    .fc-compactWeek-view .calendar-agenda-event-week .calendar-agenda-event-meta,
+    .fc-compactDay-view .calendar-agenda-event-week .calendar-agenda-event-meta {
+        justify-items: center;
+        gap: 6px;
+        padding: 6px 8px;
+        text-align: center;
+    }
+
+    .fc-compactWeek-view .fc-today,
+    .fc-compactDay-view .fc-today {
+        background: linear-gradient(180deg, rgba(23, 111, 190, 0.12) 0%, rgba(23, 111, 190, 0.06) 100%) !important;
+        background-clip: padding-box !important;
+    }
+
     .agendamento-details { padding: 15px; }
     .agendamento-details p { margin-bottom: 10px; line-height: 1.6; }
     .calendar-event-highlight {
@@ -1168,40 +2156,157 @@
     }
     .fc-time-grid-event {
         margin-right: 4px;
+        overflow: hidden;
     }
     .fc-time-grid-event .fc-content {
         padding: 6px 8px;
+        height: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
     }
     .fc-time-grid .fc-event-container {
         margin-right: 2px;
     }
 
-    .fc-agendaWeek-view .fc-time-grid-event .fc-content {
-        padding: 0;
-    }
-
-    .fc-agendaWeek-view .calendar-week-event {
+    .fc-agendaWeek-view .calendar-agenda-event-week {
         border-radius: 16px !important;
         box-shadow: 0 12px 22px rgba(15, 61, 107, 0.14);
     }
 
-    .fc-agendaWeek-view .calendar-week-event-time {
-        font-size: 11.5px;
+    .fc-agendaWeek-view .calendar-agenda-event-week .fc-content {
+        display: block;
+        padding: 8px 9px;
     }
 
-    .fc-agendaWeek-view .calendar-week-event-with-name .calendar-week-event-card {
-        align-content: start;
+    .fc-agendaWeek-view .calendar-agenda-event-week .calendar-agenda-event-card {
+        gap: 6px;
+    }
+
+    .fc-agendaWeek-view .calendar-agenda-event-week .calendar-agenda-event-topline {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
         gap: 8px;
-        padding: 8px 10px 10px;
     }
 
-    .fc-agendaWeek-view .calendar-week-event-with-name .calendar-week-event-name {
+    .fc-agendaWeek-view .calendar-agenda-event-week .calendar-agenda-event-time,
+    .fc-agendaWeek-view .calendar-agenda-event-week .calendar-agenda-event-status {
+        padding: 3px 8px;
+        font-size: 10px;
+    }
+
+    .fc-agendaWeek-view .calendar-agenda-event-week .calendar-agenda-event-patient {
+        order: 3;
+        flex: 1 0 100%;
+        width: 100%;
+        align-self: center;
         font-size: 12.5px;
+        line-height: 1.2;
+        text-align: center;
+        white-space: normal;
+        word-break: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .fc-agendaWeek-view .calendar-agenda-event-week .calendar-agenda-event-details {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 6px;
+    }
+
+    .fc-agendaWeek-view .calendar-agenda-event-week .calendar-agenda-event-meta {
+        justify-items: center;
+        gap: 6px;
+        padding: 6px 8px;
+        text-align: center;
+    }
+
+    .fc-agendaWeek-view .calendar-agenda-event-week .calendar-agenda-event-label {
+        font-size: 8.5px;
+    }
+
+    .fc-agendaWeek-view .calendar-agenda-event-week .calendar-agenda-event-value {
+        font-size: 11px;
+        line-height: 1.25;
+        text-align: center;
+    }
+
+    .fc-agendaWeek-view .calendar-agenda-event-week.calendar-agenda-event-short .fc-content {
+        padding: 5px 7px;
+    }
+
+    .fc-agendaWeek-view .calendar-agenda-event-week.calendar-agenda-event-short .calendar-agenda-event-card {
+        gap: 4px;
+    }
+
+    .fc-agendaWeek-view .calendar-agenda-event-week.calendar-agenda-event-short .calendar-agenda-event-details {
+        display: none;
+    }
+
+    .fc-agendaWeek-view .calendar-agenda-event-week.calendar-agenda-event-short .calendar-agenda-event-patient {
+        font-size: 11px;
+        line-height: 1.1;
+        flex-basis: 100%;
     }
 
     html[data-theme="dark"] .calendar-shell .card-header,
     html[data-theme="dark"] .calendar-shell .card-body {
         background: transparent !important;
+    }
+
+    html[data-theme="dark"] .calendar-clinic-sidebar-card {
+        background: linear-gradient(180deg, rgba(24, 42, 61, 0.98) 0%, rgba(18, 32, 48, 0.98) 100%);
+        border-color: #000000;
+        box-shadow: inset 0 0 0 1px #000000, 0 18px 34px rgba(2, 8, 15, 0.28);
+    }
+
+    html[data-theme="dark"] .calendar-clinic-sidebar-kicker {
+        color: #94b9db;
+    }
+
+    html[data-theme="dark"] .calendar-clinic-sidebar-range {
+        color: #eef6ff;
+    }
+
+    html[data-theme="dark"] .calendar-clinic-sidebar-break {
+        background: rgba(143, 197, 255, 0.12);
+        color: #d7eaff;
+    }
+
+    html[data-theme="dark"] .calendar-clinic-sidebar-break-muted {
+        background: rgba(255, 255, 255, 0.06);
+        color: #aac5de;
+    }
+
+    html[data-theme="dark"] .calendar-clinic-sidebar-hour {
+        background: rgba(21, 36, 52, 0.94);
+        border-color: rgba(143, 197, 255, 0.16);
+        color: #d7eaff;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    html[data-theme="dark"] .calendar-clinic-sidebar-hour.is-break {
+        background: linear-gradient(180deg, rgba(108, 84, 25, 0.72) 0%, rgba(90, 68, 18, 0.72) 100%);
+        border-color: rgba(255, 214, 112, 0.24);
+        color: #ffe9ae;
+    }
+
+    html[data-theme="dark"] .calendar-clinic-sidebar-hour.is-unavailable {
+        background: rgba(28, 41, 55, 0.9);
+        border-style: dashed;
+        color: #7f97ad;
+    }
+
+    html[data-theme="dark"] .calendar-clinic-sidebar-hour:hover,
+    html[data-theme="dark"] .calendar-clinic-sidebar-hour:focus {
+        border-color: rgba(143, 197, 255, 0.26);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 10px 18px rgba(2, 8, 15, 0.24);
+    }
+
+    html[data-theme="dark"] .calendar-clinic-sidebar-hour.is-active {
+        background: linear-gradient(180deg, rgba(143, 197, 255, 0.16) 0%, rgba(143, 197, 255, 0.1) 100%);
+        border-color: rgba(143, 197, 255, 0.3);
+        color: #eef6ff;
+        box-shadow: inset 0 0 0 1px rgba(143, 197, 255, 0.14), 0 12px 22px rgba(2, 8, 15, 0.22);
     }
 
     html[data-theme="dark"] .calendar-legend-item {
@@ -1322,74 +2427,12 @@
         padding: 14px 8px;
     }
 
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-day-header:not(:last-child),
     html[data-theme="dark"] .fc-agendaDay-view .fc-day-header:not(:last-child),
     html[data-theme="dark"] .fc-month-view .fc-day-header:not(:last-child),
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-widget-content:not(:last-child),
     html[data-theme="dark"] .fc-agendaDay-view .fc-widget-content:not(:last-child),
     html[data-theme="dark"] .fc-month-view .fc-day:not(:last-child),
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-slats td:not(:last-child),
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-bg td:not(:last-child),
-    html[data-theme="dark"] .fc-month-view .fc-bg td:not(:last-child),
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-content-skeleton td:not(:last-child) {
+    html[data-theme="dark"] .fc-month-view .fc-bg td:not(:last-child) {
         border-right: 1px solid rgba(143, 197, 255, 0.3) !important;
-    }
-
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-day-header:not(:last-child),
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-bg td:not(:last-child),
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-content-skeleton td:not(:last-child),
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-slats td:not(:last-child),
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-widget-content:not(:last-child) {
-        box-shadow: inset -2px 0 0 rgba(143, 197, 255, 0.34);
-    }
-
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-slats .fc-widget-content,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-skeleton .fc-widget-content,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-col,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-bg .fc-day,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-day,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-event-container,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-bgevent-container,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-highlight-container {
-        border-right: 1px solid rgba(143, 197, 255, 0.28) !important;
-        box-shadow: inset -1px 0 0 rgba(143, 197, 255, 0.26) !important;
-    }
-
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-col:last-child,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-bg .fc-day:last-child,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-day:last-child,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-event-container:last-child,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-bgevent-container:last-child,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-highlight-container:last-child {
-        border-right: 0 !important;
-        box-shadow: none !important;
-    }
-
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-col {
-        background-image: linear-gradient(180deg, rgba(143, 197, 255, 0.09) 0%, rgba(143, 197, 255, 0.02) 100%);
-        background-clip: padding-box;
-    }
-
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-col:nth-child(odd),
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-bg td:nth-child(odd) {
-        background-color: rgba(143, 197, 255, 0.05) !important;
-    }
-
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-col:nth-child(even),
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-bg td:nth-child(even) {
-        background-color: rgba(255, 255, 255, 0.015) !important;
-    }
-
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-content-col:first-child,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-bg td:first-child,
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-day-header:first-child {
-        border-left: 1px solid rgba(143, 197, 255, 0.34) !important;
-        box-shadow: inset 1px 0 0 rgba(143, 197, 255, 0.28), inset -1px 0 0 rgba(143, 197, 255, 0.26) !important;
-    }
-
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-day-header:not(:last-child) {
-        border-right: 1px solid rgba(143, 197, 255, 0.38) !important;
-        box-shadow: inset -2px 0 0 rgba(143, 197, 255, 0.3) !important;
     }
 
     html[data-theme="dark"] .fc-time-grid,
@@ -1400,26 +2443,161 @@
     html[data-theme="dark"] .fc-bg,
     html[data-theme="dark"] .fc-slats,
     html[data-theme="dark"] .fc-content-skeleton,
-    html[data-theme="dark"] .fc-time-grid-container,
     html[data-theme="dark"] .fc-day-grid-container {
         background: #16283b;
     }
 
-    html[data-theme="dark"] .fc-day,
-    html[data-theme="dark"] .fc-time-area,
-    html[data-theme="dark"] .fc-axis,
-    html[data-theme="dark"] .fc-slats td,
-    html[data-theme="dark"] .fc-time-grid .fc-slats .fc-minor td {
-        background: #16283b;
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-slats td,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-slats td,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-time-grid .fc-slats .fc-minor td,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-time-grid .fc-slats .fc-minor td,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-bg td,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-bg td,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-day,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-day {
+        background: #1c2f43 !important;
         color: #9bb4ca;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-axis,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-axis {
+        background: #16283b !important;
+        color: #c8def3 !important;
+        border-right: 1px solid rgba(143, 197, 255, 0.2) !important;
+        position: relative;
+        z-index: 10;
+        box-shadow: none !important;
+        padding-right: 12px;
+        text-align: right;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-slats .fc-minor .fc-axis,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-slats .fc-minor .fc-axis {
+        opacity: 0;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-day-header,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-day-header,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-widget-header,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-widget-header {
+        background: linear-gradient(180deg, rgba(28, 47, 67, 0.98) 0%, rgba(24, 40, 57, 0.98) 100%) !important;
+        color: #d2e4f5 !important;
+        border-bottom: 1px solid rgba(143, 197, 255, 0.18) !important;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-widget-content,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-widget-content,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-bg td,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-bg td {
+        border-color: rgba(143, 197, 255, 0.18) !important;
+        box-shadow: none !important;
     }
 
     html[data-theme="dark"] .fc-month-view .fc-day,
     html[data-theme="dark"] .fc-month-view .fc-widget-content,
     html[data-theme="dark"] .fc-month-view .fc-bg td,
+    html[data-theme="dark"] .fc-compactWeek-view .fc-day,
+    html[data-theme="dark"] .fc-compactWeek-view .fc-widget-content,
+    html[data-theme="dark"] .fc-compactWeek-view .fc-bg td,
+    html[data-theme="dark"] .fc-compactDay-view .fc-day,
+    html[data-theme="dark"] .fc-compactDay-view .fc-widget-content,
+    html[data-theme="dark"] .fc-compactDay-view .fc-bg td,
     html[data-theme="dark"] .fc-month-view .fc-content-skeleton td {
         background: #16283b !important;
         border-color: rgba(143, 197, 255, 0.24) !important;
+    }
+
+    html[data-theme="dark"] .fc-compactWeek-view .fc-day-header,
+    html[data-theme="dark"] .fc-compactWeek-view .fc-widget-header,
+    html[data-theme="dark"] .fc-compactDay-view .fc-day-header,
+    html[data-theme="dark"] .fc-compactDay-view .fc-widget-header {
+        background: linear-gradient(180deg, rgba(23, 40, 59, 0.98) 0%, rgba(19, 33, 49, 0.98) 100%) !important;
+        color: #c4d9ed !important;
+        border-bottom: 1px solid rgba(143, 197, 255, 0.26) !important;
+    }
+
+    html[data-theme="dark"] .fc-compactWeek-view .fc-day-header,
+    html[data-theme="dark"] .fc-compactDay-view .fc-day-header {
+        padding: 0 !important;
+        overflow: hidden;
+        background-clip: padding-box !important;
+    }
+
+    html[data-theme="dark"] .fc-compactWeek-view .fc-day-header:not(:last-child),
+    html[data-theme="dark"] .fc-compactWeek-view .fc-widget-content:not(:last-child),
+    html[data-theme="dark"] .fc-compactWeek-view .fc-bg td:not(:last-child),
+    html[data-theme="dark"] .fc-compactWeek-view .fc-content-skeleton td:not(:last-child),
+    html[data-theme="dark"] .fc-compactDay-view .fc-day-header:not(:last-child),
+    html[data-theme="dark"] .fc-compactDay-view .fc-widget-content:not(:last-child),
+    html[data-theme="dark"] .fc-compactDay-view .fc-bg td:not(:last-child),
+    html[data-theme="dark"] .fc-compactDay-view .fc-content-skeleton td:not(:last-child) {
+        border-right: 1px solid rgba(143, 197, 255, 0.24) !important;
+    }
+
+    html[data-theme="dark"] .fc-compactWeek-view .fc-today,
+    html[data-theme="dark"] .fc-compactWeek-view .fc-state-highlight,
+    html[data-theme="dark"] .fc-compactDay-view .fc-today,
+    html[data-theme="dark"] .fc-compactDay-view .fc-state-highlight {
+        background: linear-gradient(180deg, rgba(255, 230, 154, 0.18) 0%, rgba(255, 230, 154, 0.1) 100%) !important;
+    }
+
+    html[data-theme="dark"] .calendar-compact-week-availability.is-open {
+        background: rgba(72, 201, 110, 0.16);
+        border-color: rgba(72, 201, 110, 0.22);
+        color: #b9f5c8;
+    }
+
+    html[data-theme="dark"] .calendar-compact-week-availability.is-medium {
+        background: rgba(143, 197, 255, 0.16);
+        border-color: rgba(143, 197, 255, 0.22);
+        color: #d7eaff;
+    }
+
+    html[data-theme="dark"] .calendar-compact-week-availability.is-busy {
+        background: rgba(255, 214, 112, 0.16);
+        border-color: rgba(255, 214, 112, 0.24);
+        color: #ffe7a2;
+    }
+
+    html[data-theme="dark"] .calendar-compact-week-availability.is-off {
+        background: rgba(123, 141, 160, 0.16);
+        border-color: rgba(123, 141, 160, 0.22);
+        color: #d4dfeb;
+    }
+
+    html[data-theme="dark"] .calendar-compact-week-header-note.is-open,
+    html[data-theme="dark"] .calendar-compact-week-header-note.is-medium,
+    html[data-theme="dark"] .calendar-compact-week-header-note.is-busy {
+        background: linear-gradient(180deg, rgba(32, 76, 53, 0.96) 0%, rgba(27, 63, 45, 0.96) 100%);
+        border-color: rgba(102, 196, 136, 0.24);
+        color: #c8f0d4;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    html[data-theme="dark"] .calendar-compact-week-header-note.is-off {
+        background: linear-gradient(180deg, rgba(52, 63, 76, 0.96) 0%, rgba(43, 53, 66, 0.96) 100%);
+        border-color: rgba(169, 197, 223, 0.18);
+        color: #c7d7e6;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    html[data-theme="dark"] .calendar-compact-week-day-empty {
+        background: linear-gradient(180deg, rgba(24, 53, 38, 0.92) 0%, rgba(20, 43, 31, 0.92) 100%);
+        border-color: rgba(72, 201, 110, 0.22);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    html[data-theme="dark"] .calendar-compact-week-day-empty-label {
+        color: #9be8b1;
+    }
+
+    html[data-theme="dark"] .calendar-compact-week-day-empty-text {
+        color: #d7eaff;
+    }
+
+    html[data-theme="dark"] .calendar-compact-week-day-empty[data-state="off"] {
+        background: linear-gradient(180deg, rgba(33, 43, 55, 0.94) 0%, rgba(26, 34, 44, 0.94) 100%);
+        border-color: rgba(123, 141, 160, 0.24);
     }
 
     html[data-theme="dark"] .fc-month-view .fc-day-top {
@@ -1456,26 +2634,29 @@
         background: #16283b;
     }
 
-    html[data-theme="dark"] .fc-agendaWeek-view .fc-axis {
-        background: #132131;
-        color: #a9c5df;
-        border-right: 1px solid rgba(143, 197, 255, 0.22) !important;
-    }
-
-    html[data-theme="dark"] .fc-agendaDay-view .fc-axis {
-        background: #132131;
-        color: #a9c5df;
-        border-right: 1px solid rgba(143, 197, 255, 0.22) !important;
-    }
-
     html[data-theme="dark"] .fc-month-view .fc-today,
     html[data-theme="dark"] .fc-month-view .fc-state-highlight {
         background: linear-gradient(180deg, rgba(255, 230, 154, 0.18) 0%, rgba(255, 230, 154, 0.1) 100%) !important;
     }
 
+    html[data-theme="dark"] .fc-compactWeek-view .fc-today,
+    html[data-theme="dark"] .fc-compactWeek-view .fc-state-highlight,
+    html[data-theme="dark"] .fc-compactDay-view .fc-today,
+    html[data-theme="dark"] .fc-compactDay-view .fc-state-highlight {
+        background: linear-gradient(180deg, rgba(35, 50, 66, 0.98) 0%, rgba(29, 42, 56, 0.98) 100%) !important;
+        background-clip: padding-box !important;
+    }
+
     html[data-theme="dark"] .fc-today,
     html[data-theme="dark"] .fc-state-highlight {
         background: linear-gradient(180deg, rgba(255, 230, 154, 0.18) 0%, rgba(255, 230, 154, 0.1) 100%) !important;
+    }
+
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-today,
+    html[data-theme="dark"] .fc-agendaWeek-view .fc-state-highlight,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-today,
+    html[data-theme="dark"] .fc-agendaDay-view .fc-state-highlight {
+        background: transparent !important;
     }
 
     html[data-theme="dark"] .fc-time-grid-event,
@@ -1495,10 +2676,33 @@
     html[data-theme="dark"] .fc-agendaWeek-view .fc-axis,
     html[data-theme="dark"] .fc-agendaDay-view .fc-axis {
         font-weight: 700;
-        color: #9bb4ca;
+        color: #bcd4ea;
+        background: #16283b;
+        position: relative;
+        z-index: 8;
+        min-width: 88px !important;
+        width: 88px !important;
+        padding-right: 12px;
+        text-align: right;
+        box-shadow: none !important;
     }
 
     @media (max-width: 767.98px) {
+        .calendar-board {
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .calendar-clinic-sidebar {
+            position: static;
+            width: 100%;
+            flex-basis: auto;
+        }
+
+        .calendar-clinic-sidebar-hours {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
         .card-header-action .form-control-sm {
             min-width: 0;
             width: 100%;

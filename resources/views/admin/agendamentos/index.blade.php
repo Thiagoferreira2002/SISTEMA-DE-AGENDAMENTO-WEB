@@ -11,11 +11,28 @@
             : collect(['Lista de Agendamentos' => $agendamentos]);
     @endphp
     <style>
+        .section-body > .col-12 > .card,
+        .section-body > .row > .col-12 > .card {
+            border: 1px solid #d2dbe6 !important;
+            box-shadow: inset 0 0 0 1px #d2dbe6;
+        }
+
+        html[data-theme="dark"] .section-body > .col-12 > .card,
+        html[data-theme="dark"] .section-body > .row > .col-12 > .card {
+            border-color: #000000 !important;
+            box-shadow: inset 0 0 0 1px #000000;
+        }
+
         .agenda-group-card {
-            border: 1px solid #dce9f7;
+            border: 1px solid #d2dbe6;
             border-radius: 18px;
-            box-shadow: 0 12px 28px rgba(15, 61, 107, 0.08);
+            box-shadow: inset 0 0 0 1px #d2dbe6, 0 12px 28px rgba(15, 61, 107, 0.08);
             overflow: hidden;
+        }
+
+        html[data-theme="dark"] .agenda-group-card {
+            border-color: #000000;
+            box-shadow: inset 0 0 0 1px #000000, 0 12px 28px rgba(15, 61, 107, 0.08);
         }
 
         .agenda-group-header {
@@ -241,6 +258,13 @@
             min-width: 190px;
             max-width: 100%;
             margin-right: auto;
+            border: 1px solid #d2dbe6 !important;
+            box-shadow: inset 0 0 0 1px #d2dbe6;
+        }
+
+        html[data-theme="dark"] .agenda-stat-card {
+            border-color: #000000 !important;
+            box-shadow: inset 0 0 0 1px #000000;
         }
 
         .agenda-stat-card .card-wrap {
@@ -405,8 +429,8 @@
 
         html[data-theme="dark"] .card-statistic-1 {
             background: rgba(24, 43, 64, 0.98) !important;
-            border: 1px solid rgba(143, 197, 255, 0.16);
-            box-shadow: none;
+            border: 1px solid #000000 !important;
+            box-shadow: inset 0 0 0 1px #000000;
         }
 
         html[data-theme="dark"] .card-statistic-1 .card-header h4,
@@ -619,23 +643,25 @@
                         <form method="GET" action="{{ route('admin.agendamentos.index') }}">
                             <div class="agenda-filters-grid">
                                 <div class="row agenda-filters-fields">
-                                        <div class="{{ $showMultiProfessionalFilter ? 'col-xl-4 col-lg-5' : 'col-lg-6' }} col-md-6 col-12">
+                                        <div class="{{ $showMultiProfessionalFilter ? 'col-xl-3 col-lg-4' : (($hideProfessionalFilter ?? false) ? 'col-lg-5' : 'col-lg-6') }} col-md-7 col-12">
                                             <div class="form-group">
                                                 <label for="q">Busca global</label>
                                                 <input type="text" class="form-control" id="q" name="q" value="{{ request('q') }}" placeholder="Digite o nome, CPF ou data do agendamento">
                                             </div>
                                         </div>
-                                        <div class="col-xl-2 col-lg-3 col-md-6 col-12">
-                                            <div class="form-group">
-                                                <label for="medico">Profissional</label>
-                                                <select class="form-control" id="medico" name="medico" data-native-select="true">
-                                                    <option value="">{{ $showMultiProfessionalFilter ? 'Todos' : 'Selecione' }}</option>
-                                                    @foreach($professionals as $professional)
-                                                        <option value="{{ $professional['nome'] }}" {{ request('medico') === $professional['nome'] ? 'selected' : '' }}>{{ $professional['nome'] }}</option>
-                                                    @endforeach
-                                                </select>
+                                        @if(!($hideProfessionalFilter ?? false))
+                                            <div class="col-xl-2 col-lg-3 col-md-6 col-12">
+                                                <div class="form-group">
+                                                    <label for="medico">Profissional</label>
+                                                    <select class="form-control" id="medico" name="medico" data-native-select="true">
+                                                        <option value="">{{ $showMultiProfessionalFilter ? 'Todos' : 'Selecione' }}</option>
+                                                        @foreach($professionals as $professional)
+                                                            <option value="{{ $professional['nome'] }}" {{ request('medico') === $professional['nome'] ? 'selected' : '' }}>{{ $professional['nome'] }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
                                             </div>
-                                        </div>
+                                        @endif
                                         @if($showMultiProfessionalFilter)
                                             <div class="col-lg-12 col-12 mt-2">
                                                 <label class="d-block">Visualizar até 3 Profissionais</label>

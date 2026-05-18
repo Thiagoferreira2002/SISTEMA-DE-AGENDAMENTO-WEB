@@ -1,6 +1,19 @@
 @extends('admin.layouts.master')
 
 @section('content')
+<style>
+    .section-body > .card,
+    .section-body > .row > .col-12 > .card {
+        border: 1px solid #d2dbe6 !important;
+        box-shadow: inset 0 0 0 1px #d2dbe6;
+    }
+
+    html[data-theme="dark"] .section-body > .card,
+    html[data-theme="dark"] .section-body > .row > .col-12 > .card {
+        border-color: #000000 !important;
+        box-shadow: inset 0 0 0 1px #000000;
+    }
+</style>
 <section class="section">
     <div class="section-header">
         <h1>Horário da Clínica</h1>

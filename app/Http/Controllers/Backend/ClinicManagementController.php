@@ -9,6 +9,7 @@ use App\Models\ClinicHour;
 use App\Models\Patient;
 use App\Models\Procedure;
 use App\Models\Professional;
+use App\Models\ProfessionalAbsence;
 use App\Models\User;
 use App\Traits\RecordsActivity;
 use Carbon\Carbon;
@@ -102,6 +103,150 @@ class ClinicManagementController extends Controller
         ]);
 
         return view('admin.modules.agendamentos.blocks', compact('blockedSlots'));
+    }
+
+    public function doctorAbsences(): View
+    {
+        $professional = $this->authenticatedProfessional();
+
+        abort_unless($professional, 403);
+
+        $absences = Schema::hasTable('ausencias_profissionais')
+            ? $professional->absences()
+                ->whereDate('data_ausencia', '>=', now()->toDateString())
+                ->get()
+            : collect();
+
+        $appointments = Agendamento::query()
+            ->whereDate('data_agendamento', '>=', now()->toDateString())
+            ->where(function ($query) use ($professional) {
+                $query->where('profissional_id', $professional->id)
+                    ->orWhere('medico', $professional->nome);
+            })
+            ->where(function ($query) {
+                $query->whereIn('status', ['pendente', 'confirmado'])
+                    ->orWhereNull('status');
+            })
+            ->orderBy('data_agendamento')
+            ->orderBy('horario')
+            ->get()
+            ->map(function (Agendamento $appointment) {
+                return [
+                    'date' => optional($appointment->data_agendamento)->format('Y-m-d'),
+                    'start_time' => substr((string) $appointment->horario, 0, 5),
+                    'end_time' => optional($this->appointmentEndDateTime($appointment))?->format('H:i'),
+                    'patient_name' => $appointment->nome ?: 'Paciente',
+                    'service' => $appointment->servico ?: 'Atendimento',
+                ];
+            })
+            ->values();
+
+        return view('admin.modules.doctor.absences', [
+            'professional' => $professional,
+            'absences' => $absences,
+            'appointments' => $appointments,
+            'setupWarning' => Schema::hasTable('ausencias_profissionais')
+                ? null
+                : 'Execute as migrations para habilitar o controle de ausências pontuais do profissional.',
+        ]);
+    }
+
+    public function storeDoctorAbsence(Request $request): RedirectResponse
+    {
+        $professional = $this->authenticatedProfessional();
+
+        abort_unless($professional, 403);
+
+        if (! Schema::hasTable('ausencias_profissionais')) {
+            return redirect()->route('admin.doctor.absences')
+                ->with('warning', 'Execute as migrations para habilitar o controle de ausências pontuais do profissional.');
+        }
+
+        $validated = $request->validate([
+            'data_ausencia' => ['required', 'date', 'after_or_equal:today'],
+            'hora_inicial' => ['required', 'date_format:H:i'],
+            'hora_final' => ['required', 'date_format:H:i', 'after:hora_inicial'],
+            'motivo' => ['required', 'string', 'max:120'],
+            'observacao' => ['nullable', 'string'],
+        ], [
+            'data_ausencia.required' => 'Informe a data da ausência.',
+            'data_ausencia.after_or_equal' => 'A ausência deve ser cadastrada para hoje ou uma data futura.',
+            'hora_inicial.required' => 'Informe o horário inicial da ausência.',
+            'hora_final.required' => 'Informe o horário final da ausência.',
+            'hora_final.after' => 'O horário final deve ser maior que o horário inicial.',
+            'motivo.required' => 'Informe o motivo da ausência.',
+        ]);
+
+        $absenceDate = Carbon::parse($validated['data_ausencia']);
+
+        if (! $this->professionalScheduleCoversInterval($professional, $absenceDate, $validated['hora_inicial'], $validated['hora_final'])) {
+            return redirect()->route('admin.doctor.absences')
+                ->withInput()
+                ->withErrors(['hora_inicial' => 'A ausência precisa estar dentro de um horário de atendimento configurado para esse dia.']);
+        }
+
+        if ($this->professionalAbsenceOverlapsExisting($professional, $absenceDate, $validated['hora_inicial'], $validated['hora_final'])) {
+            return redirect()->route('admin.doctor.absences')
+                ->withInput()
+                ->withErrors(['hora_inicial' => 'Já existe uma ausência cadastrada para esse período.']);
+        }
+
+        $conflictingAppointments = $this->professionalAppointmentsOverlappingInterval(
+            $professional,
+            $absenceDate,
+            $validated['hora_inicial'],
+            $validated['hora_final']
+        );
+
+        if ($conflictingAppointments->isNotEmpty()) {
+            return redirect()->route('admin.doctor.absences')
+                ->withInput()
+                ->withErrors([
+                    'hora_inicial' => 'Já existem agendamentos ativos nesse período. Remarque ou finalize esses horários antes de registrar a ausência.',
+                ]);
+        }
+
+        $absence = ProfessionalAbsence::create([
+            'profissional_id' => $professional->id,
+            'data_ausencia' => $validated['data_ausencia'],
+            'hora_inicial' => $validated['hora_inicial'],
+            'hora_final' => $validated['hora_final'],
+            'motivo' => $validated['motivo'],
+            'observacao' => $validated['observacao'] ?? null,
+        ]);
+
+        $this->recordActivity('created', $absence, 'Ausência pontual do profissional cadastrada.', [
+            'professional_id' => $professional->id,
+            'data_ausencia' => $validated['data_ausencia'],
+            'hora_inicial' => $validated['hora_inicial'],
+            'hora_final' => $validated['hora_final'],
+            'motivo' => $validated['motivo'],
+        ]);
+
+        return redirect()->route('admin.doctor.absences')
+            ->with('success', 'Ausência pontual cadastrada com sucesso.');
+    }
+
+    public function destroyDoctorAbsence(ProfessionalAbsence $absence): RedirectResponse
+    {
+        $professional = $this->authenticatedProfessional();
+
+        abort_unless($professional && (int) $absence->profissional_id === (int) $professional->id, 403);
+
+        $absenceSnapshot = [
+            'professional_id' => $absence->profissional_id,
+            'data_ausencia' => optional($absence->data_ausencia)->format('Y-m-d'),
+            'hora_inicial' => substr((string) $absence->hora_inicial, 0, 5),
+            'hora_final' => substr((string) $absence->hora_final, 0, 5),
+            'motivo' => $absence->motivo,
+        ];
+
+        $absence->delete();
+
+        $this->recordActivity('deleted', $professional, 'Ausência pontual do profissional removida.', $absenceSnapshot);
+
+        return redirect()->route('admin.doctor.absences')
+            ->with('success', 'Ausência pontual removida com sucesso.');
     }
 
     public function clinicHours(): View
@@ -465,6 +610,95 @@ class ClinicManagementController extends Controller
             });
     }
 
+    private function professionalScheduleCoversInterval(Professional $professional, Carbon $date, string $startTime, string $endTime): bool
+    {
+        $professional->loadMissing('schedules');
+
+        $requestedStart = Carbon::createFromFormat('H:i', substr($startTime, 0, 5));
+        $requestedEnd = Carbon::createFromFormat('H:i', substr($endTime, 0, 5));
+        $dayOfWeek = $date->dayOfWeekIso;
+
+        return $professional->schedules->contains(function ($schedule) use ($dayOfWeek, $requestedStart, $requestedEnd) {
+            if ((int) $schedule->day_of_week !== $dayOfWeek) {
+                return false;
+            }
+
+            $scheduleStart = Carbon::createFromFormat('H:i:s', (string) $schedule->start_time);
+            $scheduleEnd = Carbon::createFromFormat('H:i:s', (string) $schedule->end_time);
+
+            if (! ($requestedStart->greaterThanOrEqualTo($scheduleStart) && $requestedEnd->lessThanOrEqualTo($scheduleEnd))) {
+                return false;
+            }
+
+            if ($schedule->break_start_time && $schedule->break_end_time) {
+                $breakStart = Carbon::createFromFormat('H:i:s', (string) $schedule->break_start_time);
+                $breakEnd = Carbon::createFromFormat('H:i:s', (string) $schedule->break_end_time);
+
+                if ($requestedStart->lt($breakEnd) && $requestedEnd->gt($breakStart)) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }
+
+    private function professionalAbsenceOverlapsExisting(Professional $professional, Carbon $date, string $startTime, string $endTime): bool
+    {
+        return ProfessionalAbsence::query()
+            ->where('profissional_id', $professional->id)
+            ->whereDate('data_ausencia', $date->format('Y-m-d'))
+            ->get()
+            ->contains(function (ProfessionalAbsence $absence) use ($startTime, $endTime) {
+                return $this->timeRangesOverlap(
+                    substr((string) $absence->hora_inicial, 0, 5),
+                    substr((string) $absence->hora_final, 0, 5),
+                    $startTime,
+                    $endTime
+                );
+            });
+    }
+
+    private function professionalAppointmentsOverlappingInterval(Professional $professional, Carbon $date, string $startTime, string $endTime)
+    {
+        return Agendamento::query()
+            ->whereDate('data_agendamento', $date->format('Y-m-d'))
+            ->where(function ($query) use ($professional) {
+                $query->where('profissional_id', $professional->id)
+                    ->orWhere('medico', $professional->nome);
+            })
+            ->where(function ($query) {
+                $query->whereIn('status', ['pendente', 'confirmado'])
+                    ->orWhereNull('status');
+            })
+            ->get()
+            ->filter(function (Agendamento $appointment) use ($startTime, $endTime) {
+                $appointmentEnd = optional($this->appointmentEndDateTime($appointment))?->format('H:i');
+
+                if (! $appointmentEnd) {
+                    return false;
+                }
+
+                return $this->timeRangesOverlap(
+                    substr((string) $appointment->horario, 0, 5),
+                    $appointmentEnd,
+                    $startTime,
+                    $endTime
+                );
+            })
+            ->values();
+    }
+
+    private function timeRangesOverlap(string $startA, string $endA, string $startB, string $endB): bool
+    {
+        $rangeAStart = Carbon::createFromFormat('H:i', substr($startA, 0, 5));
+        $rangeAEnd = Carbon::createFromFormat('H:i', substr($endA, 0, 5));
+        $rangeBStart = Carbon::createFromFormat('H:i', substr($startB, 0, 5));
+        $rangeBEnd = Carbon::createFromFormat('H:i', substr($endB, 0, 5));
+
+        return $rangeAStart->lt($rangeBEnd) && $rangeAEnd->gt($rangeBStart);
+    }
+
     public function promoteWaitlist(Agendamento $agendamento): RedirectResponse
     {
         $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
@@ -609,8 +843,10 @@ class ClinicManagementController extends Controller
         $totalFinishedAppointments = $history->total();
 
         $history->getCollection()->transform(function ($item) {
+            $item->medico_historico = $item->professional?->nome ?: ($item->medico_historico ?? $item->medico ?: 'Não informado');
             $item->medico_historico = $item->medico ?: 'Não informado';
 
+            $item->medico_historico = $item->professional?->nome ?: ($item->medico_historico ?: 'Não informado');
             return $item;
         });
 

@@ -1,10 +1,39 @@
 @extends('admin.layouts.master')
 @section('content')
 <style>
+    .section-body > .row > .col-12 > .card,
+    .section-body > .col-12 > .card {
+        border: 1px solid #d2dbe6 !important;
+        box-shadow: inset 0 0 0 1px #d2dbe6;
+    }
+
+    html[data-theme="dark"] .section-body > .row > .col-12 > .card,
+    html[data-theme="dark"] .section-body > .col-12 > .card {
+        border-color: #000000 !important;
+        box-shadow: inset 0 0 0 1px #000000;
+    }
+
+    .card-statistic-1.history-summary-card {
+        border: 1px solid #d2dbe6 !important;
+        box-shadow: inset 0 0 0 1px #d2dbe6;
+    }
+
     .history-summary-card {
         width: fit-content;
         min-width: 190px;
         max-width: 100%;
+        border: 1px solid #d2dbe6 !important;
+        box-shadow: inset 0 0 0 1px #d2dbe6;
+    }
+
+    html[data-theme="dark"] .history-summary-card {
+        border-color: #000000 !important;
+        box-shadow: inset 0 0 0 1px #000000;
+    }
+
+    html[data-theme="dark"] .card-statistic-1.history-summary-card {
+        border-color: #000000 !important;
+        box-shadow: inset 0 0 0 1px #000000;
     }
 
     .history-summary-card .card-icon {
@@ -123,6 +152,7 @@
         overflow: auto;
         border-radius: 18px;
         background: #ffffff;
+        border: 1px solid #d2dbe6;
         box-shadow: 0 24px 54px rgba(15, 23, 42, 0.24);
     }
 
@@ -192,7 +222,7 @@
 
     html[data-theme="dark"] .history-details-dialog {
         background: linear-gradient(180deg, rgba(22, 40, 59, 0.99) 0%, rgba(19, 33, 49, 0.99) 100%);
-        border: 1px solid rgba(143, 197, 255, 0.16);
+        border: 1px solid #000000;
     }
 
     html[data-theme="dark"] .history-detail-item label,

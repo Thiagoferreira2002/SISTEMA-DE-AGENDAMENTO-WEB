@@ -10,10 +10,29 @@
         ];
     @endphp
     <style>
+        .section-body > .row > .col-12 > .card,
+        .section-body > .col-12 > .card {
+            border: 1px solid #d2dbe6 !important;
+            box-shadow: inset 0 0 0 1px #d2dbe6;
+        }
+
+        html[data-theme="dark"] .section-body > .row > .col-12 > .card,
+        html[data-theme="dark"] .section-body > .col-12 > .card {
+            border-color: #000000 !important;
+            box-shadow: inset 0 0 0 1px #000000;
+        }
+
         .confirmation-summary-card {
             width: fit-content;
             min-width: 190px;
             max-width: 100%;
+            border: 1px solid #d2dbe6 !important;
+            box-shadow: inset 0 0 0 1px #d2dbe6;
+        }
+
+        html[data-theme="dark"] .confirmation-summary-card {
+            border-color: #000000 !important;
+            box-shadow: inset 0 0 0 1px #000000;
         }
 
         .confirmation-summary-card .card-icon {
@@ -168,8 +187,8 @@
         html[data-theme="dark"] .section-body .card,
         html[data-theme="dark"] .card-statistic-1 {
             background: linear-gradient(180deg, rgba(22, 40, 59, 0.98) 0%, rgba(19, 33, 49, 0.98) 100%);
-            border-color: rgba(143, 197, 255, 0.16);
-            box-shadow: 0 18px 34px rgba(2, 8, 15, 0.34);
+            border-color: #000000 !important;
+            box-shadow: inset 0 0 0 1px #000000, 0 18px 34px rgba(2, 8, 15, 0.34);
         }
 
         html[data-theme="dark"] .section-body .card-header,

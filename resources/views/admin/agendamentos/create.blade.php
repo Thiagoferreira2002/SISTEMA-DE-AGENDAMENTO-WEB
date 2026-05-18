@@ -1,6 +1,28 @@
 ﻿@extends('admin.layouts.master')
 @section('content')
 <style>
+    .appointment-planner-shell,
+    .appointment-day-overview,
+    .appointment-overview-panel {
+        border-color: #d2dbe6 !important;
+    }
+
+    .appointment-planner-shell {
+        box-shadow: inset 0 0 0 1px #d2dbe6, 0 12px 28px rgba(18, 58, 99, 0.06);
+    }
+
+    html[data-theme="dark"] .appointment-planner-shell,
+    html[data-theme="dark"] .appointment-day-overview,
+    html[data-theme="dark"] .appointment-overview-panel,
+    html[data-theme="dark"] .appointment-planner-shell .alert-light,
+    html[data-theme="dark"] .appointment-planner-shell .border.rounded {
+        border-color: #000000 !important;
+    }
+
+    html[data-theme="dark"] .appointment-planner-shell {
+        box-shadow: inset 0 0 0 1px #000000, 0 18px 36px rgba(2, 8, 15, 0.32);
+    }
+
     .appointment-planner-shell {
         border: 1px solid rgba(30, 144, 255, 0.14);
         background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(244,249,255,.94));
@@ -1121,7 +1143,7 @@
                 return [];
             }
 
-            return professional.schedules
+            var windows = professional.schedules
                 .filter(function(schedule) {
                     return Number(schedule.day_of_week) === Number(weekDay);
                 })
@@ -1144,6 +1166,56 @@
                     intervals.push({ start: start, end: end });
                     return intervals;
                 }, []);
+
+            return subtractAbsenceWindows(windows, selectedProfessionalAbsencesForDate());
+        }
+
+        function selectedProfessionalAbsencesForDate() {
+            var professional = selectedProfessionalRecord();
+            var selectedDate = appointmentDateInput ? appointmentDateInput.value : '';
+
+            if (!professional || !selectedDate || !Array.isArray(professional.absences)) {
+                return [];
+            }
+
+            return professional.absences
+                .filter(function(absence) {
+                    return String(absence.date || '') === selectedDate;
+                })
+                .map(function(absence) {
+                    return {
+                        start: minutesFromTime(absence.start_time),
+                        end: minutesFromTime(absence.end_time)
+                    };
+                })
+                .filter(function(interval) {
+                    return interval.start !== null && interval.end !== null && interval.end > interval.start;
+                });
+        }
+
+        function subtractAbsenceWindows(windows, absences) {
+            return (windows || []).reduce(function(currentWindows, windowRange) {
+                return (absences || []).reduce(function(splitWindows, absenceRange) {
+                    return splitWindows.reduce(function(nextWindows, currentWindow) {
+                        if (absenceRange.end <= currentWindow.start || absenceRange.start >= currentWindow.end) {
+                            nextWindows.push(currentWindow);
+                            return nextWindows;
+                        }
+
+                        if (absenceRange.start > currentWindow.start) {
+                            nextWindows.push({ start: currentWindow.start, end: absenceRange.start });
+                        }
+
+                        if (absenceRange.end < currentWindow.end) {
+                            nextWindows.push({ start: absenceRange.end, end: currentWindow.end });
+                        }
+
+                        return nextWindows;
+                    }, []);
+                }, [windowRange]);
+            }, []).filter(function(windowRange) {
+                return windowRange.end > windowRange.start;
+            });
         }
 
         function rangeFitsProfessionalAvailability(startMinutes, endMinutes) {

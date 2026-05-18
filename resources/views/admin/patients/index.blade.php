@@ -1,10 +1,27 @@
 @extends('admin.layouts.master')
 @section('content')
 <style>
+    .section-body > .row > .col-12 > .card {
+        border: 1px solid #d2dbe6 !important;
+        box-shadow: inset 0 0 0 1px #d2dbe6;
+    }
+
+    html[data-theme="dark"] .section-body > .row > .col-12 > .card {
+        border-color: #000000 !important;
+        box-shadow: inset 0 0 0 1px #000000;
+    }
+
     .patients-summary-card {
         width: fit-content;
         min-width: 190px;
         max-width: 100%;
+        border: 1px solid #d2dbe6 !important;
+        box-shadow: inset 0 0 0 1px #d2dbe6;
+    }
+
+    html[data-theme="dark"] .patients-summary-card {
+        border-color: #000000 !important;
+        box-shadow: inset 0 0 0 1px #000000;
     }
 
     .patients-summary-card .card-icon {

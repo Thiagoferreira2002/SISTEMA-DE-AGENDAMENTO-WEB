@@ -500,7 +500,7 @@
                 return [];
             }
 
-            return professional.schedules
+            var windows = professional.schedules
                 .filter(function(schedule) {
                     return Number(schedule.day_of_week) === Number(weekDay);
                 })
@@ -523,6 +523,56 @@
                     intervals.push({ start: start, end: end });
                     return intervals;
                 }, []);
+
+            return subtractAbsenceWindows(windows, selectedProfessionalAbsencesForDate());
+        }
+
+        function selectedProfessionalAbsencesForDate() {
+            var professional = selectedProfessionalRecord();
+            var selectedDate = appointmentDateInput ? appointmentDateInput.value : '';
+
+            if (!professional || !selectedDate || !Array.isArray(professional.absences)) {
+                return [];
+            }
+
+            return professional.absences
+                .filter(function(absence) {
+                    return String(absence.date || '') === selectedDate;
+                })
+                .map(function(absence) {
+                    return {
+                        start: minutesFromTime(absence.start_time),
+                        end: minutesFromTime(absence.end_time)
+                    };
+                })
+                .filter(function(interval) {
+                    return interval.start !== null && interval.end !== null && interval.end > interval.start;
+                });
+        }
+
+        function subtractAbsenceWindows(windows, absences) {
+            return (windows || []).reduce(function(currentWindows, windowRange) {
+                return (absences || []).reduce(function(splitWindows, absenceRange) {
+                    return splitWindows.reduce(function(nextWindows, currentWindow) {
+                        if (absenceRange.end <= currentWindow.start || absenceRange.start >= currentWindow.end) {
+                            nextWindows.push(currentWindow);
+                            return nextWindows;
+                        }
+
+                        if (absenceRange.start > currentWindow.start) {
+                            nextWindows.push({ start: currentWindow.start, end: absenceRange.start });
+                        }
+
+                        if (absenceRange.end < currentWindow.end) {
+                            nextWindows.push({ start: absenceRange.end, end: currentWindow.end });
+                        }
+
+                        return nextWindows;
+                    }, []);
+                }, [windowRange]);
+            }, []).filter(function(windowRange) {
+                return windowRange.end > windowRange.start;
+            });
         }
 
         function rangeFitsProfessionalAvailability(startMinutes, endMinutes) {
