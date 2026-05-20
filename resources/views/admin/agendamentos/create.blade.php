@@ -139,7 +139,7 @@
 
     .appointment-day-overview-grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
         gap: 14px;
     }
 
@@ -177,6 +177,19 @@
         gap: 8px;
     }
 
+    .appointment-overview-panel.is-availability .appointment-overview-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        align-items: start;
+    }
+
+    .appointment-overview-panel.is-availability .appointment-chip {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+
     .appointment-overview-empty {
         display: block;
         font-size: 12px;
@@ -201,17 +214,25 @@
 
     .appointment-chip.available { background: rgba(40, 167, 69, 0.12); color: #1b6f35; }
     .appointment-chip.occupied { background: rgba(220, 53, 69, 0.12); color: #a12839; }
+    .appointment-chip.absence { background: rgba(255, 193, 7, 0.22); color: #7a5600; }
     .appointment-chip.interval { background: rgba(108, 117, 125, 0.16); color: #495057; }
     .appointment-chip.neutral { background: rgba(30, 144, 255, 0.12); color: #155a9d; }
+    .appointment-chip.is-clickable { border: 0; cursor: pointer; }
+    .appointment-chip.is-clickable:hover { filter: brightness(0.96); transform: translateY(-1px); }
 
     html[data-theme="dark"] .appointment-chip.available { background: rgba(64, 201, 117, 0.16); color: #92e1ae; }
     html[data-theme="dark"] .appointment-chip.occupied { background: rgba(255, 107, 129, 0.16); color: #ffb4c1; }
+    html[data-theme="dark"] .appointment-chip.absence { background: rgba(255, 193, 7, 0.16); color: #ffe09a; }
     html[data-theme="dark"] .appointment-chip.interval { background: rgba(173, 181, 189, 0.12); color: #d3dde6; }
     html[data-theme="dark"] .appointment-chip.neutral { background: rgba(118, 187, 255, 0.16); color: #bfe0ff; }
     html[data-theme="dark"] .appointment-overview-panel { background: rgba(13, 25, 39, 0.55); border-color: rgba(143, 197, 255, 0.14); }
     html[data-theme="dark"] .appointment-overview-heading { color: #d7eaff; }
     html[data-theme="dark"] .appointment-overview-heading i { background: rgba(143, 197, 255, 0.14); }
     html[data-theme="dark"] .appointment-overview-empty { color: #a9c5df; }
+
+    .appointment-notes-group {
+        margin-top: 24px;
+    }
 
     .appointment-planner-shell select[data-native-select="true"] {
         appearance: auto;
@@ -223,6 +244,106 @@
         border-radius: 12px;
         background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 100%);
         box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+    }
+
+    .appointment-detail-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1050;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(7, 18, 31, 0.56);
+    }
+
+    .appointment-detail-modal-backdrop.is-visible {
+        display: flex;
+    }
+
+    .appointment-detail-modal {
+        width: min(520px, 100%);
+        border-radius: 18px;
+        border: 1px solid rgba(23, 111, 190, 0.18);
+        background: #ffffff;
+        box-shadow: 0 22px 70px rgba(13, 35, 56, 0.24);
+        overflow: hidden;
+    }
+
+    .appointment-detail-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 20px;
+        background: linear-gradient(180deg, #f7fbff, #edf5ff);
+        border-bottom: 1px solid rgba(23, 111, 190, 0.12);
+    }
+
+    .appointment-detail-modal-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 800;
+        color: #15344f;
+    }
+
+    .appointment-detail-modal-close {
+        width: 34px;
+        height: 34px;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(23, 111, 190, 0.1);
+        color: #15344f;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .appointment-detail-modal-body {
+        padding: 20px;
+    }
+
+    .appointment-detail-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(23, 111, 190, 0.08);
+    }
+
+    .appointment-detail-row:last-child {
+        border-bottom: 0;
+    }
+
+    .appointment-detail-label {
+        color: #58708a;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .appointment-detail-value {
+        color: #15344f;
+        font-weight: 700;
+        text-align: right;
+    }
+
+    html[data-theme="dark"] .appointment-detail-modal {
+        border-color: rgba(143, 197, 255, 0.16);
+        background: #132131;
+    }
+
+    html[data-theme="dark"] .appointment-detail-modal-header {
+        background: rgba(19, 33, 49, 0.96);
+        border-bottom-color: rgba(143, 197, 255, 0.14);
+    }
+
+    html[data-theme="dark"] .appointment-detail-modal-title,
+    html[data-theme="dark"] .appointment-detail-value {
+        color: #eef6ff;
+    }
+
+    html[data-theme="dark"] .appointment-detail-label {
+        color: #a9c5df;
     }
 
     html[data-theme="dark"] .appointment-planner-shell .text-muted,
@@ -370,6 +491,10 @@
         }
 
         .appointment-day-overview-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .appointment-overview-panel.is-availability .appointment-overview-list {
             grid-template-columns: 1fr;
         }
 
@@ -580,7 +705,7 @@
 
                                     <div class="row">
                                         <div class="col-lg-8 col-12">
-                                            <div class="form-group">
+                                            <div class="form-group appointment-notes-group">
                                                 <label for="motivo_consulta">Motivo do Agendamento</label>
                                                 <textarea class="form-control @error('motivo_consulta') is-invalid @enderror" id="motivo_consulta" name="motivo_consulta" rows="3" placeholder="Descreva o motivo do agendamento">{{ old('motivo_consulta') }}</textarea>
                                                 @error('motivo_consulta')
@@ -685,6 +810,15 @@
         </div>
     </div>
 </section>
+<div class="appointment-detail-modal-backdrop" id="appointment-detail-modal" aria-hidden="true">
+    <div class="appointment-detail-modal" role="dialog" aria-modal="true" aria-labelledby="appointment-detail-modal-title">
+        <div class="appointment-detail-modal-header">
+            <h5 class="appointment-detail-modal-title" id="appointment-detail-modal-title">Detalhes do agendamento</h5>
+            <button type="button" class="appointment-detail-modal-close" data-close-appointment-modal aria-label="Fechar">&times;</button>
+        </div>
+        <div class="appointment-detail-modal-body" data-appointment-modal-body></div>
+    </div>
+</div>
 <script src="https://unpkg.com/imask"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -706,6 +840,7 @@
         var selectedProcedureId = '{{ old('procedure_id') }}';
         var clinicHours = @json($clinicHours ?? null);
         var occupiedAppointments = @json($occupiedAppointments ?? []);
+        var availabilityEndpoint = '{{ route('admin.agendamentos.availability') }}';
         var initialStartTime = '{{ old('horario') }}';
         var initialEndTime = '{{ old('horario_final') }}';
         var availabilityFeedback = document.getElementById('professional-availability-feedback');
@@ -713,11 +848,16 @@
         var timeValidationFeedback = document.getElementById('time-validation-feedback');
         var appointmentDayOverview = document.getElementById('appointment-day-overview');
         var endTimeGuidance = document.getElementById('end-time-guidance');
+        var appointmentDetailModal = document.getElementById('appointment-detail-modal');
+        var appointmentDetailModalTitle = document.getElementById('appointment-detail-modal-title');
+        var appointmentDetailModalBody = document.querySelector('[data-appointment-modal-body]');
         var appointmentForm = document.querySelector('form[action="{{ route('admin.agendamentos.store') }}"]');
         var submitButton = appointmentForm ? appointmentForm.querySelector('button[type="submit"]') : null;
         var appointmentLockedFields = appointmentForm ? Array.from(appointmentForm.querySelectorAll('#nome, #email, #telefone, #professional_id, #procedure_id, #data_agendamento, #horario, #horario_final, #motivo_consulta')) : [];
         var timeSlotStep = 5;
         var currentEndTimeGuidanceMessage = 'Selecione um horário de término válido.';
+        var availabilityState = { windows: [], absences: [], occupied: [], startSlots: [], endSlots: [] };
+        var availabilityRequestSequence = 0;
 
         function onlyDigits(value) {
             return String(value || '').replace(/\D/g, '');
@@ -750,6 +890,78 @@
             }
 
             wrappedSelect.selectric();
+        }
+
+        function resetAvailabilityState() {
+            availabilityState = { windows: [], absences: [], occupied: [], startSlots: [], endSlots: [] };
+        }
+
+        function loadAvailabilityState(callback) {
+            var selectedProfessionalId = currentSelectedProfessionalId();
+            var selectedDate = appointmentDateInput ? appointmentDateInput.value : '';
+            var duration = selectedProcedureDuration();
+            var selectedStartTime = startTimeInput ? (startTimeInput.value || initialStartTime || '') : '';
+
+            if (!selectedProfessionalId || !selectedDate) {
+                resetAvailabilityState();
+                if (typeof callback === 'function') {
+                    callback();
+                }
+                return;
+            }
+
+            var requestSequence = ++availabilityRequestSequence;
+            var requestUrl = new URL(availabilityEndpoint, window.location.origin);
+            requestUrl.searchParams.set('professional_id', selectedProfessionalId);
+            requestUrl.searchParams.set('date', selectedDate);
+            requestUrl.searchParams.set('duration', String(duration));
+
+            if (selectedStartTime) {
+                requestUrl.searchParams.set('start_time', selectedStartTime);
+            }
+
+            fetch(requestUrl.toString(), {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Falha ao carregar disponibilidade');
+                    }
+
+                    return response.json();
+                })
+                .then(function(payload) {
+                    if (requestSequence !== availabilityRequestSequence) {
+                        return;
+                    }
+
+                    availabilityState = {
+                        windows: Array.isArray(payload.windows) ? payload.windows : [],
+                        absences: Array.isArray(payload.absences) ? payload.absences : [],
+                        occupied: Array.isArray(payload.occupied) ? payload.occupied : [],
+                        startSlots: Array.isArray(payload.start_slots) ? payload.start_slots : [],
+                        endSlots: Array.isArray(payload.end_slots) ? payload.end_slots : [],
+                    };
+                })
+                .catch(function() {
+                    if (requestSequence !== availabilityRequestSequence) {
+                        return;
+                    }
+
+                    resetAvailabilityState();
+                })
+                .finally(function() {
+                    if (requestSequence !== availabilityRequestSequence) {
+                        return;
+                    }
+
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
+                });
         }
 
         function fillPatientFields(patient) {
@@ -875,8 +1087,12 @@
             if (durationPreview) durationPreview.textContent = (duration || '30') + ' min';
             if (serviceHidden) serviceHidden.value = name || '';
 
-            updateTimeOptions();
-            updateEndTimeFromProcedure();
+            loadAvailabilityState(function() {
+                validateAppointmentDateField();
+                updateTimeOptions();
+                updateEndTimeFromProcedure();
+                updateProfessionalAvailabilityFeedback();
+            });
         }
 
         function setEndTimeGuidance(message, type) {
@@ -943,6 +1159,7 @@
             }
 
             var minimumDate = minimumAppointmentDateValue();
+            var professional = selectedProfessionalRecord();
 
             if (appointmentDateInput) {
                 appointmentDateInput.min = minimumDate;
@@ -954,6 +1171,22 @@
                     : 'O horário da clínica já foi encerrado hoje. Novos agendamentos só podem ser marcados a partir de amanhã.';
                 setFieldFeedback(dateValidationFeedback, dateMessage, 'danger');
                 appointmentDateInput.setCustomValidity(dateMessage);
+                return false;
+            }
+
+            if (professional && !availabilityWindowsForSelectedDate().length) {
+                var availabilityMessage = appointmentDateInput.value === currentDateValue()
+                    ? 'O profissional selecionado não possui mais horários disponíveis hoje. Escolha outro dia para continuar.'
+                    : 'O profissional selecionado não atende nesta data. Escolha outro dia para continuar.';
+                setFieldFeedback(dateValidationFeedback, availabilityMessage, 'danger');
+                appointmentDateInput.setCustomValidity(availabilityMessage);
+                return false;
+            }
+
+            if (professional && availabilityWindowsForSelectedDate().length && !enabledStartSlotsForSelection().length) {
+                var unavailableMessage = 'O profissional possui agenda nesta data, mas nao ha horario livre para este procedimento no momento.';
+                setFieldFeedback(dateValidationFeedback, unavailableMessage, 'danger');
+                appointmentDateInput.setCustomValidity(unavailableMessage);
                 return false;
             }
 
@@ -1047,8 +1280,8 @@
                     }
                     if (optionState.disabled) {
                         option.disabled = true;
-                        option.style.color = '#6c757d';
-                        option.style.backgroundColor = '#eef1f4';
+                        option.style.color = optionState.color || '#6c757d';
+                        option.style.backgroundColor = optionState.backgroundColor || '#eef1f4';
                         option.textContent = option.textContent + ' - ' + (optionState.reason || 'ocupado');
                     }
                 }
@@ -1059,6 +1292,54 @@
 
                 selectElement.appendChild(option);
             }
+
+            if (selectedValue && !Array.from(selectElement.options).some(function(option) { return option.value === selectedValue; })) {
+                selectElement.value = '';
+            }
+
+            refreshEnhancedSelect(selectElement);
+        }
+
+        function fillTimeSelectFromSlots(selectElement, slots, selectedValue, placeholderText) {
+            if (!selectElement) {
+                return;
+            }
+
+            selectElement.innerHTML = '';
+
+            var placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = placeholderText || 'Selecione';
+            selectElement.appendChild(placeholder);
+
+            var sortedSlots = Array.isArray(slots)
+                ? slots.slice().sort(function(a, b) { return a.minutes - b.minutes; })
+                : [];
+
+            sortedSlots.forEach(function(slot) {
+                if (!slot || !slot.time) {
+                    return;
+                }
+
+                var option = document.createElement('option');
+                option.value = slot.time;
+                option.textContent = slot.time;
+
+                if (slot.disabled) {
+                    option.disabled = true;
+                    option.style.color = slot.color || '#6c757d';
+                    option.style.backgroundColor = slot.backgroundColor || '#eef1f4';
+                    if (slot.reason) {
+                        option.textContent += ' - ' + slot.reason;
+                    }
+                }
+
+                if (String(selectedValue || '') === slot.time) {
+                    option.selected = true;
+                }
+
+                selectElement.appendChild(option);
+            });
 
             if (selectedValue && !Array.from(selectElement.options).some(function(option) { return option.value === selectedValue; })) {
                 selectElement.value = '';
@@ -1136,61 +1417,40 @@
         }
 
         function availabilityWindowsForSelectedDate() {
-            var professional = selectedProfessionalRecord();
-            var weekDay = selectedAppointmentWeekday();
-
-            if (!professional || weekDay === null || !Array.isArray(professional.schedules)) {
-                return [];
-            }
-
-            var windows = professional.schedules
-                .filter(function(schedule) {
-                    return Number(schedule.day_of_week) === Number(weekDay);
-                })
-                .reduce(function(intervals, schedule) {
-                    var start = minutesFromTime(schedule.start_time);
-                    var end = minutesFromTime(schedule.end_time);
-                    var breakStart = minutesFromTime(schedule.break_start_time);
-                    var breakEnd = minutesFromTime(schedule.break_end_time);
-
-                    if (start === null || end === null || end <= start) {
-                        return intervals;
-                    }
-
-                    if (breakStart !== null && breakEnd !== null && breakStart > start && breakEnd < end) {
-                        intervals.push({ start: start, end: breakStart });
-                        intervals.push({ start: breakEnd, end: end });
-                        return intervals;
-                    }
-
-                    intervals.push({ start: start, end: end });
-                    return intervals;
-                }, []);
-
-            return subtractAbsenceWindows(windows, selectedProfessionalAbsencesForDate());
+            return (availabilityState.windows || []).map(function(windowRange) {
+                return {
+                    start: typeof windowRange.start === 'number' ? windowRange.start : minutesFromTime(windowRange.start_time),
+                    end: typeof windowRange.end === 'number' ? windowRange.end : minutesFromTime(windowRange.end_time)
+                };
+            }).filter(function(windowRange) {
+                return windowRange.start !== null && windowRange.end !== null && windowRange.end > windowRange.start;
+            });
         }
 
         function selectedProfessionalAbsencesForDate() {
-            var professional = selectedProfessionalRecord();
-            var selectedDate = appointmentDateInput ? appointmentDateInput.value : '';
-
-            if (!professional || !selectedDate || !Array.isArray(professional.absences)) {
-                return [];
-            }
-
-            return professional.absences
-                .filter(function(absence) {
-                    return String(absence.date || '') === selectedDate;
-                })
+            return (availabilityState.absences || [])
                 .map(function(absence) {
                     return {
-                        start: minutesFromTime(absence.start_time),
-                        end: minutesFromTime(absence.end_time)
+                        id: absence.id || null,
+                        date: absence.date || (appointmentDateInput ? appointmentDateInput.value : ''),
+                        start: typeof absence.start === 'number' ? absence.start : minutesFromTime(absence.start_time),
+                        end: typeof absence.end === 'number' ? absence.end : minutesFromTime(absence.end_time),
+                        startTime: absence.start_time || '',
+                        endTime: absence.end_time || '',
+                        reason: absence.reason || '',
+                        observation: absence.observation || '',
+                        professionalName: absence.professional_name || ((selectedProfessionalRecord() || {}).nome || '')
                     };
                 })
                 .filter(function(interval) {
                     return interval.start !== null && interval.end !== null && interval.end > interval.start;
                 });
+        }
+
+        function overlapsAnyRange(startMinutes, endMinutes, ranges) {
+            return (ranges || []).some(function(interval) {
+                return !(endMinutes <= interval.start || startMinutes >= interval.end);
+            });
         }
 
         function subtractAbsenceWindows(windows, absences) {
@@ -1255,11 +1515,17 @@
             var professional = selectedProfessionalRecord();
             var patientIdField = getPatientIdField();
             var selectedDate = appointmentDateInput ? appointmentDateInput.value : '';
-            var hasAvailability = availabilityWindowsForSelectedDate().length > 0;
+            var hasAvailability = enabledStartSlotsForSelection().length > 0;
             var hasPatient = !!(patientIdField && patientIdField.value);
             var shouldDisable = !hasPatient || !professional || !selectedDate || !hasAvailability;
 
             submitButton.disabled = shouldDisable;
+        }
+
+        function enabledStartSlotsForSelection() {
+            return (availabilityState.startSlots || []).filter(function(slot) {
+                return slot && slot.time && !slot.disabled;
+            });
         }
 
         function renderAppointmentDayOverview() {
@@ -1287,9 +1553,16 @@
 
             var occupiedHtml = occupied.length
                 ? occupied.map(function(interval) {
-                    return '<span class="appointment-chip occupied">Ocupado: ' + timeFromMinutes(interval.start) + ' às ' + timeFromMinutes(interval.end) + '</span>';
+                    return '<button type="button" class="appointment-chip occupied is-clickable" data-appointment-detail-id="' + interval.id + '">Ocupado: ' + timeFromMinutes(interval.start) + ' às ' + timeFromMinutes(interval.end) + '</button>';
                 }).join('')
                 : '<span class="appointment-chip neutral">Nenhum horário preenchido até o momento.</span>';
+
+            var absences = selectedProfessionalAbsencesForDate();
+            var absenceHtml = absences.length
+                ? absences.map(function(interval) {
+                    return '<button type="button" class="appointment-chip absence is-clickable" data-absence-detail-id="' + escapeHtml(interval.id || '') + '">Ausência: ' + timeFromMinutes(interval.start) + ' às ' + timeFromMinutes(interval.end) + '</button>';
+                }).join('')
+                : '<span class="appointment-chip neutral">Sem ausência neste dia.</span>';
 
             var intervalHtml = restrictedInterval
                 ? '<span class="appointment-chip interval">Intervalo da clínica: ' + timeFromMinutes(restrictedInterval.start) + ' às ' + timeFromMinutes(restrictedInterval.end) + '</span>'
@@ -1304,6 +1577,7 @@
                 '<div class="appointment-day-overview-title">Resumo da agenda do dia</div>' +
                 '<div class="appointment-chip-list mb-3">' + availableHtml + '</div>' +
                 '<div class="appointment-chip-list mb-3">' + occupiedHtml + '</div>' +
+                '<div class="appointment-chip-list mb-3">' + absenceHtml + '</div>' +
                 '<div class="appointment-chip-list">' + intervalHtml + '</div>';
 
             enhanceAppointmentDayOverviewLayout();
@@ -1316,24 +1590,29 @@
 
             var chipLists = appointmentDayOverview.querySelectorAll('.appointment-chip-list');
 
-            if (chipLists.length !== 3) {
+            if (chipLists.length !== 4) {
                 return;
             }
 
             var availableHtml = chipLists[0].innerHTML;
             var occupiedHtml = chipLists[1].innerHTML;
-            var intervalHtml = chipLists[2].innerHTML;
+            var absenceHtml = chipLists[2].innerHTML;
+            var intervalHtml = chipLists[3].innerHTML;
 
             appointmentDayOverview.innerHTML = '' +
                 '<div class="appointment-day-overview-title">Resumo da agenda do dia</div>' +
                 '<div class="appointment-day-overview-grid">' +
-                    '<div class="appointment-overview-panel">' +
+                    '<div class="appointment-overview-panel is-availability">' +
                         '<div class="appointment-overview-heading"><i class="fas fa-clock"></i><span>Disponibilidade</span></div>' +
                         '<div class="appointment-overview-list">' + availableHtml + '</div>' +
                     '</div>' +
                     '<div class="appointment-overview-panel">' +
                         '<div class="appointment-overview-heading"><i class="fas fa-user-check"></i><span>Agenda ocupada</span></div>' +
                         '<div class="appointment-overview-list">' + occupiedHtml + '</div>' +
+                    '</div>' +
+                    '<div class="appointment-overview-panel">' +
+                        '<div class="appointment-overview-heading"><i class="fas fa-user-clock"></i><span>Ausências</span></div>' +
+                        '<div class="appointment-overview-list">' + absenceHtml + '</div>' +
                     '</div>' +
                     '<div class="appointment-overview-panel">' +
                         '<div class="appointment-overview-heading"><i class="fas fa-coffee"></i><span>Intervalo da Clínica</span></div>' +
@@ -1362,7 +1641,17 @@
             }
 
             if (!windows.length) {
-                setAvailabilityFeedback('O profissional selecionado não atende nesta data. Escolha outro dia para continuar.', 'danger');
+                var availabilityFeedbackMessage = selectedDate === currentDateValue()
+                    ? 'O profissional selecionado não possui mais horários disponíveis hoje. Escolha outro dia para continuar.'
+                    : 'O profissional selecionado não atende nesta data. Escolha outro dia para continuar.';
+                setAvailabilityFeedback(availabilityFeedbackMessage, 'danger');
+                renderAppointmentDayOverview();
+                updateSubmitState();
+                return;
+            }
+
+            if (!enabledStartSlotsForSelection().length) {
+                setAvailabilityFeedback('O profissional possui agenda nesta data, mas todos os horarios estao bloqueados por ausencia, ocupacao ou regra da agenda.', 'danger');
                 renderAppointmentDayOverview();
                 updateSubmitState();
                 return;
@@ -1381,19 +1670,139 @@
             var selectedDate = appointmentDateInput ? appointmentDateInput.value : '';
             var selectedProfessionalId = currentSelectedProfessionalId();
 
-            return occupiedAppointments.filter(function(item) {
-                return selectedDate
-                    && selectedProfessionalId
-                    && String(item.date || '') === String(selectedDate)
-                    && String(item.professional_id || '') === String(selectedProfessionalId);
-            }).map(function(item) {
+            return (availabilityState.occupied || []).map(function(range) {
+                var matchingAppointment = occupiedAppointments.find(function(item) {
+                    return selectedDate
+                        && selectedProfessionalId
+                        && String(item.date || '') === String(selectedDate)
+                        && String(item.professional_id || '') === String(selectedProfessionalId)
+                        && String(item.start_time || '') === String(range.start_time || '')
+                        && String(item.end_time || '') === String(range.end_time || '');
+                }) || {};
+
                 return {
-                    start: minutesFromTime(item.start_time),
-                    end: minutesFromTime(item.end_time)
+                    id: matchingAppointment.id,
+                    start: typeof range.start === 'number' ? range.start : minutesFromTime(range.start_time),
+                    end: typeof range.end === 'number' ? range.end : minutesFromTime(range.end_time),
+                    patientName: matchingAppointment.patient_name || 'Paciente',
+                    service: matchingAppointment.service || 'Atendimento',
+                    professionalName: matchingAppointment.professional_name || '',
+                    date: matchingAppointment.date || selectedDate,
+                    startTime: range.start_time || matchingAppointment.start_time || '',
+                    endTime: range.end_time || matchingAppointment.end_time || '',
+                    status: matchingAppointment.status || '',
+                    phone: matchingAppointment.phone || '',
+                    email: matchingAppointment.email || ''
                 };
             }).filter(function(item) {
                 return item.start !== null && item.end !== null;
             });
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, function(character) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[character];
+            });
+        }
+
+        function appointmentById(appointmentId) {
+            return occupiedAppointments.find(function(item) {
+                return String(item.id || '') === String(appointmentId || '');
+            }) || null;
+        }
+
+        function formatAppointmentDate(dateValue) {
+            if (!dateValue || String(dateValue).indexOf('-') === -1) {
+                return dateValue || '-';
+            }
+
+            var parts = String(dateValue).split('-');
+
+            if (parts.length !== 3) {
+                return dateValue;
+            }
+
+            return parts[2] + '/' + parts[1] + '/' + parts[0];
+        }
+
+        function formatAppointmentStatus(statusValue) {
+            var normalizedStatus = String(statusValue || 'pendente').toLowerCase();
+
+            return {
+                pendente: 'Pendente',
+                confirmado: 'Confirmado',
+                concluido: 'Finalizado',
+                finalizado: 'Finalizado',
+                cancelado: 'Cancelado'
+            }[normalizedStatus] || normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1);
+        }
+
+        function openAppointmentDetailModal(appointmentId) {
+            var appointment = appointmentById(appointmentId);
+
+            if (!appointment || !appointmentDetailModal || !appointmentDetailModalBody) {
+                return;
+            }
+
+            if (appointmentDetailModalTitle) {
+                appointmentDetailModalTitle.textContent = 'Detalhes do agendamento';
+            }
+
+            appointmentDetailModalBody.innerHTML = '' +
+                '<div class="appointment-detail-row"><span class="appointment-detail-label">Paciente</span><span class="appointment-detail-value">' + escapeHtml(appointment.patient_name || 'Paciente') + '</span></div>' +
+                '<div class="appointment-detail-row"><span class="appointment-detail-label">Serviço</span><span class="appointment-detail-value">' + escapeHtml(appointment.service || 'Atendimento') + '</span></div>' +
+                '<div class="appointment-detail-row"><span class="appointment-detail-label">Profissional</span><span class="appointment-detail-value">' + escapeHtml(appointment.professional_name || '-') + '</span></div>' +
+                '<div class="appointment-detail-row"><span class="appointment-detail-label">Data</span><span class="appointment-detail-value">' + escapeHtml(formatAppointmentDate(appointment.date)) + '</span></div>' +
+                '<div class="appointment-detail-row"><span class="appointment-detail-label">Horário</span><span class="appointment-detail-value">' + escapeHtml((appointment.start_time || '--:--') + ' às ' + (appointment.end_time || '--:--')) + '</span></div>' +
+                '<div class="appointment-detail-row"><span class="appointment-detail-label">Status</span><span class="appointment-detail-value">' + escapeHtml(formatAppointmentStatus(appointment.status)) + '</span></div>' +
+                '<div class="appointment-detail-row"><span class="appointment-detail-label">Telefone</span><span class="appointment-detail-value">' + escapeHtml(appointment.phone || '-') + '</span></div>' +
+                '<div class="appointment-detail-row"><span class="appointment-detail-label">E-mail</span><span class="appointment-detail-value">' + escapeHtml(appointment.email || '-') + '</span></div>';
+
+            appointmentDetailModal.classList.add('is-visible');
+            appointmentDetailModal.setAttribute('aria-hidden', 'false');
+        }
+
+        function absenceById(absenceId) {
+            return selectedProfessionalAbsencesForDate().find(function(item) {
+                return String(item.id || '') === String(absenceId || '');
+            }) || null;
+        }
+
+        function openAbsenceDetailModal(absenceId) {
+            var absence = absenceById(absenceId);
+
+            if (!absence || !appointmentDetailModal || !appointmentDetailModalBody) {
+                return;
+            }
+
+            if (appointmentDetailModalTitle) {
+                appointmentDetailModalTitle.textContent = 'Detalhes da ausencia';
+            }
+
+            appointmentDetailModalBody.innerHTML = '' +
+                '<div class="appointment-detail-row"><span class="appointment-detail-label">Profissional</span><span class="appointment-detail-value">' + escapeHtml(absence.professionalName || '-') + '</span></div>' +
+                '<div class="appointment-detail-row"><span class="appointment-detail-label">Data</span><span class="appointment-detail-value">' + escapeHtml(formatAppointmentDate(absence.date)) + '</span></div>' +
+                '<div class="appointment-detail-row"><span class="appointment-detail-label">Horario</span><span class="appointment-detail-value">' + escapeHtml((absence.startTime || timeFromMinutes(absence.start)) + ' às ' + (absence.endTime || timeFromMinutes(absence.end))) + '</span></div>' +
+                '<div class="appointment-detail-row"><span class="appointment-detail-label">Motivo</span><span class="appointment-detail-value">' + escapeHtml(absence.reason || '-') + '</span></div>' +
+                '<div class="appointment-detail-row"><span class="appointment-detail-label">Observacao</span><span class="appointment-detail-value">' + escapeHtml(absence.observation || '-') + '</span></div>';
+
+            appointmentDetailModal.classList.add('is-visible');
+            appointmentDetailModal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeAppointmentDetailModal() {
+            if (!appointmentDetailModal) {
+                return;
+            }
+
+            appointmentDetailModal.classList.remove('is-visible');
+            appointmentDetailModal.setAttribute('aria-hidden', 'true');
         }
 
         function selectedProcedureDuration() {
@@ -1407,6 +1816,12 @@
             return occupiedIntervals.some(function(interval) {
                 return !(endMinutes <= interval.start || startMinutes >= interval.end);
             });
+        }
+
+        function overlappingOccupiedAppointment(startMinutes, endMinutes, occupiedIntervals) {
+            return (occupiedIntervals || []).find(function(interval) {
+                return !(endMinutes <= interval.start || startMinutes >= interval.end);
+            }) || null;
         }
 
         function overlapsClinicRestriction(startMinutes, endMinutes) {
@@ -1437,19 +1852,19 @@
             return Math.max(clinicOpeningMinutes(), endMaximum - procedureDuration);
         }
 
+        function availabilityWindowForStart(startMinutes, windows) {
+            return (windows || []).find(function(windowRange) {
+                return startMinutes >= windowRange.start && startMinutes < windowRange.end;
+            }) || null;
+        }
+
         function updateTimeOptions() {
             if (!startTimeInput || !endTimeInput) return;
 
             var selectedProfessionalId = currentSelectedProfessionalId();
-            var availabilityWindows = availabilityWindowsForSelectedDate();
-            var startMinimum = ceilToStep(clinicOpeningMinutes());
-            var endMaximum = floorToStep(clinicClosingMinutes());
-            var latestStartMinutes = latestValidStartMinutes(endMaximum, selectedProcedureDuration());
             var selectedDate = appointmentDateInput ? appointmentDateInput.value : '';
             var today = currentDateValue();
             var minimumDate = minimumAppointmentDateValue();
-            var occupiedIntervals = occupiedIntervalsForSelection();
-            var procedureDuration = selectedProcedureDuration();
             var availableEndOptions = [];
             var defaultEndGuidance = '';
 
@@ -1462,6 +1877,8 @@
                 }
             }
 
+            var availabilityWindows = availabilityWindowsForSelectedDate();
+
             if (!selectedProfessionalId || !selectedDate || !availabilityWindows.length) {
                 fillTimeSelect(startTimeInput, null, null, '', selectedProfessionalId && selectedDate ? 'Profissional indisponível nesta data' : 'Selecione profissional e data');
                 fillTimeSelect(endTimeInput, null, null, '', 'Selecione um horário inicial');
@@ -1473,75 +1890,24 @@
                 return;
             }
 
-            if (selectedDate === today) {
-                var currentMinutes = minutesFromTime(currentTimeValue());
-                if (currentMinutes !== null) {
-                    startMinimum = Math.max(startMinimum, ceilToStep(currentMinutes));
-                }
-            }
+            fillTimeSelectFromSlots(startTimeInput, availabilityState.startSlots || [], startTimeInput.value || initialStartTime, 'Selecione');
 
-            latestStartMinutes = floorToStep(latestStartMinutes);
-
-            fillTimeSelect(startTimeInput, startMinimum, latestStartMinutes, startTimeInput.value || initialStartTime, 'Selecione', function(time, minutes) {
-                var slotEnd = minutes + procedureDuration;
-                var overlapsOccupied = overlapsOccupiedRange(minutes, slotEnd, occupiedIntervals);
-                var overlapsRestriction = overlapsClinicRestriction(minutes, slotEnd);
-                var withinProfessionalAvailability = rangeFitsProfessionalAvailability(minutes, slotEnd);
-
-                return {
-                    disabled: !withinProfessionalAvailability || overlapsRestriction || overlapsOccupied,
-                    reason: !withinProfessionalAvailability ? 'fora da agenda do profissional' : (overlapsRestriction ? 'intervalo da clínica' : 'ocupado')
-                };
+            var selectedStartOption = Array.from(startTimeInput.options).find(function(option) {
+                return option.value === startTimeInput.value;
             });
 
-            if (!startTimeInput.value) {
-                startTimeInput.value = firstEnabledTimeOptionValue(startTimeInput);
+            if (!startTimeInput.value || (selectedStartOption && selectedStartOption.disabled)) {
+                startTimeInput.value = '';
                 refreshEnhancedSelect(startTimeInput);
             }
 
             var selectedStartMinutes = minutesFromTime(startTimeInput.value || initialStartTime);
-            var endMinimum = selectedStartMinutes !== null ? selectedStartMinutes + timeSlotStep : startMinimum;
-            var restrictedInterval = clinicRestrictedInterval();
+            fillTimeSelectFromSlots(endTimeInput, availabilityState.endSlots || [], endTimeInput.value || initialEndTime, 'Selecione');
 
-            if (selectedStartMinutes !== null) {
-                endMinimum = Math.max(endMinimum, selectedStartMinutes + selectedProcedureDuration());
-            }
-
-            endMinimum = ceilToStep(endMinimum);
-
-            fillTimeSelect(endTimeInput, endMinimum, endMaximum, endTimeInput.value || initialEndTime, 'Selecione', function(time, minutes) {
-                if (selectedStartMinutes === null) {
-                    return { disabled: true };
-                }
-
-                var overlapsOccupied = overlapsOccupiedRange(selectedStartMinutes, minutes, occupiedIntervals);
-
-                if (restrictedInterval && selectedStartMinutes < restrictedInterval.start && minutes > restrictedInterval.start) {
-                    return { hidden: true };
-                }
-
-                if (!rangeFitsProfessionalAvailability(selectedStartMinutes, minutes)) {
-                    return {
-                        disabled: true,
-                        reason: 'fora da agenda do profissional'
-                    };
-                }
-
-                if (isWithinClinicRestriction(minutes)) {
-                    return {
-                        disabled: true,
-                        reason: 'intervalo da clínica'
-                    };
-                }
-
-                if (!overlapsOccupied) {
-                    availableEndOptions.push(minutes);
-                }
-
-                return {
-                    disabled: overlapsOccupied,
-                    reason: 'ocupado'
-                };
+            availableEndOptions = (availabilityState.endSlots || []).filter(function(slot) {
+                return slot && slot.time && !slot.disabled;
+            }).map(function(slot) {
+                return slot.minutes;
             });
 
             endTimeInput.setCustomValidity('');
@@ -1554,9 +1920,6 @@
                 var noAvailabilityMessage = 'Nao ha horario de termino disponivel para este inicio. Ajuste o horario inicial para terminar antes do intervalo da clinica ou escolha um horario apos ele.';
                 setEndTimeGuidance(noAvailabilityMessage, 'danger');
                 endTimeInput.setCustomValidity(noAvailabilityMessage);
-            } else if (restrictedInterval && selectedStartMinutes < restrictedInterval.start) {
-                updateEndTimeFromProcedure();
-                setEndTimeGuidance('Este atendimento pode terminar exatamente as ' + timeFromMinutes(restrictedInterval.start) + ', mas nao pode avancar para dentro do intervalo da clinica.', 'muted');
             } else {
                 updateEndTimeFromProcedure();
                 setEndTimeGuidance(defaultEndGuidance, 'muted');
@@ -1679,8 +2042,11 @@
             }
 
             renderProcedureOptions(selectedProfessionalId);
-            updateProfessionalAvailabilityFeedback();
-            updateTimeOptions();
+            loadAvailabilityState(function() {
+                validateAppointmentDateField();
+                updateProfessionalAvailabilityFeedback();
+                updateTimeOptions();
+            });
         }
 
         if (procedureSelect) {
@@ -1752,22 +2118,29 @@
 
         if (startTimeInput) {
             startTimeInput.addEventListener('change', function() {
-                updateTimeOptions();
-                updateEndTimeFromProcedure();
-                validateAppointmentTimeField();
+                loadAvailabilityState(function() {
+                    updateTimeOptions();
+                    updateEndTimeFromProcedure();
+                    validateAppointmentTimeField();
+                });
             });
         }
 
         if (appointmentDateInput) {
             appointmentDateInput.min = minimumAppointmentDateValue();
             appointmentDateInput.addEventListener('change', function() {
-                validateAppointmentDateField();
-                updateProfessionalAvailabilityFeedback();
-                enforceStartTimeMinimum();
-                validateAppointmentTimeField();
+                loadAvailabilityState(function() {
+                    validateAppointmentDateField();
+                    updateProfessionalAvailabilityFeedback();
+                    enforceStartTimeMinimum();
+                    validateAppointmentTimeField();
+                });
             });
-            validateAppointmentDateField();
-            enforceStartTimeMinimum();
+            loadAvailabilityState(function() {
+                validateAppointmentDateField();
+                enforceStartTimeMinimum();
+                updateProfessionalAvailabilityFeedback();
+            });
         }
 
         if (endTimeInput) {
@@ -1782,9 +2155,47 @@
             });
         }
 
-        updateEndTimeFromProcedure();
-        updateProfessionalAvailabilityFeedback();
-        validateAppointmentTimeField();
+        if (appointmentDayOverview) {
+            appointmentDayOverview.addEventListener('click', function(event) {
+                var appointmentTrigger = event.target.closest('[data-appointment-detail-id]');
+                var absenceTrigger = event.target.closest('[data-absence-detail-id]');
+
+                if (!appointmentTrigger && !absenceTrigger) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                if (appointmentTrigger) {
+                    openAppointmentDetailModal(appointmentTrigger.getAttribute('data-appointment-detail-id'));
+                    return;
+                }
+
+                openAbsenceDetailModal(absenceTrigger.getAttribute('data-absence-detail-id'));
+            });
+        }
+
+        if (appointmentDetailModal) {
+            appointmentDetailModal.addEventListener('click', function(event) {
+                if (event.target === appointmentDetailModal || event.target.closest('[data-close-appointment-modal]')) {
+                    closeAppointmentDetailModal();
+                }
+            });
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && appointmentDetailModal.classList.contains('is-visible')) {
+                    closeAppointmentDetailModal();
+                }
+            });
+        }
+
+        loadAvailabilityState(function() {
+            validateAppointmentDateField();
+            updateEndTimeFromProcedure();
+            updateProfessionalAvailabilityFeedback();
+            validateAppointmentTimeField();
+            updateSubmitState();
+        });
         setAppointmentFieldsLocked(!(document.getElementById('patient_id') && document.getElementById('patient_id').value));
         if (document.getElementById('patient_id') && document.getElementById('patient_id').value) {
             setPatientSearchFeedback('Paciente já selecionado para este agendamento.', 'success');

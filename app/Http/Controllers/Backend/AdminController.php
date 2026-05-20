@@ -39,7 +39,7 @@ class AdminController extends Controller
        });
        $completedAppointmentsQuery = Agendamento::query()->where('status', 'concluido');
        $upcomingAppointmentsQuery = Agendamento::query()
-           ->with('professional')
+           ->with(['professional', 'patient'])
            ->whereDate('data_agendamento', '>=', now()->toDateString())
            ->where(function ($query) {
                $query->whereNull('status')

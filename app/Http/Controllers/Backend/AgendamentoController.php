@@ -160,6 +160,67 @@ class AgendamentoController extends Controller
         return response()->json($this->buildCalendarEvents($agendamentos));
     }
 
+    public function availability(Request $request): JsonResponse
+    {
+        $request->validate([
+            'professional_id' => ['required', 'integer'],
+            'date' => ['required', 'date'],
+            'duration' => ['nullable', 'integer', 'min:5', 'max:480'],
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'ignore_appointment_id' => ['nullable', 'integer'],
+        ]);
+
+        if (! $this->hasTables(['profissionais', 'agendas_profissionais'])) {
+            return response()->json([
+                'windows' => [],
+                'absences' => [],
+                'occupied' => [],
+                'start_slots' => [],
+                'end_slots' => [],
+            ]);
+        }
+
+        $professional = Professional::with([
+            'schedules',
+            'absences' => fn ($query) => $query->whereDate('data_ausencia', $request->date),
+        ])->where('ativo', true)->find($request->integer('professional_id'));
+
+        if (! $professional) {
+            return response()->json([
+                'windows' => [],
+                'absences' => [],
+                'occupied' => [],
+                'start_slots' => [],
+                'end_slots' => [],
+            ]);
+        }
+
+        $authenticatedProfessional = $this->authenticatedProfessional();
+        if ($authenticatedProfessional && (int) $authenticatedProfessional->id !== (int) $professional->id) {
+            abort(403);
+        }
+
+        $duration = max(5, (int) $request->integer('duration', 30));
+        $selectedDate = (string) $request->date;
+        $selectedStartTime = $request->string('start_time')->toString();
+        $clinicHours = $this->clinicHoursConfig();
+        $availabilityWindows = $this->buildProfessionalAvailabilityWindows($professional, $selectedDate, $clinicHours);
+        $occupiedRanges = $this->occupiedAppointmentRanges(
+            $professional->id,
+            $selectedDate,
+            $request->filled('ignore_appointment_id') ? $request->integer('ignore_appointment_id') : null
+        );
+        $absenceRanges = $this->professionalAbsenceRanges($professional, $selectedDate);
+
+        return response()->json([
+            'windows' => array_map(fn (array $window) => $this->formatMinuteRange($window), $availabilityWindows),
+            'absences' => array_map(fn (array $range) => $this->formatMinuteRange($range), $absenceRanges),
+            'occupied' => array_map(fn (array $range) => $this->formatMinuteRange($range), $occupiedRanges),
+            'start_slots' => $this->buildAvailabilityStartSlots($availabilityWindows, $occupiedRanges, $absenceRanges, $duration, $selectedDate),
+            'end_slots' => $this->buildAvailabilityEndSlots($availabilityWindows, $occupiedRanges, $absenceRanges, $duration, $selectedStartTime),
+        ]);
+    }
+
     private function filteredAppointments(Request $request, bool $includeCalendarHistory = false): array
     {
         $focusedAppointmentId = $request->integer('open_agendamento');
@@ -1194,7 +1255,7 @@ class AgendamentoController extends Controller
             ->with('professional:id,nome')
             ->when($ignoredAppointment, fn ($query) => $query->where('id', '!=', $ignoredAppointment->id))
             ->whereIn('status', ['pendente', 'confirmado'])
-            ->get(['id', 'profissional_id', 'medico', 'data_agendamento', 'horario', 'duracao_minutos', 'status'])
+            ->get(['id', 'profissional_id', 'medico', 'nome', 'servico', 'telefone', 'email', 'data_agendamento', 'horario', 'duracao_minutos', 'status'])
             ->map(function (Agendamento $agendamento) {
                 $startTime = substr((string) $agendamento->horario, 0, 5);
                 $duration = (int) ($agendamento->duracao_minutos ?: 30);
@@ -1203,15 +1264,289 @@ class AgendamentoController extends Controller
                     ->format('H:i');
 
                 return [
+                    'id' => $agendamento->id,
                     'date' => $agendamento->data_agendamento?->format('Y-m-d'),
                     'professional_id' => $agendamento->professional_id,
                     'professional_name' => $agendamento->professional?->nome ?: $agendamento->medico,
+                    'patient_name' => $agendamento->nome ?: 'Paciente',
+                    'service' => $agendamento->servico ?: 'Atendimento',
+                    'phone' => $agendamento->telefone,
+                    'email' => $agendamento->email,
+                    'status' => $agendamento->status ?: 'pendente',
                     'start_time' => $startTime,
                     'end_time' => $endTime,
                 ];
             })
             ->values()
             ->all();
+    }
+
+    private function buildProfessionalAvailabilityWindows(Professional $professional, string $selectedDate, ?array $clinicHours): array
+    {
+        $weekDay = Carbon::parse($selectedDate)->dayOfWeekIso;
+
+        $windows = $professional->schedules
+            ->filter(fn ($schedule) => (int) $schedule->day_of_week === (int) $weekDay)
+            ->map(function ($schedule) use ($clinicHours) {
+                return $this->adjustScheduleToClinicHours($schedule, $clinicHours);
+            })
+            ->filter()
+            ->flatMap(function (array $schedule) {
+                $start = $this->minutesFromClock($schedule['start_time']);
+                $end = $this->minutesFromClock($schedule['end_time']);
+                $breakStart = $this->minutesFromClock($schedule['break_start_time']);
+                $breakEnd = $this->minutesFromClock($schedule['break_end_time']);
+
+                if ($start === null || $end === null || $end <= $start) {
+                    return [];
+                }
+
+                if ($breakStart !== null && $breakEnd !== null && $breakStart > $start && $breakEnd < $end) {
+                    return [
+                        ['start' => $start, 'end' => $breakStart],
+                        ['start' => $breakEnd, 'end' => $end],
+                    ];
+                }
+
+                return [['start' => $start, 'end' => $end]];
+            })
+            ->values()
+            ->all();
+
+        if ($clinicInterval = $this->clinicIntervalRange($clinicHours)) {
+            $windows = $this->subtractRangesFromWindows($windows, [$clinicInterval]);
+        }
+
+        return $windows;
+    }
+
+    private function professionalAbsenceRanges(Professional $professional, string $selectedDate): array
+    {
+        return $professional->absences
+            ->filter(fn ($absence) => optional($absence->data_ausencia)->format('Y-m-d') === $selectedDate)
+            ->map(function ($absence) use ($professional, $selectedDate) {
+                return [
+                    'id' => $absence->id,
+                    'start' => $this->minutesFromClock(substr((string) $absence->hora_inicial, 0, 5)),
+                    'end' => $this->minutesFromClock(substr((string) $absence->hora_final, 0, 5)),
+                    'date' => $selectedDate,
+                    'reason' => $absence->motivo,
+                    'observation' => $absence->observacao,
+                    'professional_name' => $professional->nome,
+                ];
+            })
+            ->filter(fn (array $range) => $range['start'] !== null && $range['end'] !== null && $range['end'] > $range['start'])
+            ->values()
+            ->all();
+    }
+
+    private function occupiedAppointmentRanges(int $professionalId, string $selectedDate, ?int $ignoredAppointmentId = null): array
+    {
+        if (! $this->hasTables(['agendamentos'])) {
+            return [];
+        }
+
+        return Agendamento::query()
+            ->when($ignoredAppointmentId, fn ($query) => $query->where('id', '!=', $ignoredAppointmentId))
+            ->where('profissional_id', $professionalId)
+            ->whereDate('data_agendamento', $selectedDate)
+            ->whereIn('status', ['pendente', 'confirmado'])
+            ->orderBy('horario')
+            ->get(['horario', 'duracao_minutos'])
+            ->map(function (Agendamento $agendamento) {
+                $start = $this->minutesFromClock(substr((string) $agendamento->horario, 0, 5));
+                $duration = (int) ($agendamento->duracao_minutos ?: 30);
+
+                return [
+                    'start' => $start,
+                    'end' => $start !== null ? $start + $duration : null,
+                ];
+            })
+            ->filter(fn (array $range) => $range['start'] !== null && $range['end'] !== null && $range['end'] > $range['start'])
+            ->values()
+            ->all();
+    }
+
+    private function buildAvailabilityStartSlots(array $windows, array $occupiedRanges, array $absenceRanges, int $duration, string $selectedDate): array
+    {
+        $slots = [];
+        $nowDate = now()->format('Y-m-d');
+        $nowMinutes = $selectedDate === $nowDate
+            ? $this->minutesFromClock(now()->format('H:i'))
+            : null;
+
+        foreach ($windows as $window) {
+            $windowStart = $this->ceilMinutesToStep($window['start']);
+            $windowLatestStart = $this->floorMinutesToStep($window['end'] - $duration);
+
+            for ($minutes = $windowStart; $minutes <= $windowLatestStart; $minutes += 5) {
+                $end = $minutes + $duration;
+                $overlappingAbsence = $this->overlappingRange($minutes, $end, $absenceRanges);
+                $overlapsOccupied = $this->rangeOverlapsAny($minutes, $end, $occupiedRanges);
+                $isPastSlot = $nowMinutes !== null && $minutes < $nowMinutes;
+
+                $slots[] = [
+                    'time' => $this->clockFromMinutes($minutes),
+                    'minutes' => $minutes,
+                    'disabled' => $overlappingAbsence !== null || $overlapsOccupied || $isPastSlot,
+                    'reason' => $overlapsOccupied ? 'agenda ocupada' : ($isPastSlot ? 'horário já passou' : ''),
+                    'color' => $overlapsOccupied ? '#a12839' : '#6c757d',
+                    'backgroundColor' => $overlapsOccupied ? 'rgba(220, 53, 69, 0.12)' : '#eef1f4',
+                    'reason' => $overlappingAbsence !== null ? 'ausencia programada' : ($overlapsOccupied ? 'agenda ocupada' : ($isPastSlot ? 'horario ja passou' : '')),
+                    'color' => $overlappingAbsence !== null ? '#7a5600' : ($overlapsOccupied ? '#a12839' : '#6c757d'),
+                    'backgroundColor' => $overlappingAbsence !== null ? 'rgba(255, 193, 7, 0.22)' : ($overlapsOccupied ? 'rgba(220, 53, 69, 0.12)' : '#eef1f4'),
+                ];
+            }
+        }
+
+        return array_values($slots);
+    }
+
+    private function buildAvailabilityEndSlots(array $windows, array $occupiedRanges, array $absenceRanges, int $duration, string $selectedStartTime): array
+    {
+        $selectedStartMinutes = $this->minutesFromClock($selectedStartTime);
+
+        if ($selectedStartMinutes === null) {
+            return [];
+        }
+
+        $selectedWindow = collect($windows)->first(function (array $window) use ($selectedStartMinutes) {
+            return $selectedStartMinutes >= $window['start'] && $selectedStartMinutes < $window['end'];
+        });
+
+        if (! $selectedWindow) {
+            return [];
+        }
+
+        $slots = [];
+        $minimumEnd = max($selectedStartMinutes + 5, $selectedStartMinutes + $duration);
+        $windowEnd = $this->floorMinutesToStep($selectedWindow['end']);
+
+        for ($minutes = $this->ceilMinutesToStep($minimumEnd); $minutes <= $windowEnd; $minutes += 5) {
+            $overlappingAbsence = $this->overlappingRange($selectedStartMinutes, $minutes, $absenceRanges);
+            $overlapsOccupied = $this->rangeOverlapsAny($selectedStartMinutes, $minutes, $occupiedRanges);
+
+            $slots[] = [
+                'time' => $this->clockFromMinutes($minutes),
+                'minutes' => $minutes,
+                'disabled' => $overlappingAbsence !== null || $overlapsOccupied,
+                'reason' => $overlapsOccupied ? 'agenda ocupada' : '',
+                'color' => $overlapsOccupied ? '#a12839' : '#6c757d',
+                'backgroundColor' => $overlapsOccupied ? 'rgba(220, 53, 69, 0.12)' : '#eef1f4',
+                'reason' => $overlappingAbsence !== null ? 'ausencia programada' : ($overlapsOccupied ? 'agenda ocupada' : ''),
+                'color' => $overlappingAbsence !== null ? '#7a5600' : ($overlapsOccupied ? '#a12839' : '#6c757d'),
+                'backgroundColor' => $overlappingAbsence !== null ? 'rgba(255, 193, 7, 0.22)' : ($overlapsOccupied ? 'rgba(220, 53, 69, 0.12)' : '#eef1f4'),
+            ];
+        }
+
+        return array_values($slots);
+    }
+
+    private function subtractRangesFromWindows(array $windows, array $ranges): array
+    {
+        foreach ($ranges as $range) {
+            $nextWindows = [];
+
+            foreach ($windows as $window) {
+                if ($range['end'] <= $window['start'] || $range['start'] >= $window['end']) {
+                    $nextWindows[] = $window;
+                    continue;
+                }
+
+                if ($range['start'] > $window['start']) {
+                    $nextWindows[] = ['start' => $window['start'], 'end' => $range['start']];
+                }
+
+                if ($range['end'] < $window['end']) {
+                    $nextWindows[] = ['start' => $range['end'], 'end' => $window['end']];
+                }
+            }
+
+            $windows = $nextWindows;
+        }
+
+        return array_values(array_filter($windows, fn (array $window) => $window['end'] > $window['start']));
+    }
+
+    private function clinicIntervalRange(?array $clinicHours): ?array
+    {
+        if (! $clinicHours || empty($clinicHours['lunch_start_time']) || empty($clinicHours['lunch_end_time'])) {
+            return null;
+        }
+
+        $start = $this->minutesFromClock($clinicHours['lunch_start_time']);
+        $end = $this->minutesFromClock($clinicHours['lunch_end_time']);
+
+        if ($start === null || $end === null || $end <= $start) {
+            return null;
+        }
+
+        return ['start' => $start, 'end' => $end];
+    }
+
+    private function formatMinuteRange(array $range): array
+    {
+        return array_merge($range, [
+            'start' => $range['start'],
+            'end' => $range['end'],
+            'start_time' => $this->clockFromMinutes($range['start']),
+            'end_time' => $this->clockFromMinutes($range['end']),
+        ]);
+    }
+
+    private function rangeOverlapsAny(int $startMinutes, int $endMinutes, array $ranges): bool
+    {
+        foreach ($ranges as $range) {
+            if (! ($endMinutes <= $range['start'] || $startMinutes >= $range['end'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function overlappingRange(int $startMinutes, int $endMinutes, array $ranges): ?array
+    {
+        foreach ($ranges as $range) {
+            if (! ($endMinutes <= $range['start'] || $startMinutes >= $range['end'])) {
+                return $range;
+            }
+        }
+
+        return null;
+    }
+
+    private function minutesFromClock(?string $time): ?int
+    {
+        $value = trim((string) $time);
+
+        if ($value === '' || ! str_contains($value, ':')) {
+            return null;
+        }
+
+        [$hours, $minutes] = explode(':', substr($value, 0, 5));
+
+        return ((int) $hours * 60) + (int) $minutes;
+    }
+
+    private function clockFromMinutes(int $minutes): string
+    {
+        $hours = intdiv($minutes, 60);
+        $remainingMinutes = $minutes % 60;
+
+        return str_pad((string) $hours, 2, '0', STR_PAD_LEFT)
+            . ':'
+            . str_pad((string) $remainingMinutes, 2, '0', STR_PAD_LEFT);
+    }
+
+    private function ceilMinutesToStep(int $minutes, int $step = 5): int
+    {
+        return (int) (ceil($minutes / $step) * $step);
+    }
+
+    private function floorMinutesToStep(int $minutes, int $step = 5): int
+    {
+        return (int) (floor($minutes / $step) * $step);
     }
 
     private function hasTables(array $tables): bool

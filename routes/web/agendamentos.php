@@ -12,6 +12,9 @@ Route::middleware('auth', 'admin')->group(function () {
     Route::get('admin/agendamentos/calendario/eventos', [AgendamentoController::class, 'calendarEvents'])
         ->name('admin.agendamentos.calendar.events');
 
+    Route::get('admin/agendamentos/disponibilidade', [AgendamentoController::class, 'availability'])
+        ->name('admin.agendamentos.availability');
+
     Route::get('admin/agendamentos/calendario', [AgendamentoController::class, 'calendar'])
         ->name('admin.agendamentos.calendar');
 

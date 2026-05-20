@@ -215,6 +215,8 @@ class PatientController extends Controller
 
     public function logs(Request $request): View
     {
+        abort_unless($request->user()?->canManageCadastrosBase(), 403);
+
         $patientLogs = collect();
         $patientCpfSearch = preg_replace('/\D/', '', (string) $request->input('patient_cpf'));
         $activityDateSearch = trim((string) $request->input('activity_date'));

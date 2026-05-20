@@ -105,72 +105,117 @@ class ClinicManagementController extends Controller
         return view('admin.modules.agendamentos.blocks', compact('blockedSlots'));
     }
 
-    public function doctorAbsences(): View
+    public function doctorAbsences(Request $request): View
     {
-        $professional = $this->authenticatedProfessional();
-
-        abort_unless($professional, 403);
-
-        $absences = Schema::hasTable('ausencias_profissionais')
-            ? $professional->absences()
-                ->whereDate('data_ausencia', '>=', now()->toDateString())
-                ->get()
+        $minimumAbsenceDate = $this->minimumAbsenceDateForRegistration();
+        $clinicHoursWindow = $this->clinicHoursWindow();
+        $professional = $this->selectedProfessionalForAbsences($request);
+        $professionalOptions = $this->canManageAbsencesForOthers() && Schema::hasTable('profissionais')
+            ? Professional::query()
+                ->where('ativo', true)
+                ->orderBy('nome')
+                ->get(['id', 'nome'])
             : collect();
 
-        $appointments = Agendamento::query()
-            ->whereDate('data_agendamento', '>=', now()->toDateString())
-            ->where(function ($query) use ($professional) {
-                $query->where('profissional_id', $professional->id)
-                    ->orWhere('medico', $professional->nome);
-            })
-            ->where(function ($query) {
-                $query->whereIn('status', ['pendente', 'confirmado'])
-                    ->orWhereNull('status');
-            })
-            ->orderBy('data_agendamento')
-            ->orderBy('horario')
-            ->get()
-            ->map(function (Agendamento $appointment) {
-                return [
-                    'date' => optional($appointment->data_agendamento)->format('Y-m-d'),
-                    'start_time' => substr((string) $appointment->horario, 0, 5),
-                    'end_time' => optional($this->appointmentEndDateTime($appointment))?->format('H:i'),
-                    'patient_name' => $appointment->nome ?: 'Paciente',
-                    'service' => $appointment->servico ?: 'Atendimento',
-                ];
-            })
-            ->values();
+        abort_unless($professional || $professionalOptions->isNotEmpty() || $this->canManageAbsencesForOthers(), 403);
+
+        $professionalSchedules = collect();
+        $absences = collect();
+        $appointments = collect();
+
+        if (Schema::hasTable('ausencias_profissionais')) {
+            $this->cleanupExpiredProfessionalAbsences($professional);
+        }
+
+        if ($professional) {
+            $professional->loadMissing('schedules');
+
+            $professionalSchedules = $professional->schedules
+                ->map(fn ($schedule) => [
+                    'day_of_week' => (int) $schedule->day_of_week,
+                    'start_time' => substr((string) $schedule->start_time, 0, 5),
+                    'end_time' => substr((string) $schedule->end_time, 0, 5),
+                    'break_start_time' => $schedule->break_start_time ? substr((string) $schedule->break_start_time, 0, 5) : null,
+                    'break_end_time' => $schedule->break_end_time ? substr((string) $schedule->break_end_time, 0, 5) : null,
+                ])
+                ->values();
+
+            $absences = Schema::hasTable('ausencias_profissionais')
+                ? $professional->absences()
+                    ->whereDate('data_ausencia', '>=', $minimumAbsenceDate->toDateString())
+                    ->get()
+                : collect();
+
+            $appointments = Agendamento::query()
+                ->whereDate('data_agendamento', '>=', now()->toDateString())
+                ->where(function ($query) use ($professional) {
+                    $query->where('profissional_id', $professional->id)
+                        ->orWhere('medico', $professional->nome);
+                })
+                ->where(function ($query) {
+                    $query->whereIn('status', ['pendente', 'confirmado'])
+                        ->orWhereNull('status');
+                })
+                ->orderBy('data_agendamento')
+                ->orderBy('horario')
+                ->get()
+                ->map(function (Agendamento $appointment) {
+                    return [
+                        'date' => optional($appointment->data_agendamento)->format('Y-m-d'),
+                        'start_time' => substr((string) $appointment->horario, 0, 5),
+                        'end_time' => optional($this->appointmentEndDateTime($appointment))?->format('H:i'),
+                        'patient_name' => $appointment->nome ?: 'Paciente',
+                        'service' => $appointment->servico ?: 'Atendimento',
+                    ];
+                })
+                ->values();
+        }
+
+        $setupWarning = null;
+
+        if (! Schema::hasTable('ausencias_profissionais')) {
+            $setupWarning = 'Execute as migrations para habilitar o controle de ausências pontuais do profissional.';
+        } elseif (! $professional && $professionalOptions->isEmpty()) {
+            $setupWarning = 'Cadastre e ative um profissional para gerenciar as ausências.';
+        }
 
         return view('admin.modules.doctor.absences', [
             'professional' => $professional,
             'absences' => $absences,
             'appointments' => $appointments,
-            'setupWarning' => Schema::hasTable('ausencias_profissionais')
-                ? null
-                : 'Execute as migrations para habilitar o controle de ausências pontuais do profissional.',
+            'minimumAbsenceDate' => $minimumAbsenceDate,
+            'clinicHours' => $clinicHoursWindow,
+            'professionalSchedules' => $professionalSchedules,
+            'setupWarning' => $setupWarning,
+            'professionalOptions' => $professionalOptions,
+            'isProfessionalAbsenceContext' => $this->isProfessionalUser(),
         ]);
     }
 
     public function storeDoctorAbsence(Request $request): RedirectResponse
     {
-        $professional = $this->authenticatedProfessional();
+        $professional = $this->selectedProfessionalForAbsences($request);
 
-        abort_unless($professional, 403);
+        abort_unless($professional && ($this->isProfessionalUser() || $this->canManageAbsencesForOthers()), 403);
 
         if (! Schema::hasTable('ausencias_profissionais')) {
-            return redirect()->route('admin.doctor.absences')
+            return redirect()->route('admin.doctor.absences', $this->absenceRouteParameters($professional))
                 ->with('warning', 'Execute as migrations para habilitar o controle de ausências pontuais do profissional.');
         }
 
+        $minimumAbsenceDate = $this->minimumAbsenceDateForRegistration();
+
         $validated = $request->validate([
-            'data_ausencia' => ['required', 'date', 'after_or_equal:today'],
+            'data_ausencia' => ['required', 'date', 'after_or_equal:' . $minimumAbsenceDate->toDateString()],
             'hora_inicial' => ['required', 'date_format:H:i'],
             'hora_final' => ['required', 'date_format:H:i', 'after:hora_inicial'],
             'motivo' => ['required', 'string', 'max:120'],
             'observacao' => ['nullable', 'string'],
         ], [
             'data_ausencia.required' => 'Informe a data da ausência.',
-            'data_ausencia.after_or_equal' => 'A ausência deve ser cadastrada para hoje ou uma data futura.',
+            'data_ausencia.after_or_equal' => $minimumAbsenceDate->isToday()
+                ? 'A ausência deve ser cadastrada para hoje ou uma data futura.'
+                : 'O horário da clínica já foi encerrado hoje. Registre a ausência a partir de amanhã.',
             'hora_inicial.required' => 'Informe o horário inicial da ausência.',
             'hora_final.required' => 'Informe o horário final da ausência.',
             'hora_final.after' => 'O horário final deve ser maior que o horário inicial.',
@@ -179,14 +224,20 @@ class ClinicManagementController extends Controller
 
         $absenceDate = Carbon::parse($validated['data_ausencia']);
 
+        if ($absenceDate->isToday() && $validated['hora_inicial'] < now()->format('H:i')) {
+            return redirect()->route('admin.doctor.absences', $this->absenceRouteParameters($professional))
+                ->withInput()
+                ->withErrors(['hora_inicial' => 'O horário inicial não pode ser anterior ao horário atual.']);
+        }
+
         if (! $this->professionalScheduleCoversInterval($professional, $absenceDate, $validated['hora_inicial'], $validated['hora_final'])) {
-            return redirect()->route('admin.doctor.absences')
+            return redirect()->route('admin.doctor.absences', $this->absenceRouteParameters($professional))
                 ->withInput()
                 ->withErrors(['hora_inicial' => 'A ausência precisa estar dentro de um horário de atendimento configurado para esse dia.']);
         }
 
         if ($this->professionalAbsenceOverlapsExisting($professional, $absenceDate, $validated['hora_inicial'], $validated['hora_final'])) {
-            return redirect()->route('admin.doctor.absences')
+            return redirect()->route('admin.doctor.absences', $this->absenceRouteParameters($professional))
                 ->withInput()
                 ->withErrors(['hora_inicial' => 'Já existe uma ausência cadastrada para esse período.']);
         }
@@ -199,7 +250,7 @@ class ClinicManagementController extends Controller
         );
 
         if ($conflictingAppointments->isNotEmpty()) {
-            return redirect()->route('admin.doctor.absences')
+            return redirect()->route('admin.doctor.absences', $this->absenceRouteParameters($professional))
                 ->withInput()
                 ->withErrors([
                     'hora_inicial' => 'Já existem agendamentos ativos nesse período. Remarque ou finalize esses horários antes de registrar a ausência.',
@@ -223,15 +274,20 @@ class ClinicManagementController extends Controller
             'motivo' => $validated['motivo'],
         ]);
 
-        return redirect()->route('admin.doctor.absences')
+        return redirect()->route('admin.doctor.absences', $this->absenceRouteParameters($professional))
             ->with('success', 'Ausência pontual cadastrada com sucesso.');
     }
 
-    public function destroyDoctorAbsence(ProfessionalAbsence $absence): RedirectResponse
+    public function destroyDoctorAbsence(Request $request, ProfessionalAbsence $absence): RedirectResponse
     {
         $professional = $this->authenticatedProfessional();
 
-        abort_unless($professional && (int) $absence->profissional_id === (int) $professional->id, 403);
+        if ($professional) {
+            abort_unless((int) $absence->profissional_id === (int) $professional->id, 403);
+        } else {
+            abort_unless($this->canManageAbsencesForOthers(), 403);
+            $professional = $absence->professional;
+        }
 
         $absenceSnapshot = [
             'professional_id' => $absence->profissional_id,
@@ -245,7 +301,7 @@ class ClinicManagementController extends Controller
 
         $this->recordActivity('deleted', $professional, 'Ausência pontual do profissional removida.', $absenceSnapshot);
 
-        return redirect()->route('admin.doctor.absences')
+        return redirect()->route('admin.doctor.absences', $this->absenceRouteParameters($professional))
             ->with('success', 'Ausência pontual removida com sucesso.');
     }
 
@@ -608,6 +664,91 @@ class ClinicManagementController extends Controller
             ->first(function (Professional $item) use ($fullName) {
                 return mb_strtolower(trim((string) $item->nome)) === $fullName;
             });
+    }
+
+    private function canManageAbsencesForOthers(): bool
+    {
+        $role = Auth::user()?->normalizedRole();
+
+        return in_array($role, ['admin', 'gestor_clinica', 'recepcionista'], true);
+    }
+
+    private function selectedProfessionalForAbsences(?Request $request = null): ?Professional
+    {
+        $authenticatedProfessional = $this->authenticatedProfessional();
+
+        if ($authenticatedProfessional) {
+            return $authenticatedProfessional;
+        }
+
+        if (! $this->canManageAbsencesForOthers() || ! Schema::hasTable('profissionais')) {
+            return null;
+        }
+
+        $professionalQuery = Professional::query()
+            ->where('ativo', true)
+            ->orderBy('nome');
+
+        $selectedProfessionalId = (int) ($request?->input('professional_id', $request?->query('professional_id')) ?? 0);
+
+        if ($selectedProfessionalId > 0) {
+            $selectedProfessional = (clone $professionalQuery)
+                ->whereKey($selectedProfessionalId)
+                ->first();
+
+            if ($selectedProfessional) {
+                return $selectedProfessional;
+            }
+        }
+
+        return $professionalQuery->first();
+    }
+
+    private function absenceRouteParameters(?Professional $professional = null): array
+    {
+        if ($this->isProfessionalUser() || ! $professional) {
+            return [];
+        }
+
+        return ['professional_id' => $professional->id];
+    }
+
+    private function cleanupExpiredProfessionalAbsences(?Professional $professional = null): void
+    {
+        $query = ProfessionalAbsence::query();
+
+        if ($professional) {
+            $query->where('profissional_id', $professional->id);
+        }
+
+        $query->where(function ($builder) {
+            $builder->whereDate('data_ausencia', '<', now()->toDateString())
+                ->orWhere(function ($sameDayQuery) {
+                    $sameDayQuery->whereDate('data_ausencia', now()->toDateString())
+                        ->where('hora_final', '<=', now()->format('H:i:s'));
+                });
+        })->delete();
+    }
+
+    private function minimumAbsenceDateForRegistration(): Carbon
+    {
+        $minimumDate = now();
+
+        if (! Schema::hasTable('horarios_clinica')) {
+            return $minimumDate;
+        }
+
+        $clinicClosingTime = ClinicHour::query()->value('closing_time');
+
+        if (! $clinicClosingTime) {
+            return $minimumDate;
+        }
+
+        $clinicClosingDateTime = now()->copy()->setTimeFromTimeString((string) $clinicClosingTime);
+
+        return now()->greaterThanOrEqualTo($clinicClosingDateTime)
+            ? $minimumDate->copy()->addDay()
+            : $minimumDate;
     }
 
     private function professionalScheduleCoversInterval(Professional $professional, Carbon $date, string $startTime, string $endTime): bool
@@ -1095,6 +1236,11 @@ class ClinicManagementController extends Controller
         $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
         $redirectTo = $request->input('return_to', route('admin.doctor.queue', $request->only(['q', 'date', 'period'])));
 
+        if (Auth::user()?->isClinicManager()) {
+            return redirect($redirectTo)
+                ->with('layout_warning', 'O Gestor da Clínica possui acesso somente para visualização em Atendimentos em Atraso.');
+        }
+
         if ($agendamento->status === 'concluido') {
             return redirect($redirectTo)
                 ->with('warning', 'Este atendimento já foi finalizado.');
@@ -1116,6 +1262,11 @@ class ClinicManagementController extends Controller
     {
         $this->ensureAuthenticatedProfessionalCanAccessAppointment($agendamento);
         $redirectTo = $request->input('return_to', route('admin.doctor.queue', $request->only(['q', 'date', 'period', 'professional_id'])));
+
+        if (Auth::user()?->isClinicManager()) {
+            return redirect($redirectTo)
+                ->with('layout_warning', 'O Gestor da Clínica possui acesso somente para visualização em Atendimentos em Atraso.');
+        }
 
         if ($agendamento->status === 'concluido') {
             return redirect($redirectTo)

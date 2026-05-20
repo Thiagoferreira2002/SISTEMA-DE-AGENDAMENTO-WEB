@@ -272,6 +272,15 @@ class User extends Authenticatable
             return true;
         }
 
+        if (str_starts_with($routeName, 'admin.doctor.absences')) {
+            return $this->canAccessSubmenu('agendamentos') || $this->canAccessSubmenu('painel_doutor');
+        }
+
+        if ($routeName === 'admin.doctor.queue.finish') {
+            return ! $this->isClinicManager()
+                && ($this->canAccessSubmenu('agendamentos') || $this->canAccessSubmenu('painel_doutor'));
+        }
+
         if ($this->nivel === 'admin' || $this->role === 'admin') {
             return true;
         }

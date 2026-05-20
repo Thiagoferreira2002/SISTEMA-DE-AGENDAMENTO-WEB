@@ -442,6 +442,179 @@
     display: none;
   }
 
+  .dashboard-details-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(7, 16, 28, 0.62);
+    backdrop-filter: blur(4px);
+  }
+
+  .dashboard-details-modal.is-open {
+    display: flex;
+  }
+
+  .dashboard-details-dialog {
+    width: min(100%, 760px);
+    max-height: calc(100vh - 36px);
+    overflow: auto;
+    border-radius: 24px;
+    border: 1px solid #d2dbe6;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(244, 249, 255, 0.98) 100%);
+    box-shadow: 0 24px 54px rgba(7, 16, 28, 0.2);
+  }
+
+  html[data-theme="dark"] .dashboard-details-dialog {
+    border-color: #000000;
+    background: linear-gradient(180deg, rgba(22, 40, 59, 0.99) 0%, rgba(18, 33, 49, 0.99) 100%);
+  }
+
+  .dashboard-details-header,
+  .dashboard-details-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 24px;
+  }
+
+  .dashboard-details-header {
+    border-bottom: 1px solid rgba(30, 144, 255, 0.14);
+  }
+
+  .dashboard-details-footer {
+    border-top: 1px solid rgba(30, 144, 255, 0.14);
+  }
+
+  .dashboard-details-header h4 {
+    margin: 0;
+    color: var(--dashboard-dark);
+    font-weight: 700;
+  }
+
+  html[data-theme="dark"] .dashboard-details-header h4 {
+    color: #eef5fc;
+  }
+
+  .dashboard-details-close {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(30, 144, 255, 0.12);
+    color: #0f5aa6;
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .dashboard-details-close:hover {
+    background: rgba(30, 144, 255, 0.18);
+  }
+
+  html[data-theme="dark"] .dashboard-details-close {
+    background: rgba(143, 197, 255, 0.12);
+    color: #d8ebff;
+  }
+
+  .dashboard-details-body {
+    padding: 24px;
+  }
+
+  .dashboard-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .dashboard-detail-card {
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(30, 144, 255, 0.14);
+    background: rgba(255, 255, 255, 0.78);
+  }
+
+  html[data-theme="dark"] .dashboard-detail-card {
+    border-color: rgba(143, 197, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .dashboard-detail-card.dashboard-detail-card-full {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-detail-card label {
+    display: block;
+    margin-bottom: 6px;
+    color: #587693;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .dashboard-detail-card p {
+    margin: 0;
+    color: var(--dashboard-dark);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  html[data-theme="dark"] .dashboard-detail-card label {
+    color: #a9c5df;
+  }
+
+  html[data-theme="dark"] .dashboard-detail-card p {
+    color: #eef5fc;
+  }
+
+  .dashboard-detail-summary {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .dashboard-detail-summary img {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(23, 111, 190, 0.12);
+    flex: 0 0 auto;
+  }
+
+  .dashboard-detail-summary strong {
+    display: block;
+    color: var(--dashboard-dark);
+    font-size: 18px;
+    line-height: 1.3;
+  }
+
+  .dashboard-detail-summary span {
+    display: block;
+    margin-top: 4px;
+    color: #5b7895;
+    font-size: 13px;
+  }
+
+  html[data-theme="dark"] .dashboard-detail-summary strong {
+    color: #eef5fc;
+  }
+
+  html[data-theme="dark"] .dashboard-detail-summary span {
+    color: #a9c5df;
+  }
+
+  .dashboard-modal-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   @media (max-width: 991.98px) {
     .dashboard-metrics-row,
     .dashboard-secondary-row {
@@ -655,6 +828,10 @@
       padding-left: 14px;
       padding-right: 14px;
     }
+
+    .dashboard-details-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   @media (max-width: 420px) {
@@ -800,9 +977,23 @@
                 </thead>
                 <tbody>
                   @forelse($proximosAgendamentos as $agendamento)
+                    @php
+                      $appointmentStatus = ucfirst($agendamento->status ?? 'pendente');
+                      $appointmentDescription = $agendamento->motivo_consulta ?: ($agendamento->descricao ?: 'Sem descricao informada.');
+                    @endphp
                     <tr
                       class="dashboard-appointment-row"
-                      data-href="{{ route('admin.agendamentos.show', ['agendamento' => $agendamento, 'return_to' => url()->full()]) }}"
+                      data-appointment-name="{{ e($agendamento->nome ?: 'Paciente') }}"
+                      data-appointment-photo="{{ e($agendamento->patient?->foto_url ?? asset('backend/assets/img/avatar/avatar-1.png')) }}"
+                      data-appointment-service="{{ e($agendamento->servico ?: 'Atendimento') }}"
+                      data-appointment-professional="{{ e($agendamento->professional->nome ?? $agendamento->medico ?? 'Nao informado') }}"
+                      data-appointment-date="{{ e(optional($agendamento->data_agendamento)->format('d/m/Y') ?: '-') }}"
+                      data-appointment-time="{{ e($agendamento->horario ?: '-') }}"
+                      data-appointment-status="{{ e($appointmentStatus) }}"
+                      data-appointment-status-class="{{ e($agendamento->status ?: 'pendente') }}"
+                      data-appointment-email="{{ e($agendamento->email ?: '-') }}"
+                      data-appointment-phone="{{ e($agendamento->telefone ?: '-') }}"
+                      data-appointment-description="{{ e($appointmentDescription) }}"
                       tabindex="0"
                     >
                       <td class="dashboard-mobile-full" data-label="Paciente">
@@ -852,15 +1043,112 @@
     </div>
   </div>
 </section>
+<div class="dashboard-details-modal" id="dashboardAppointmentModal" aria-hidden="true">
+  <div class="dashboard-details-dialog">
+    <div class="dashboard-details-header">
+      <h4>Detalhes do agendamento</h4>
+      <button type="button" class="dashboard-details-close" data-dashboard-modal-close aria-label="Fechar">&times;</button>
+    </div>
+    <div class="dashboard-details-body">
+      <div class="dashboard-details-grid">
+        <div class="dashboard-detail-card dashboard-detail-card-full">
+          <div class="dashboard-detail-summary">
+            <img src="{{ asset('backend/assets/img/avatar/avatar-1.png') }}" alt="Foto do paciente" data-dashboard-modal-photo>
+            <div>
+              <strong data-dashboard-modal-name>-</strong>
+              <span data-dashboard-modal-subtitle>Informacoes principais do atendimento</span>
+            </div>
+          </div>
+        </div>
+        <div class="dashboard-detail-card">
+          <label>Servico</label>
+          <p data-dashboard-modal-service>-</p>
+        </div>
+        <div class="dashboard-detail-card">
+          <label>Profissional</label>
+          <p data-dashboard-modal-professional>-</p>
+        </div>
+        <div class="dashboard-detail-card">
+          <label>Data</label>
+          <p data-dashboard-modal-date>-</p>
+        </div>
+        <div class="dashboard-detail-card">
+          <label>Horario</label>
+          <p data-dashboard-modal-time>-</p>
+        </div>
+        <div class="dashboard-detail-card">
+          <label>Status</label>
+          <p><span class="dashboard-status dashboard-modal-status pendente" data-dashboard-modal-status>-</span></p>
+        </div>
+        <div class="dashboard-detail-card">
+          <label>Telefone</label>
+          <p data-dashboard-modal-phone>-</p>
+        </div>
+        <div class="dashboard-detail-card">
+          <label>E-mail</label>
+          <p data-dashboard-modal-email>-</p>
+        </div>
+        <div class="dashboard-detail-card dashboard-detail-card-full">
+          <label>Motivo do agendamento</label>
+          <p data-dashboard-modal-description>-</p>
+        </div>
+      </div>
+    </div>
+    <div class="dashboard-details-footer">
+      <span></span>
+      <button type="button" class="btn btn-light" data-dashboard-modal-close>Fechar</button>
+    </div>
+  </div>
+</div>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.dashboard-appointment-row[data-href]').forEach(function (row) {
-      row.addEventListener('click', function () {
-        const targetUrl = row.dataset.href;
+    var appointmentRows = document.querySelectorAll('.dashboard-appointment-row');
+    var modal = document.getElementById('dashboardAppointmentModal');
+    var closeButtons = modal ? modal.querySelectorAll('[data-dashboard-modal-close]') : [];
 
-        if (targetUrl) {
-          window.location.href = targetUrl;
-        }
+    if (!appointmentRows.length || !modal) {
+      return;
+    }
+
+    var fields = {
+      photo: modal.querySelector('[data-dashboard-modal-photo]'),
+      name: modal.querySelector('[data-dashboard-modal-name]'),
+      subtitle: modal.querySelector('[data-dashboard-modal-subtitle]'),
+      service: modal.querySelector('[data-dashboard-modal-service]'),
+      professional: modal.querySelector('[data-dashboard-modal-professional]'),
+      date: modal.querySelector('[data-dashboard-modal-date]'),
+      time: modal.querySelector('[data-dashboard-modal-time]'),
+      status: modal.querySelector('[data-dashboard-modal-status]'),
+      phone: modal.querySelector('[data-dashboard-modal-phone]'),
+      email: modal.querySelector('[data-dashboard-modal-email]'),
+      description: modal.querySelector('[data-dashboard-modal-description]')
+    };
+
+    var closeModal = function () {
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    };
+
+    appointmentRows.forEach(function (row) {
+      row.addEventListener('click', function () {
+        fields.photo.setAttribute('src', row.dataset.appointmentPhoto || '{{ asset('backend/assets/img/avatar/avatar-1.png') }}');
+        fields.photo.setAttribute('alt', 'Foto de ' + (row.dataset.appointmentName || 'paciente'));
+        fields.name.textContent = row.dataset.appointmentName || '-';
+        fields.subtitle.textContent = row.dataset.appointmentService || 'Informacoes principais do atendimento';
+        fields.service.textContent = row.dataset.appointmentService || '-';
+        fields.professional.textContent = row.dataset.appointmentProfessional || '-';
+        fields.date.textContent = row.dataset.appointmentDate || '-';
+        fields.time.textContent = row.dataset.appointmentTime || '-';
+        fields.phone.textContent = row.dataset.appointmentPhone || '-';
+        fields.email.textContent = row.dataset.appointmentEmail || '-';
+        fields.description.textContent = row.dataset.appointmentDescription || '-';
+        fields.status.textContent = row.dataset.appointmentStatus || '-';
+        fields.status.className = 'dashboard-status dashboard-modal-status ' + (row.dataset.appointmentStatusClass || 'pendente');
+
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
       });
 
       row.addEventListener('keydown', function (event) {
@@ -869,6 +1157,22 @@
           row.click();
         }
       });
+    });
+
+    closeButtons.forEach(function (button) {
+      button.addEventListener('click', closeModal);
+    });
+
+    modal.addEventListener('click', function (event) {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+        closeModal();
+      }
     });
   });
 </script>

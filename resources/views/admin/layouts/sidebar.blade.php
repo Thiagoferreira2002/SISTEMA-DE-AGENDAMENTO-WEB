@@ -457,10 +457,11 @@
       $isDoctorCompletedRoute = $isProfessionalAccount
         && request()->routeIs('admin.agendamentos.completed')
         && request()->query('source') === 'doctor';
+      $isAdministrativeAbsenceRoute = ! $isProfessionalAccount && request()->routeIs('admin.doctor.absences*');
       $isDashboardMenuOpen = request()->routeIs('admin.dashboard') || request()->routeIs('admin.account.*') || request()->routeIs('admin.tutorial');
       $isPatientsMenuOpen = request()->routeIs('admin.patients.*') || $isPatientTabOnCreate;
-      $isAgendamentosMenuOpen = request()->routeIs('admin.agendamentos.*') && ! $isPatientTabOnCreate && ! $isProfessionalCalendarRoute && ! $isDoctorCompletedRoute;
-      $isDoctorMenuOpen = request()->routeIs('admin.doctor.*') || $isProfessionalCalendarRoute || $isDoctorCompletedRoute;
+      $isAgendamentosMenuOpen = $isAdministrativeAbsenceRoute || (request()->routeIs('admin.agendamentos.*') && ! $isPatientTabOnCreate && ! $isProfessionalCalendarRoute && ! $isDoctorCompletedRoute);
+      $isDoctorMenuOpen = ($isProfessionalAccount && request()->routeIs('admin.doctor.*')) || $isProfessionalCalendarRoute || $isDoctorCompletedRoute;
       $isCadastrosMenuOpen = request()->routeIs('admin.settings.*');
     @endphp
 
@@ -493,7 +494,9 @@
                     <li class="{{ $isPatientTabOnCreate ? 'active' : '' }}"><a class="nav-link painelms submenu-nowrap" href="{{ route('admin.agendamentos.create', ['tab' => 'paciente']) }}">Cadastrar Novo Paciente</a></li>
                   @endif
                   <li class="{{ request()->routeIs('admin.patients.index') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.patients.index') }}">Listagem / Busca</a></li>
-                  <li class="{{ request()->routeIs('admin.patients.logs') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.patients.logs') }}">Logs de Pacientes</a></li>
+                  @if($loggedUser?->canManageCadastrosBase())
+                    <li class="{{ request()->routeIs('admin.patients.logs') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.patients.logs') }}">Logs de Pacientes</a></li>
+                  @endif
                 </ul>
               </li>
             @endif
@@ -514,6 +517,8 @@
                   @if($loggedUser?->normalizedRole() === 'recepcionista')
                     <li class="{{ request()->routeIs('admin.agendamentos.delayed-appointments') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.delayed-appointments') }}">Atendimentos em Atraso</a></li>
                   @endif
+                  @if(in_array($loggedUser?->normalizedRole(), ['admin', 'gestor_clinica', 'recepcionista'], true))
+                  @endif
                   @if($loggedUser?->normalizedRole() !== 'profissional')
                     <li class="{{ request()->routeIs('admin.agendamentos.completed') && ! $isProfessionalCalendarRoute ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.completed') }}">Agendamentos Finalizados</a></li>
                   @endif
@@ -528,11 +533,11 @@
                 <ul class="dropdown-menu" style="{{ $isDoctorMenuOpen ? 'display:block;' : '' }}">
                   @if($loggedUser?->normalizedRole() === 'profissional')
                     <li class="{{ request()->routeIs('admin.agendamentos.calendar') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.calendar') }}">Seu Calendário</a></li>
-                    <li class="{{ request()->routeIs('admin.doctor.absences*') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.doctor.absences') }}">Ausências</a></li>
                   @endif
                   <li class="{{ request()->routeIs('admin.doctor.queue') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.doctor.queue') }}">Fila de Espera</a></li>
                   <li class="{{ request()->routeIs('admin.doctor.pending-finalization') ? 'active' : '' }}"><a class="nav-link painelms submenu-nowrap" href="{{ route('admin.doctor.pending-finalization') }}">Atendimentos em Atraso</a></li>
                   @if($loggedUser?->normalizedRole() === 'profissional')
+                    <li class="{{ request()->routeIs('admin.doctor.absences*') ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.doctor.absences') }}">Aus&ecirc;ncias</a></li>
                     <li class="{{ $isDoctorCompletedRoute ? 'active' : '' }}"><a class="nav-link painelms" href="{{ route('admin.agendamentos.completed', ['source' => 'doctor']) }}">Agendamentos Finalizados</a></li>
                   @endif
                 </ul>

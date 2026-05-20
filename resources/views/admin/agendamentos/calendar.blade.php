@@ -273,6 +273,7 @@
     var calendarProcedureOptions = @json($procedureOptions ?? []);
     var calendarProfessionalOptions = @json($professionalOptions ?? []);
     var calendarViewStorageKey = 'admin.agendamentos.calendar.view';
+    var calendarIsProfessionalAccount = @json(optional(auth()->user())->normalizedRole() === 'profissional');
     var appointmentShowBaseUrl = '{{ url('admin/agendamentos') }}';
     var appointmentEditBaseUrl = '{{ url('admin/agendamentos') }}';
     var appointmentReturnUrl = @json(url()->full());
@@ -1067,6 +1068,24 @@
             }
 
             function resolveInitialCalendarView() {
+                var requestedView = String(calendarRequestedView || '').trim();
+
+                if (requestedView === 'agendaWeek') {
+                    return 'compactWeek';
+                }
+
+                if (requestedView === 'agendaDay') {
+                    return 'compactDay';
+                }
+
+                if (requestedView === 'month' || requestedView === 'compactWeek' || requestedView === 'compactDay') {
+                    return requestedView;
+                }
+
+                if (calendarIsProfessionalAccount) {
+                    return 'month';
+                }
+
                 var storedView = readStoredCalendarView();
 
                 if (storedView === 'month') {
